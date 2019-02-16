@@ -69,15 +69,16 @@ bool ChuffsOn(void) {
 bool FileExists(const char *wavfilename){
 #ifdef _Audio
  #ifdef ESP32
-    // put esp32 equivaent here
-  
+ bool ishere;
+    // put esp32 equivalent here  but note  esp32 audio was quite stable without needing this .
+   
   #else // esp8266 version 
   File TestObj;
     if (!(TestObj= SPIFFS.open(wavfilename,"r"))){ 
       #ifdef _SERIAL_Audio_DEBUG
         DebugSprintfMsgSend( sprintf ( DebugMsg, " SFX File not found %s",wavfilename));
       #endif
-        malloc(TestObj);  // is this needed 
+        malloc(TestObj);  //  this needed 
         return false; 
         }
    malloc(TestObj); 
@@ -196,9 +197,10 @@ long timer;
 
 void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
 #ifdef _Audio
+
   if (!FileExists(wavfilename)){
-  return;
-     }
+                               return;
+                               }
 
   if (wav[Channel]->isRunning()) {   wav[Channel]->stop();  //delay(1);
           #ifdef _SERIAL_Audio_DEBUG
@@ -224,7 +226,7 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
   ChuffDebugState=1; 
   if (Channel==1){PlayingSoundEffect=true;  //if ch1 (SFX) works ch 0 (Chuffs) will, but we do not need lots of debug messages for chuffs
                   Volume=Volume*100; // convert to % just for message
-                  DebugSprintfMsgSend( sprintf ( DebugMsg, " Playing SFX file <%s> at %.0f%% volume",wavfilename,Volume));
+                        DebugSprintfMsgSend( sprintf ( DebugMsg, " Playing SFX file <%s> at %.0f%% volume",wavfilename,Volume));
                  }
 #endif
 }
@@ -334,17 +336,21 @@ void AudioLoop(int32_t TimeNow){
  #ifdef SteamOutputPin
               if ((SteamOnStarted+SteamPulseDuration)<=TimeNow){digitalWrite (NodeMCUPinD[SteamOutputPin],LOW);}
  #endif 
-   
+bool SoundPlaying;
+SoundPlaying=false;   
    if (wav[0]->isRunning()) { //ch 0 is chuffs
-    if (!wav[0]->loop()) { wav[0]->stop(); stub[0]->stop();//Running[0]=false;Serial.printf("stopping 0\n"); }
+              SoundPlaying=true; 
+              if (!wav[0]->loop()) { wav[0]->stop(); stub[0]->stop();//Running[0]=false;Serial.printf("stopping 0\n"); }
                           #ifdef _SERIAL_Audio_DEBUG 
                               Serial.printf("S0\n");
                           #endif
                          }
                         }
 
-  if (wav[1]->isRunning()) {ChuffDebugState=2;
-      if (!wav[1]->loop()) { ChuffDebugState=3;
+  if (wav[1]->isRunning()) {
+              SoundPlaying=true; 
+              ChuffDebugState=2;
+              if (!wav[1]->loop()) { ChuffDebugState=3;
                             wav[1]->stop(); stub[1]->stop();
                             PlayingSoundEffect=false;//Running[1]=false;Serial.printf("stopping 1\n");}
                             #ifdef _SERIAL_Audio_DEBUG
@@ -358,6 +364,7 @@ void AudioLoop(int32_t TimeNow){
                             #endif
                            }
                             }
+    
  #endif
  }
              

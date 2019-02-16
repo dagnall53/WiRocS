@@ -63,14 +63,16 @@ void CheckForSerialInput(){
     bool LAMP;
   
     while ((millis()<= Timestarted+4000) || UpdateInProgress) {
-      if ((millis()>= FlashTime) && !UpdateInProgress) { LAMP=!LAMP; FlashTime=millis()+200; Serial.print(">");digitalWrite (NodeMCUPinD[SignalLed] , LAMP) ;}
+      if ((millis()>= FlashTime) && !UpdateInProgress) { LAMP=!LAMP; FlashTime=millis()+100; Serial.print(digitalRead(0));digitalWrite (NodeMCUPinD[SignalLed] , LAMP) ;}
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
-      if (newData == true) {TestData=receivedChars;
+      if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 
+                {
+                  if (newData == true) {TestData=receivedChars;}
                           //Serial.print("<");Serial.print(TestData);Serial.print("> Looking for {");Serial.print(LookFor);Serial.println("}");
                           switch (SerioLevel){ 
                           case 0:
-                                 if (TestData=="xxx\0"){
+                                 if ((TestData=="xxx\0")|| !(digitalRead(0))){
                                     UpdateInProgress=true;
                                     //display.clear(); display.drawString(64, 32, "Type in New SSID"); display.display();
                                     OLED_5_line_display(1,"Type in New SSID",""," ","","");
@@ -185,7 +187,7 @@ extern uint16_t RocNodeID;
 extern void WriteEEPROM(void);
 extern void Commit_EEprom(String reason);
 void WriteWiFiSettings(){
-    Serial.println(" --Writing the SSID, Password, BrokerAddr to EEPROM-- ");
+    Serial.println(" --WriteWiFisettings-- Saving the SSID, Password, BrokerAddr to EEPROM ");
     Data_Updated = true;
     WriteEEPROM();
     EPROM_Write_Delay = millis() + 10000;

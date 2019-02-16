@@ -1,6 +1,7 @@
 #include "MQTT.h"
 #include <Arduino.h> //needed 
- //  #include "Globals.h" 
+//#include "Directives.h"
+
 
 extern uint8_t Message_Length;
 extern boolean Message_Decoded;
@@ -72,8 +73,8 @@ extern int IntFromPacket_at_Addr(uint8_t* msg, uint8_t highbyte);
 
 
 
-//extern void MQTTFetch (char* topic, byte* payload, unsigned int Length) ;
-void MQTTFetch (char* topic, byte* payload, unsigned int Length) { //replaces rocfetch
+
+void MQTTFetch (char* topic, byte* payload, unsigned int Length) { 
   //do a check on length matching payload[7] ??
 
   if ((strncmp("PiNg", topic, 4) == 0)) {
@@ -172,7 +173,6 @@ void MQTTSend (String topic, uint8_t * payload) { //replaces rocsend
 void MQTT_Setup(void){
   
   client.setServer(mosquitto, 1883);   //Hard set port at 1833
-  //client.setServer(mqtt_server, 1883); //old hard set version...
   client.setCallback(MQTTFetch);
 }
 
@@ -231,44 +231,44 @@ extern int BrokerAddr;
 extern void WriteWiFiSettings();
 extern uint16_t SW_REV;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern char L5[DisplayWidth],L10[DisplayWidth];
+extern void StringToL5(char *line, String input);
+extern void FlashMessage (String msg, int Repeats, int ON, int Off);
+uint32_t TimeLimit;
+
 void reconnect() {
+  bool ConnectedNow; int cx;
   char ClientName[80];
-  char myName[15] = "RocNetESPNode:";String MSGText1;String MSGText2;
-  sprintf(ClientName, "%s%i", myName, RocNodeID);
-  //Loop until we're reconnected 
-  digitalWrite (NodeMCUPinD[SignalLed] , SignalON) ; ///turn on
-  PrintTime(" Attempting MQTT connection attempt #");
-  Serial.print(connects);
-  while (!client.connected()) {
-    // this is unknown here ftpSrv.handleFTP();        //make sure you call handleFTP() in loop  ??
-    Serial.print(" trying:");
-    Serial.print(mosquitto);
-    Serial.println("  ");
- 
-  MSGText1="at <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
-  MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
-  OLED_5_line_display(1,"","Looking for Broker: ",MSGText1,MSGText2,"");
-  connects=connects+1;
-    
-    //Attempt to connect
-
-    if (client.connect(ClientName)) {
-      Serial.println();
-       //DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at:%d.%d.%d.%d",ClientName,ip0,ip1,subIPH,subIPL);
-       if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));
-       BrokerAddr=mosquitto[3];
-       WriteWiFiSettings();
-            }
+  char myName[15] = "RocNetESPNode:";
+  String MSGText1, MSGText2;
+  if (!MQTT_Connected()) { // not connected so need to do stuff
+      sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
+      digitalWrite (NodeMCUPinD[SignalLed] , SignalON) ; ///turn on
+      MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
+      MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
+      MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
+      Serial.print("MQTT trying ");Serial.println(MSGText1);
+      StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should display progress via L5/L10 and oledsatus
+      ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
+      if (ConnectedNow) {
+            connects=0;
+            if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
+                   DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));
+                   BrokerAddr=mosquitto[3];
+                   WriteWiFiSettings();
+                   }
       //can advise this node is connected now:
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at:%d.%d.%d.%d",ClientName,ip0,ip1,subIPH,subIPL));
-       OLED_5_line_display(1,"","","","",DebugMsg);
+      
+            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
+            cx=sprintf( DebugMsg, "Found Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
+            FlashMessage(DebugMsg, 10, 500, 100);  //Flash message 
+            MSGText1="";StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
+            
         //... and now subscribe to topics  http://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en#groups
-
-      client.subscribe("rocnet/lc", 1 ); //loco
-      client.subscribe("rocnet/#", 0);   //everything
-      //client.subscribe("PiNg", 0);  //my ping...for my qos 1 attempt
-       /*   or do it individually.......
+            client.subscribe("rocnet/lc", 1 ); //loco
+            client.subscribe("rocnet/#", 0);   //everything else
+        //client.subscribe("PiNg", 0);  //my ping...for my qos 1 attempt
+         /*   or do it individually.......
 
         client.subscribe("rocnet/dc",0);
         client.subscribe("rocnet/cs",0);
@@ -276,24 +276,20 @@ void reconnect() {
         client.subscribe("rocnet/ot",1);
         client.subscribe("rocnet/sr",0); //to allow reflection check of my sensor events
       */
-     
-       delay(100);
-       EPROM_Write_Delay = millis();
-    
-    } else {
+           delay(10); // time to stabilise everything?
+       } else { // not connected? try another address
              connects=connects+1;
-             if ((connects>=5) && ScanForBroker){  mosquitto[3]=mosquitto[3]+1; 
-                       Serial.println(" Searching for MQTT broker - incrementing addresses");
+             if ((connects>=5) && ScanForBroker){  
+                       mosquitto[3]=mosquitto[3]+1; 
+                       Serial.println(" Incrementing MQTT addresses ");
                        #ifdef myBrokerSubip 
                          mosquitto[3]= BrokerAddr  //change to force set  BrokerAddrDefault as your broker last ip address (defined in secrets)..
                        #endif
-                       if (mosquitto[3]>=127){mosquitto[3]=3;}   }   //limit mqtt brokerrange  to 3-50 to save scan time
-            //delay(100);
-            client.setServer(mosquitto, 1883);   //Hard set port at 1833
-            Serial.print(" Trying broker address:");Serial.print(mosquitto[0]);Serial.print(".");Serial.print(mosquitto[1]);Serial.print(".");Serial.print(mosquitto[2]);Serial.print(".");Serial.println(mosquitto[3]);
-            delay(10);
+                       if (mosquitto[3]>=127){mosquitto[3]=3;} 
+                       delay(10);  
+                       }   //limit mqtt brokerrange  to 3-127 to save scan time
             digitalWrite (NodeMCUPinD[SignalLed] , SignalOFF) ; ///turn OFF
-            }
+             }
   }
 }
 

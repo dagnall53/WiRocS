@@ -131,7 +131,7 @@ extern char DebugMsg[127];
 extern uint16_t RocNodeID;
 extern bool Display1Present,Display2Present;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
-extern void OLED_Align(bool left);
+
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
   String IAM,IAM2;
   IAM=" RN:";IAM+=RocNodeID;IAM+=" Display Addr:";
@@ -139,7 +139,7 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
   IAM+="60";
   Serial.println(msg);
   DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG"));
-  OLED_Align(false);
+
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
    
@@ -153,7 +153,7 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
     delay(Off);
     
   }
-OLED_Align(true);
+
 }
 void SetPortPinIndex() {
   //set my indexed port range for indexed use later  other code translates D0 to the pin number ESP uses..

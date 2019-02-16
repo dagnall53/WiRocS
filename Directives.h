@@ -98,11 +98,11 @@
 #define DAC25is  10
 #define DAC26is  11 //to keep port setting in rocsubs happy should not affect anything as ports 10 and 11
   #ifdef ESP32
-    //used in subroutines.h see  https://desire.giesecke.tk/index.php/2018/07/06/reserved-gpios/ note GPIO34 ... GPIO39 do not have pu/pd circuits.
+    //used in subroutines.h see  https://desire.giesecke.tk/index.php/2018/07/06/reserved-gpios/ 
     // note for GPIO pin 12 Make sure it is not pulled high by a peripheral device during boot or the module might not be able to start!
-//21,22 for audio
-//input only external pullup? 34 35 36 37 38 39 
-// NO USE SPIO flash 6 7 8 9 10 (11?)  I2C SPI 21,22 
+//21,22 for audio (Audio uses I2C defaults SPI 21,22) 
+// inputs only with external pullup? 34 35 36 37 38 39 note GPIO34 ... GPIO39 do not have pu/pd circuits.
+// NO USE SPIO flash 6 7 8 9 10 (11?)  
 // ?? not working as expected             18(VSPI CLK)
 //                                                          25,26 default to dac mode give square wave, 11 khz 50% DAC!
 // following work fine  12 13 14 15 16 17    19   (21!) 23       27     32 33 
@@ -132,4 +132,8 @@
   static const uint8_t OLED_SCL = 4;  //also known as D2 on esp 8266, but
   static const uint8_t OLED_SDA = 5;  // also known as D1 on esp 8266
 // The following hardware pinouts differ for ESP32 and ESP8266 variants
+// for oled
+#define DisplayWidth 33  // to give 32 chars
+
+
 #endif

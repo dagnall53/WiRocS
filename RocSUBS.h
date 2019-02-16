@@ -1244,13 +1244,14 @@ void ROC_Outputs() { //group 9
       if (STATE &&!PlayingSoundEffect){
         int SFXNum;
         char Filename[31]; Filename[0]='\0';
-        if ((ROC_Data[4]>=20)&& (ROC_Data[4]<=30))  {  //set range above any "real ports" numberofports
-          SFXNum=ROC_Data[4]-20; // Output Port 21 =1 triggers F1 etc.. 
+        if ((ROC_Data[4]>=100) &&(ROC_Data[4]<=110)) {  //ADDRESS RANGE 100 on  are the special addresses  FOR SOUNDS! F1.wav to F8.wav 
+          SFXNum=ROC_Data[4]-100; //  101 is sfx 1 triggers F1 etc.. 
           if (SFXNum<=1){SFXNum=1;}//set range of SFX available
-          if (SFXNum>=8){SFXNum=8;}//set range
+          if (SFXNum>=10){SFXNum=10;}//set range
           sprintf (Filename,"/F%d.wav",SFXNum);
-          //BeginPlay(1,Filename,CV[100+SFXNum]);
-          BeginPlay(1,Filename,100);//Play at a set volume until I work out a way to set volumes through rocrail 
+          BeginPlay(1,Filename,120);//Play at a set volume until I work out a way to set volumes through rocrail 
+          //DebugSprintfMsgSend( sprintf ( DebugMsg, "Rd1%d Rd2%d Rd3%d Rd4%d Rd5%d Playing %s ",ROC_Data[1],ROC_Data[2],ROC_Data[3],ROC_Data[4],ROC_Data[5],Filename));
+          // Message_Decoded = false;
         }          }
       #endif
       }// sounds 
