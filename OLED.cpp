@@ -259,15 +259,11 @@ void BigClock(int disp,int clocksize){
           for (int i=1;i<=12;i++){showTimeAnalog(1,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}
           showTimeAnalog(1,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
           showTimeAnalog(1,clocksize,center_x,center_y, -0.1, 0.9, mins);
-         if (divider==1){ showTimeAnalog(1,clocksize,center_x,center_y, -0.2, 0.5, secs);
+         if (divider<=2){ showTimeAnalog(1,clocksize,center_x,center_y, -0.2, 0.5, secs);
           showTimeAnalogCircle(1,clocksize,4, center_x,center_y, -0.2, 0.65, secs);
           showTimeAnalog(1,clocksize,center_x,center_y, 0.8, 0.9, secs);}
           display1.display();
-       if (divider<=2){ showTimeAnalog(1,clocksize,center_x,center_y, 0.2, 0.5, secs);
-        showTimeAnalogCircle(1,clocksize,4, center_x,center_y, 0.2, 0.65, secs);
-        showTimeAnalog(1,clocksize,center_x,center_y, -0.8, 0.9, secs);}
-        display1.display();
-        }else{ 
+         }else{ 
             display1.drawCircle(center_x, center_y, clocksize);
             showTimeAnalog(1,clocksize,center_x,center_y, 0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
             showTimeAnalog(1,clocksize,center_x,center_y, 0.1, 0.9, mins);

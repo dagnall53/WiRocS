@@ -185,15 +185,18 @@ void MQTT_Loop(void){
     client.loop(); //gets wifi messages etc..
 }
 extern uint16_t MyLocoAddr ;
+extern int32_t SigStrength();
 void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
   char DebugMsgLocal[127];
     char DebugMsgTemp[127];
   int cx;
- 
+  int32_t Signal;
+  Signal=SigStrength();
+  
   #ifdef _LOCO_SERVO_Driven_Port
-  cx= sprintf ( DebugMsgTemp, " Node:%d Loco:%d(%s) Msg<%s>", RocNodeID, MyLocoAddr,Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
-  cx= sprintf ( DebugMsgTemp, " Node:%d (%s) Msg:%s", RocNodeID, Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
   #endif
 
    //add timestamp to outgoing message
@@ -236,12 +239,15 @@ extern void StringToL5(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 uint32_t TimeLimit;
 
-void reconnect() {
-  bool ConnectedNow; int cx;
+extern String wifiSSID;
+extern bool CheckWiFiConnected(void);
+void MQTTreconnect() {
+  bool ConnectedNow,WIConnected; int cx;
   char ClientName[80];
-  char myName[15] = "RocNetESPNode:";
+  char myName[15] = "WiRocS:";
   String MSGText1, MSGText2;
-  if (!MQTT_Connected()) { // not connected so need to do stuff
+  WIConnected=true; //assume wifi connected at first (not unreasonable..)
+  if (!MQTT_Connected()) { // MQTT may not be connected so need to do stuff
       sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
       digitalWrite (NodeMCUPinD[SignalLed] , SignalON) ; ///turn on
       MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
@@ -255,11 +261,12 @@ void reconnect() {
             if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
                    DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));
                    BrokerAddr=mosquitto[3];
+                   
                    WriteWiFiSettings();
                    }
       //can advise this node is connected now:
       
-            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
+            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected to %s at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,wifiSSID.c_str(),ip0,ip1,subIPH,subIPL,mosquitto[3]));
             cx=sprintf( DebugMsg, "Found Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
             FlashMessage(DebugMsg, 10, 500, 100);  //Flash message 
             MSGText1="";StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
@@ -279,7 +286,8 @@ void reconnect() {
            delay(10); // time to stabilise everything?
        } else { // not connected? try another address
              connects=connects+1;
-             if ((connects>=5) && ScanForBroker){  
+             if (!CheckWiFiConnected()){WIConnected=false;Serial.println(" Lost WiFi ");   }
+             if ((connects>=5) && ScanForBroker && WIConnected){  // if (WiFi.status() != WL_CONNECTED)do not try other mqtt so make sure we are actually connected   
                        mosquitto[3]=mosquitto[3]+1; 
                        Serial.println(" Incrementing MQTT addresses ");
                        #ifdef myBrokerSubip 
