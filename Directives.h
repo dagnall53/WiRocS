@@ -129,7 +129,7 @@
 
   #endif
  // These OLED SCL/SDA pin definitions are same for both ESP8266 and ESP32.
-  static const uint8_t OLED_SCL =4;   = 0; //= 4 is D2 try 0 to move to D3  //also known as D2 on esp 8266, but
+  static const uint8_t OLED_SCL = 4; // or try   = 0; to move to d3 Usefull with motor shield //= 4 is D2 try 0 to move to D3  //also known as D2 on esp 8266, but
   static const uint8_t OLED_SDA = 5;  // also known as D1 on esp 8266
 // The following hardware pinouts differ for ESP32 and ESP8266 variants
 // for oled

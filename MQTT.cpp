@@ -26,6 +26,7 @@ extern boolean MSGReflected;
 extern uint8_t SentMessage[128];
 extern uint8_t SentMessage_Length;
 extern String SentTopic;
+extern void SignOfLifeFlash(bool state);
 // globals used 
 
 #include <PubSubClient.h>
@@ -93,7 +94,7 @@ void MQTTFetch (char* topic, byte* payload, unsigned int Length) {
   Message_Length = Length;
   if (Message_Length >= 1) {
 
-    digitalWrite (NodeMCUPinD[SignalLed], HIGH) ;  ///turn On
+    SignOfLifeFlash( HIGH) ;  ///turn On
     ROC_netid = payload[0];
     ROC_recipient = IntFromPacket_at_Addr(payload, Recipient_Addr);
     ROC_sender = IntFromPacket_at_Addr(payload, Sender_Addr);
@@ -121,7 +122,7 @@ void MQTTFetch (char* topic, byte* payload, unsigned int Length) {
 
 void MQTTSendQ1(String topic, uint8_t * payload) { //QoS1 version
   uint8_t Length;
-  digitalWrite (NodeMCUPinD[SignalLed], HIGH) ;  ///turn On
+  SignOfLifeFlash( HIGH) ;  ///turn On
   Length = payload[7] + 8;
   MsgSendTime = millis();
   MSGReflected = false;
@@ -139,7 +140,7 @@ void MQTTSendQ1(String topic, uint8_t * payload) { //QoS1 version
   client.publish(topic.c_str(), payload, Length); //send as qos 0..for now
 }
 void testConnection  (int Number) {
-  digitalWrite (NodeMCUPinD[SignalLed], HIGH) ;  ///turn On
+  SignOfLifeFlash( HIGH) ;  ///turn On
   PingSendTime = millis();
   PingReflected = false;
   byte id[2];
@@ -150,7 +151,7 @@ void testConnection  (int Number) {
 
 void MQTTSend (String topic, uint8_t * payload) { //replaces rocsend
   uint8_t Length;
-  digitalWrite (NodeMCUPinD[SignalLed], HIGH) ;  ///turn On
+  SignOfLifeFlash( HIGH) ;  ///turn On
   Length = payload[7] + 8;
 
 #ifdef _SERIAL_MQTT_DEBUG
@@ -249,7 +250,7 @@ void MQTTreconnect() {
   WIConnected=true; //assume wifi connected at first (not unreasonable..)
   if (!MQTT_Connected()) { // MQTT may not be connected so need to do stuff
       sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
-      digitalWrite (NodeMCUPinD[SignalLed] , SignalON) ; ///turn on
+      SignOfLifeFlash( SignalON) ; ///turn on
       MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
       MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
       MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
@@ -296,7 +297,7 @@ void MQTTreconnect() {
                        if (mosquitto[3]>=127){mosquitto[3]=3;} 
                        delay(10);  
                        }   //limit mqtt brokerrange  to 3-127 to save scan time
-            digitalWrite (NodeMCUPinD[SignalLed] , SignalOFF) ; ///turn OFF
+            SignOfLifeFlash( SignalOFF) ; ///turn OFF
              }
   }
 }

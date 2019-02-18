@@ -1,3 +1,5 @@
+#include <Ethernet.h>
+
 #ifndef Ports_h
  #define Ports_h
 #include <Stepper.h>
@@ -485,9 +487,13 @@ void Port_Mode_Set(int i) {
     }//end of switch
     // do "Special cases" based on pin numbers
     if((Display1Present||Display2Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
-      description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
-                      Pi03_Setting_options[i] = 0; 
-      hardset =true;output=false;pullup=false;setElsewhere = true;
+                      description ="I2C bus";
+                      //bitSet(Pi02_Port_Settings_D[i], 0 ); 
+                      //Pi03_Setting_options[i] = 0; 
+                      hardset =true;
+                      output=false;
+                      pullup=false;
+                      setElsewhere = true;
       }
 
     

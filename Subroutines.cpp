@@ -8,6 +8,7 @@ extern uint8_t divider;
 extern uint8_t Message_Length;
 extern uint8_t recMessage[128];
 extern uint8_t NodeMCUPinD[18]; // hard fixed //Number of ports +2
+extern void SignOfLifeFlash(bool state);
 // globals
 
 #define RN_PACKET_NETID  0
@@ -145,11 +146,11 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
    
    if(Display1Present){OLED_5_line_display(1,IAM,"",msg,"",""); } 
     if(Display2Present){OLED_5_line_display(2,IAM2,"",msg,"","");   }
-    digitalWrite (NodeMCUPinD[SignalLed] , SignalON) ; ///turn on
+    SignOfLifeFlash( SignalON) ; ///turn on
     delay(ON);
     if(Display1Present){OLED_5_line_display(1,IAM,"","","","");   }
      if(Display2Present){OLED_5_line_display(2,IAM2,"","","","");   }
-    digitalWrite (NodeMCUPinD[SignalLed] , SignalOFF) ; ///turn OFF
+    SignOfLifeFlash( SignalOFF) ; ///turn OFF
     delay(Off);
     
   }

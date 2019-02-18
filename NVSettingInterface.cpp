@@ -10,6 +10,7 @@ extern int BrokerAddr;
 extern uint8_t NodeMCUPinD[18]; // hard fixed //Number of ports +2//
 extern bool Data_Updated;
 extern uint32_t EPROM_Write_Delay;
+extern void SignOfLifeFlash(bool state);
 // globals 
  char receivedChars[numChars];   //an array to store the received data
  boolean newData = false;
@@ -29,7 +30,7 @@ int MSG_content_length(){
   return Length;
 }
 
-
+// may need something else otherthan digital read(0) if not using flash
 
 void CheckForSerialInput(){
   String MSGText;
@@ -45,6 +46,7 @@ void CheckForSerialInput(){
     CtrlE=5;
     //Gives options to change wifiSSID,wifiPassword
     UpdateInProgress=false;
+    //pinMode(0, INPUT_PULLUP);
     if (wifiSSID=="Router Name"){UpdateInProgress=true;Serial.println(" Forcing request for new entries as Default Router name has not been set in Secrets.h");
                                     Serial.println("--Serial port update Started--");
                                     Serial.print("  SSID currently is <");Serial.print(wifiSSID);Serial.print("> Password is <");Serial.print(wifiPassword); Serial.println(">");
@@ -59,11 +61,12 @@ void CheckForSerialInput(){
                                     OLED_5_line_display(1,"Node Starting","","","Pausing for Serial I/O","type 'xxx' to start");
                                        }
     Timestarted=millis();
-    FlashTime=millis();
+    FlashTime=millis()+100;
     bool LAMP;
+    
   
     while ((millis()<= Timestarted+4000) || UpdateInProgress) {
-      if ((millis()>= FlashTime) && !UpdateInProgress) { LAMP=!LAMP; FlashTime=millis()+100; Serial.print(digitalRead(0));digitalWrite (NodeMCUPinD[SignalLed] , LAMP) ;}
+      if ((millis()>= FlashTime) && !UpdateInProgress) { LAMP=!LAMP; FlashTime=millis()+100; Serial.print(">");}
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
       if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 

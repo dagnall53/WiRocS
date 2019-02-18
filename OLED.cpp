@@ -33,6 +33,7 @@ void StringToL5(char *line, String input){
 
 void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5){
 //#ifdef ESP32
+if ((Display2Present||Display1Present)){
 if (addr==1&&Display1Present){
    display1.clear();
  // TopLine();
@@ -55,7 +56,7 @@ if (addr==2&&Display2Present){
   display2.drawString(offset, 53, L5);
   display2.display();
   }
-
+}
   //#endif
 }
 
@@ -187,6 +188,7 @@ void fillRect(void) {
 
 void SignalStrengthBar( int32_t rssi) { //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
   int PosX,PosY;
+  if ((Display2Present||Display1Present)){
  if(Display1Present){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
@@ -202,12 +204,13 @@ void SignalStrengthBar( int32_t rssi) { //https://stackoverflow.com/questions/15
   if (rssi >= -70){display1.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
   if (rssi >= -80){display1.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
  }
- }
+ }}
 
 
 
 void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl1, double pl2, double pl3)
 { 
+  if ((Display2Present||Display1Present)){
 //  #ifdef ESP32
   //double RAD = 3.14159238 / 180;
   float angle;
@@ -221,9 +224,9 @@ void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl
   if (disp==1&&Display1Present){display1.drawLine(x1,y1,x2,y2);}
   if (disp==2&&Display2Present){display2.drawLine(x1,y1,x2,y2);}
  
-}
+}}
 void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int center_y, double pl1, double pl2, double pl3)
-{ 
+{ if ((Display2Present||Display1Present)){
  float angle;
   int  x1, x2, y1, y2;
   angle = ( (6*pl3) / 57.29577951 ) ; //Convert degrees to radians
@@ -248,9 +251,11 @@ void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int 
  // if (disp==2&&Display2Present){display2.drawCircle((int)x2, (int)y2,circsize);}
  // #endif
 }
+}
 
 void BigClock(int disp,int clocksize){
   int center_x,center_y;
+  if ((Display2Present||Display1Present)){
   center_x=64;
   center_y=clocksize;
   if (disp==1&&Display1Present){
@@ -286,7 +291,7 @@ void BigClock(int disp,int clocksize){
             showTimeAnalog(2,clocksize,center_x,center_y, 0.1, 0.9, mins);
             display2.display();
           }
-  }
+  }}
  
    //showTimeAnalog(1,clockSize,clockCenterX,clockCenterY, -0.8, 0.9, secs);
    
