@@ -2,10 +2,13 @@
  #define _Directives_h
  #include <Arduino.h> //needed
 
- 
-
-
- #define SignalLed 0 // always used in this format.. NodeMCUPinD[SignalLed]" on Nodemcu, uses board use D0! expects LED +resistor to +ve! DO not change this to a usable port..
+                                  // LED_BUILTIN;?
+                                  // 2 is default on //GPIO 02 SignalLed definition onboard led on most esp8266 and esp32
+                                  //led is 22 for lolin lite? clashes with audio! 
+                                 //5 on d32 board (screws up I2C display!) = 
+                                 // LED_BUILTIN = 2??; 
+ #define SignalLed 2 // Revised definition in V5 this is now the PIN /GPIO number not D[0]. Is used (0nly) in SignOfLifeFlash 
+// #define SignalLed 16 // for red led on esp8266  
  #define SignalON LOW  //defined so I can change the "phase of the SignalLED" easily.
  #define SignalOFF HIGH
 
@@ -44,11 +47,11 @@
    #define _Audio          //RX/D9, D8, and D4 pins.defined below    
    
                            //but needs to be defined in order for NoDac to work
-   #ifdef ESP32
+   #ifdef ESP32                   // tryalso18/19?
         #define I2SDAC_LRC 21    //Pin GPio 21 is SDA on esp 32
-        #define I2SDAC_DIN 22 //try rx pin  // pin GPio 22(SCL ) on ESP32
+        #define I2SDAC_DIN 22 //try rx pin ?? // 22==pin GPio 22(SCL ) on ESP32
     #else
-        #define I2SDAC_LRC 4    //D4 is used in no dac because of default ESP8266 i2s settings (is i2s clock?) but can be used as input if you need the pin ..
+        #define I2SDAC_LRC 0    //4 ==is the  "D" number ie 4 is D4 is used in no dac because of default ESP8266 i2s settings (is i2s clock?) but can be used as input if you need the pin ..
         #define I2SDAC_DIN 9   //D9/rx used for both Audio types, is main transistor base drive for NoDac USE a Resistor to the Base. I found 10K fine. (makes noises whilst uploading!!)
    #endif
  #endif
@@ -108,13 +111,14 @@
 // following work fine  12 13 14 15 16 17    19   (21!) 23       27     32 33 
 // not exposed on my board / untested           20        24       28 29     36 37 38 39
 
-  static const  uint8_t D0   = 2; // LED_BUILTIN;?  //GPIO 02 SignalLed definition onboard led on esp32?
-  static const  uint8_t D1   = 19;
+  static const  uint8_t D0   = 2;  // V5 'D0' is not used now, used to be special pin identifier for signal led. 
+  static const  uint8_t D1   = 19;//
   static const  uint8_t D2   = 12;
   static const  uint8_t D3   = 13; //
   static const  uint8_t D4   = 14;  
   static const  uint8_t D5   = 15;
   static const  uint8_t D6   = 16;
+  
   static const  uint8_t D7   = 17;
   static const  uint8_t D8   = 21; 
   static const  uint8_t D9   = 23; 
@@ -128,12 +132,16 @@
    // on oled board, 4 is oled scl 5 is oled sda for oled 
 
   #endif
- // These OLED SCL/SDA pin definitions are same for both ESP8266 and ESP32.
-  static const uint8_t OLED_SCL = 4; // or try   = 0; to move to d3 Usefull with motor shield //= 4 is D2 try 0 to move to D3  //also known as D2 on esp 8266, but
-  static const uint8_t OLED_SDA = 5;  // also known as D1 on esp 8266
-// The following hardware pinouts differ for ESP32 and ESP8266 variants
+ // These OLED SCL/SDA pin definitions use GPIO numbers and are the same for both ESP8266 and ESP32.
+  //static const uint8_t OLED_SCL = 4;  //also known as D2 on esp 8266 
+ // static const uint8_t OLED_SDA = 5;  // also known as D1 on esp 8266
+ static const uint8_t OLED_SCL = 2;  //also known as D4 on esp 8266  !! issue with signal led?
+ static const uint8_t OLED_SDA = 0;  // also known as D3 on esp 8266
+// The following hardware pinouts may differ for ESP32 and ESP8266 variants
 // for oled
-#define DisplayWidth 33  // to give 32 chars
+#define TerminusDisplay   // Initial define to write multiple lines of Roc-Display messages on my large 128*64 oled display for a "Terminus/TicketOffice"
+                          // Code will then ignore the "Display" number and display on a line on the terminus display as defined by the "display" number.
+#define DisplayWidth 100  //100 for passing {} formatting to give 32 chars
 
 
 #endif

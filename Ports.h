@@ -1,5 +1,3 @@
-#include <Ethernet.h>
-
 #ifndef Ports_h
  #define Ports_h
 #include <Stepper.h>
@@ -208,7 +206,7 @@ uint8_t SetLocoMotorPWM(int LocoPort, int LocoDirPort, uint8_t Motor_Setting,boo
     #ifdef _separate_PWMS
     if (dir)
       digitalWrite (NodeMCUPinD[LocoDirPort], (dir )) ;WriteAnalogtoPort(LocoPort,PWMdemand);
-      analogWrite (NodeMCUPinD[LocoDirPort], PWMdemand ; digitalWrite(NodeMCUPinD[LocoPort], (dir )) ;
+      analogWrite (NodeMCUPinD[LocoDirPort], PWMdemand ; digitalWrite (NodeMCUPinD[LocoPort], (dir )) ;
   #endif
   // other hardware options
  
@@ -412,12 +410,12 @@ void Port_Mode_Set(int i) {
       break;
   #endif
 
-     case SignalLed:  
-                      description =" Node SignalLED ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
-                      Pi03_Setting_options[i] = 0;  
-                      hardset =true;setElsewhere = false;output=true;
-      break;
+    // case SignalLed:  
+    //                  description =" Node SignalLED ";
+    //                  Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
+    //                  Pi03_Setting_options[i] = 0;  
+    //                  hardset =true;setElsewhere = false;output=true;
+    //  break;
                       
   #ifdef _LOCO_SERVO_Driven_Port  
       case FRONTLight:
@@ -486,14 +484,17 @@ void Port_Mode_Set(int i) {
          break;
     }//end of switch
     // do "Special cases" based on pin numbers
+     if (NodeMCUPinD[i]==SignalLed ) {
+                      description =" SignalLED ";
+                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
+                      Pi03_Setting_options[i] = 0;  
+                      hardset =true;setElsewhere = false;output=true;
+                      }
+    
     if((Display1Present||Display2Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
-                      description ="I2C bus";
-                      //bitSet(Pi02_Port_Settings_D[i], 0 ); 
-                      //Pi03_Setting_options[i] = 0; 
-                      hardset =true;
-                      output=false;
-                      pullup=false;
-                      setElsewhere = true;
+      description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
+                      Pi03_Setting_options[i] = 0; 
+      hardset =true;output=false;pullup=false;setElsewhere = true;
       }
 
     
@@ -559,7 +560,7 @@ void Port_Mode_Set(int i) {
                                                                    else { Serial.print("0ms ");}
                                               }
                 if (IsServo(i)||IsPWM(i)){
-                  if ((Pi03_Setting_options[i]&64)==64) {Serial.print (F(" {report} "));}
+                  // we do nothing with report yet, so do not print this if ((Pi03_Setting_options[i]&64)==64) {Serial.print (F(" {report} "));}
                    sprintf ( DebugMsg, " Off<%d> On<%d> ", (Pi03_Setting_offposH[i] * 256) + Pi03_Setting_offposL[i],(Pi03_Setting_onposH[i] * 256) + Pi03_Setting_onposL[i]);
                    Serial.print(DebugMsg);
                                          }
@@ -658,7 +659,7 @@ void FLASHING() {
                                            }else {SDemand[port] = FlashHL(1, port); }
                             WriteAnalogtoPort(port,SDemand[port]);
                            } else {                                        //its a digital output so just invert current state
-          digitalWrite(NodeMCUPinD[port], !digitalRead(NodeMCUPinD[port]));
+          digitalWrite (NodeMCUPinD[port], !digitalRead(NodeMCUPinD[port]));
         }
         PortTimingDelay[port] = millis() + (DelaySetting_for_PortD[port] * 10);
       }

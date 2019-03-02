@@ -132,7 +132,7 @@ extern char DebugMsg[127];
 extern uint16_t RocNodeID;
 extern bool Display1Present,Display2Present;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
-
+extern void SetFont(uint8_t Disp,uint8_t Font);
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
   String IAM,IAM2;
   IAM=" RN:";IAM+=RocNodeID;IAM+=" Display Addr:";
@@ -144,12 +144,12 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
    
-   if(Display1Present){OLED_5_line_display(1,IAM,"",msg,"",""); } 
-    if(Display2Present){OLED_5_line_display(2,IAM2,"",msg,"","");   }
-    SignOfLifeFlash( SignalON) ; ///turn on
+   if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"",msg,"",""); } 
+    if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"",msg,"","");   }
+      SignOfLifeFlash( SignalON) ; ///turn on
     delay(ON);
-    if(Display1Present){OLED_5_line_display(1,IAM,"","","","");   }
-     if(Display2Present){OLED_5_line_display(2,IAM2,"","","","");   }
+    if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"","","","");   }
+     if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"","","","");   }
     SignOfLifeFlash( SignalOFF) ; ///turn OFF
     delay(Off);
     

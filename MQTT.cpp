@@ -17,6 +17,7 @@ extern char DebugMsg[127];
 extern uint8_t NodeMCUPinD[18]; // hard fixed //Number of ports +2
 extern int connects;
 extern boolean  Data_Updated;
+extern void SignOfLifeFlash(bool state);
 
 extern uint32_t EPROM_Write_Delay;
 extern uint32_t Ten_Sec;
@@ -26,7 +27,6 @@ extern boolean MSGReflected;
 extern uint8_t SentMessage[128];
 extern uint8_t SentMessage_Length;
 extern String SentTopic;
-extern void SignOfLifeFlash(bool state);
 // globals used 
 
 #include <PubSubClient.h>
@@ -189,7 +189,7 @@ extern uint16_t MyLocoAddr ;
 extern int32_t SigStrength();
 void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
   char DebugMsgLocal[127];
-    char DebugMsgTemp[127];
+  char DebugMsgTemp[127];
   int cx;
   int32_t Signal;
   Signal=SigStrength();
@@ -199,6 +199,7 @@ void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 12
   #else
   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
   #endif
+
 
    //add timestamp to outgoing message
 if ((hrs==0)&&(mins==0)){//not Synchronised yet..
@@ -235,20 +236,18 @@ extern int BrokerAddr;
 extern void WriteWiFiSettings();
 extern uint16_t SW_REV;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern void SetFont(uint8_t Disp,uint8_t Font);
 extern char L5[DisplayWidth],L10[DisplayWidth];
 extern void StringToL5(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 uint32_t TimeLimit;
 
-extern String wifiSSID;
-extern bool CheckWiFiConnected(void);
-void MQTTreconnect() {
-  bool ConnectedNow,WIConnected; int cx;
+void reconnect() {
+  bool ConnectedNow; int cx;
   char ClientName[80];
-  char myName[15] = "WiRocS:";
+  char myName[15] = "RocNetESPNode:";
   String MSGText1, MSGText2;
-  WIConnected=true; //assume wifi connected at first (not unreasonable..)
-  if (!MQTT_Connected()) { // MQTT may not be connected so need to do stuff
+  if (!MQTT_Connected()) { // not connected so need to do stuff
       sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
       SignOfLifeFlash( SignalON) ; ///turn on
       MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
@@ -262,12 +261,11 @@ void MQTTreconnect() {
             if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
                    DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));
                    BrokerAddr=mosquitto[3];
-                   
                    WriteWiFiSettings();
                    }
       //can advise this node is connected now:
       
-            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected to %s at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,wifiSSID.c_str(),ip0,ip1,subIPH,subIPL,mosquitto[3]));
+            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
             cx=sprintf( DebugMsg, "Found Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
             FlashMessage(DebugMsg, 10, 500, 100);  //Flash message 
             MSGText1="";StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
@@ -287,8 +285,7 @@ void MQTTreconnect() {
            delay(10); // time to stabilise everything?
        } else { // not connected? try another address
              connects=connects+1;
-             if (!CheckWiFiConnected()){WIConnected=false;Serial.println(" Lost WiFi ");   }
-             if ((connects>=5) && ScanForBroker && WIConnected){  // if (WiFi.status() != WL_CONNECTED)do not try other mqtt so make sure we are actually connected   
+             if ((connects>=5) && ScanForBroker){  
                        mosquitto[3]=mosquitto[3]+1; 
                        Serial.println(" Incrementing MQTT addresses ");
                        #ifdef myBrokerSubip 

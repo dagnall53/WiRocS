@@ -19,7 +19,7 @@ boolean MQTT_Connected(void);
 void MQTT_Loop(void);
 void DebugMsgSend (String topic, char* payload) ;
 void DebugSprintfMsgSend(int CX);
-void MQTTreconnect(void); 
+void reconnect(void); 
 
   #endif
 

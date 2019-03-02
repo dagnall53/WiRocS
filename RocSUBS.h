@@ -266,8 +266,8 @@ for (int i = 1; i <= 35 ; i++) {
   EEPROM.write(i+220, RNm[i]);
     }  // 220 to 225 are RNm
     // space from 226 to 320 is free  
-  for (int i = 0; i <= NumberOfPorts; i++) { //rn 314 needed for 8 ports  594 for 16
-
+  for (int i = 0; i <= NumberOfPorts; i++) { //rn 314 for 8 ports  594 for 16
+    EEPROM.write(320 + (i*35), Value_for_PortD[i]);
     EEPROM.write(320 + (i*35),Value_for_PortD[i]);
     EEPROM.write(321 + (i*35),Pi02_Port_Settings_D[i]);
     EEPROM.write(322 + (i*35),DelaySetting_for_PortD[i]);
@@ -300,12 +300,10 @@ for (int i = 1; i <= 35 ; i++) {
     writeString(passwordEEPROMLocation,wifiPassword);
     Serial.print(" Broker Addr");Serial.println(BrokerAddr);
     EEPROM.write(BrokerEEPROMLocation,BrokerAddr);
-    EEPROM.write(RocNodeIDLocation,RN[1]);   // high 
-    EEPROM.write(RocNodeIDLocation+1,RN[2]); //low
-    
-    Serial.print(" RocNodeID :");Serial.print( RN[1]);Serial.print(" ");Serial.println(RN[2] );
-    Serial.print(" RocNodeID copy:");Serial.print( (EEPROM.read(RocNodeIDLocation)));Serial.print(" ");Serial.println( EEPROM.read(RocNodeIDLocation+1) );
-    delay(100); // 
+    EEPROM.write(RocNodeIDLocation,RN[1]);
+    EEPROM.write(RocNodeIDLocation+1,RN[2]);
+    Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
+    delay(100); // or EEPROMRocNodeID
 }
 
 void ReadEEPROM() {
@@ -369,7 +367,7 @@ void ReadEEPROM() {
   }
   
   wifiSSID=read_String(ssidEEPROMLocation);
-  EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation)*256)+EEPROM.read(RocNodeIDLocation+1);  // Plan to move to this from RocNodeID, or use it as backup
+  EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
@@ -739,7 +737,6 @@ void ROC_NODE() { //stationary decoders GROUP 3
 
 }//end rocnode
 extern int SDemand[PortsRange]; //Number of ports +2
-extern bool Display1Present,Display2Present;
 
 void ROC_Programming() { //GROUP  5
   bool Data_Changed;
@@ -864,47 +861,39 @@ void ROC_Programming() { //GROUP  5
            DebugSprintfMsgSend(sprintf(DebugMsg,"Reporting Node Addr and Status"));
           //ROCSerialPrint(recMessage);
 
-/* Group 5 Programming stationary  Case 7 https://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en
+/* 
  NEW: 
- Reply  RNm  1   2     3       4        5               6              7                8             9               10             11             12              13 
-original ref 15  16    17       18        19             20             21               22            23              24             25              26              27      
-       iotype   flags cstype  csdevice  I2C scan 0×20 H I2C scan 0×20 L I2C scan 0×30 H I2C scan 0×30 I2C scan 0×40 H I2C scan 0×40 L adc threshold I2C scan 0×50 H I2C scan 0×50 L
-*/ 
-// see also lines 920 below...
-RNm[1]=33;  //iotype not a pi, i2c-0
-RNm[2]=0; //0= no options set 
-RNm[3]=0; //cstype: 0=none, 1=dcc232, 2=sprog
-RNm[4]=0; //csdevice: 0=/dev/ttyUSB0, 1=/dev/ttyUSB1 2= /dev/ttyACMO 3 gives error in radiobox in rocview..
-RNm[5]=0;  //020H  //Pi o2's
-RNm[6]=1; //020 l
-RNm[7]=0; //030 H //Pi04's
-RNm[8]=0; //030 L
-RNm[9]=0; //040 H  //Pi03's
-RNm[10]=1; //040 l
-RNm[11]=0; //adc thresh
-RNm[12]=0; //050 H (ROC DISPLAYS)
-RNm[13]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..
-RNm[14]=0; //Clock settings
-if (Display1Present){bitSet(RNm[13],0);RNm[14]=17;} // pretend 0x30 is 0x50 !! (sorry Rob!) 
-if (Display2Present){bitSet(RNm[13],1);RNm[14]=17;}
-                                              //Clock settings (17 is Enable and brightness=1) 
-RNm[15]=0;  //clock addresses 0x70....hi
-RNm[16]=0;  //clock addresses 0x70...low
-RNm[17]=0;  // 0x60 addresses --"GCA-Pi08".. 
-RNm[18]=0;  //0x60 lo
+ Reply Data 1   2     3       4        5               6              7                8             9               10             11             12              13 
+ RN[15         16    17       18        19             20             21               22            23              24             15              26              27      
+ iotype       flags cstype  csdevice  I2C scan 0×20 H I2C scan 0×20 L I2C scan 0×30 H I2C scan 0×30 I2C scan 0×40 H I2C scan 0×40 L adc threshold I2C scan 0×50 H I2C scan 0×50 L
+*/
+RNm[15]=33;  //iotype not a pi, i2c-0
+RNm[16]=0; //0= no options set 
+RNm[17]=0; //cstype: 0=none, 1=dcc232, 2=sprog
+RNm[18]=0; //csdevice: 0=/dev/ttyUSB0, 1=/dev/ttyUSB1 2= /dev/ttyACMO 3 gives error in radiobox in rocview..
+RNm[19]=0;  //020H  //Pi o2's
+RNm[20]=1; //020 l
+RNm[21]=0; //030 H //Pi04's
+RNm[22]=0; //030 L
+RNm[23]=0; //040 H  //Pi03's
+RNm[24]=1; //040 l
+RNm[25]=0; //adc thresh
+RNm[26]=0; //050 H (ROC DISPLAYS)
+RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..
+
 
           sendMessage[0] = ROC_netid;
           SetWordIn_msg_loc_value(sendMessage, Recipient_Addr, ROC_sender);
           SetWordIn_msg_loc_value(sendMessage, Sender_Addr, RocNodeID);
           sendMessage[5] = ROC_group;
           sendMessage[6] = ROC_code | Code_Reply; //action group and code bit 6 (64) = set for REPLY
-          sendMessage[7] = 18; //
-          for (int i = 1 ;  i <= (sendMessage[7]); i = i + 1) { 
-             sendMessage[7+i] = RNm[i]; // 
-             }
+          sendMessage[7] = 13; //6 sends to RN20
+         for (int i = 1 ;  i <= (sendMessage[7]); i = i + 1) { 
+          sendMessage[7+i] = RNm[14+i];
+         }
       
           MQTTSend("rocnet/ps", sendMessage);
-         // DebugSprintfMsgSend(sprintf(DebugMsg," Sending address and status (Display1?(%d)   Display2?(%d))",Display1Present,Display2Present));
+         //DebugSprintfMsgSend(sprintf(DebugMsg," sending (line 1159)"));
          //ROCSerialPrint(sendMessage);
 
         }
@@ -918,20 +907,22 @@ RNm[18]=0;  //0x60 lo
 
           //if ((recMessage[10]==subIPH) && (recMessage[11]==subIPL)){
          
-          DebugSprintfMsgSend(sprintf(DebugMsg,"Set node len<%d> data D[1..6] %d %d %d %d %d %d ",ROC_len,ROC_Data[1],ROC_Data[2],ROC_Data[3],ROC_Data[4],ROC_Data[5],ROC_Data[6]));
-          RNm[1] = ROC_Data[1];   // see also line 867
-          RNm[2] = ROC_Data[2];
-          RNm[3] = ROC_Data[3];
-          RNm[4] = ROC_Data[4];
-          RNm[11] = ROC_Data[5]; //ROC_Data[5] is threshold
-          RNm[14] = ROC_Data[6];  //"17" is clock and brightness 1 
+          DebugSprintfMsgSend(sprintf(DebugMsg,"Programming node options"));
+          RNm[15] = ROC_Data[1];
+          RNm[16] = ROC_Data[2];
+          RNm[17] = ROC_Data[3];
+          RNm[18] = ROC_Data[4];
+          RNm[19] = ROC_Data[5]; //ROC_Data[5] is minimal length of time a sensor will report occupied.
+
          if (millis()>=StartedAt+1000){ 
                 EPROM_Write_Delay = millis() + 500; //not ten sec, as we have all the data now..
                     Data_Updated = true;
                     WriteEEPROM();}
-       
+         
         }
-       }
+        Message_Decoded = true;
+
+      }
     case 9:  { //??Shutdown
         Message_Decoded = true; //we understand these even if they are not for us
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {
@@ -1215,7 +1206,7 @@ void ROC_Outputs() { //group 9
                                               }
                   Pi03_Setting_LastUpdated[ROC_Data[4]] = millis();  
                   
-                  if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Servo %d to State(%d) = Pos:%d deg ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
+                  if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
                                    }   
                }//   End of servo                                         
           else {   //not servo Could be PWM or digital 
@@ -1240,7 +1231,7 @@ void ROC_Outputs() { //group 9
                           if((Pi02_Port_Settings_D[ROC_Data[4]] & 129) == 128){
                                     DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output FLASHING D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
                                     else{    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
-                          digitalWrite(NodeMCUPinD[ROC_Data[4]], STATE); 
+                          digitalWrite (NodeMCUPinD[ROC_Data[4]], STATE); 
                           PortTimingDelay[ROC_Data[4]] = millis() + (DelaySetting_for_PortD[ROC_Data[4]] * 10);
                           SDemand[ROC_Data[4]] = servoLR(STATE, ROC_Data[4]);  //use sdemand to save state so we can flash
                        }
@@ -1297,22 +1288,26 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
 
 
 extern void Oled_Station_Display(uint8_t ADDR,int Display,String Message);
-
-void ROC_DISPLAY() { //display Group 12
+extern void Oled_Station_Display_2(uint8_t ADDR,int Display,String Message);
+void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
+  uint8_t Disp;
   char Message[127]; // big to accept long msg from rocrail
   if  ((ROC_recipient ==   RocNodeID)||(ROC_recipient ==  0)){ // node 0 is global message
-      Address= ROC_Data[1]; 
+      Address= ROC_Data[1];
+      Disp= ROC_Data[2];
    //Serial.println("Display  message for this node (or global)");Serial.print(" Display Addr:");Serial.print(Address);
-  // Serial.print("> Display line no {1-8}:");Serial.print(ROC_Data[2]);Serial.print("> len:");Serial.print(ROC_len);
+   // Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);Serial.print("> len:");Serial.print(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
     if (ROC_len-3>=126){ROC_len==128;}
     for (byte i = 0; i <= (ROC_len-3); i++) { 
                      Message[i]=char (ROC_Data[i+3]); 
   //                   Serial.print(char(ROC_Data[i+3]));
                      }
-    Oled_Station_Display(Address,ROC_Data[2],Message);
+    #ifdef TerminusDisplay 
+    Oled_Station_Display_2(Address,Disp,Message);
+    #endif
     
    // Serial.println(">");
    } // is display message

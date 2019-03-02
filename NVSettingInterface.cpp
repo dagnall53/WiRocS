@@ -4,6 +4,7 @@
 extern String wifiSSID ;
 extern String wifiPassword;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern void SetFont(uint8_t Disp,uint8_t Font);
 //extern void OLED_5_line_display_p(String L1,String L2,String L3,String L4,String L5);
 extern int BrokerAddr;
 //  #include "Globals.h"
@@ -30,7 +31,7 @@ int MSG_content_length(){
   return Length;
 }
 
-// may need something else otherthan digital read(0) if not using flash
+
 
 void CheckForSerialInput(){
   String MSGText;
@@ -39,34 +40,39 @@ void CheckForSerialInput(){
   String MSGText3;
   String MSGText4;
     String TestData;
+    String Count;
     long Timestarted;
     long FlashTime;
+    int countdown;
     bool UpdateInProgress; 
     char CtrlE;
     CtrlE=5;
     //Gives options to change wifiSSID,wifiPassword
     UpdateInProgress=false;
-    //pinMode(0, INPUT_PULLUP);
     if (wifiSSID=="Router Name"){UpdateInProgress=true;Serial.println(" Forcing request for new entries as Default Router name has not been set in Secrets.h");
                                     Serial.println("--Serial port update Started--");
                                     Serial.print("  SSID currently is <");Serial.print(wifiSSID);Serial.print("> Password is <");Serial.print(wifiPassword); Serial.println(">");
                                     Serial.println("Type in New SSID");newData = false;SerioLevel=1;
-                                    OLED_5_line_display(1,"EEPROM settings required","Use Serial port @115200","To enter new data"," ","");
+                                    SetFont(1,99);countdown=100;OLED_5_line_display(1,"EEPROM settings required","Use Serial port @115200","To enter new data"," ","");
                                  }else{
                                     Serial.println("");
                                     Serial.println(F("       --- To enter new wifi SSID / Password type 'xxx' BEFORE wifi connects--- "));
                                     Serial.println(F("                   -- Use 'Newline' OR 'CR' to end input line  --"));
                                     Serial.println(F("Starting~~~~~~~~~~~~~~~~~~~~~~~~waiting~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Timeout "));
                                     delay(10);Serial.print(CtrlE);delay(100);
-                                    OLED_5_line_display(1,"Node Starting","","","Pausing for Serial I/O","type 'xxx' to start");
+                                    SetFont(1,99);countdown=10;OLED_5_line_display(1,"Node Start-Up","","","","");delay(1000);
                                        }
     Timestarted=millis();
-    FlashTime=millis()+100;
+    FlashTime=millis();
     bool LAMP;
-    
   
-    while ((millis()<= Timestarted+4000) || UpdateInProgress) {
-      if ((millis()>= FlashTime) && !UpdateInProgress) { LAMP=!LAMP; FlashTime=millis()+100; Serial.print(">");}
+    while ((countdown>= 0) || UpdateInProgress) {
+      if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" ";Count+=countdown;
+                                                        LAMP=!LAMP; FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash( LAMP) ;
+                                                        if (LAMP){ OLED_5_line_display(1,"",Count,"Pausing for Serial I/O","","");                    }
+                                                            else { OLED_5_line_display(1,"",Count,"Pausing for Serial I/O","type 'xxx' to start","");}
+                                                          countdown=countdown-1;
+                                                          }
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
       if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 
@@ -193,8 +199,9 @@ void WriteWiFiSettings(){
     Serial.println(" --WriteWiFisettings-- Saving the SSID, Password, BrokerAddr to EEPROM ");
     Data_Updated = true;
     WriteEEPROM();
-    EPROM_Write_Delay = millis() + 10000;
-    Commit_EEprom("WriteWiFi settings ");
+    EPROM_Write_Delay = millis() + 500;
+    delay(20);
+    Commit_EEprom("Writing WiFi settings ");
     delay(100);
    
    }
