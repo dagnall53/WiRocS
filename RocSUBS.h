@@ -37,6 +37,7 @@ extern int DCC_Speed_Demand;
 extern int Last_DCC_Speed_Demand;
 uint8_t DIRF = 0 ;
 extern IPAddress mosquitto;
+extern bool Display1Present,Display2Present;
 
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
@@ -153,7 +154,7 @@ return Nickname;
 void PrintEEPROMSettings(){
   //code to serial print eprom settings in a form that can be used in SetDefaultSVs() 
     
-  Serial.println(" ------Current EEPROM Settings----------");
+  Serial.println(F(" ------Current EEPROM Settings----------"));
     
   for (int i = 1; i <= NumberOfPorts; i++) {
   Serial.print(" Value_for_PortD[");
@@ -289,7 +290,7 @@ for (int i = 1; i <= 35 ; i++) {
     SetWordIn_msg_loc_value(RN, 1, RocNodeID);
 
     Serial.println("--");//
-    Serial.println(" EEProm writing (but not committed yet--)");//
+    Serial.println(F(" EEProm writing (but not committed yet--)"));//
     
   
      
@@ -653,7 +654,7 @@ void ROC_NODE() { //stationary decoders GROUP 3
   switch (ROC_code) {
   uint8_t NodeClass;  
   
-    case 8:  {  //Identify         class manuID  versionH  versionL  nr I/O  subipH  subipL
+    case 8:  {  //Identify         class manuID  versionH  versionL  nr I/O  subipH  subipL //vendor @ class I/O revison 
         Message_Decoded = true; //we understand these even if they are not for us
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {   //Serial.println();
           Serial.print("Responding to IDENTIFY. This node is:");
@@ -873,13 +874,15 @@ RNm[17]=0; //cstype: 0=none, 1=dcc232, 2=sprog
 RNm[18]=0; //csdevice: 0=/dev/ttyUSB0, 1=/dev/ttyUSB1 2= /dev/ttyACMO 3 gives error in radiobox in rocview..
 RNm[19]=0;  //020H  //Pi o2's
 RNm[20]=1; //020 l
-RNm[21]=0; //030 H //Pi04's
-RNm[22]=0; //030 L
+RNm[21]=0; //030 H //Pi04's? / here is 0x38
+RNm[22]=0;
+if (Display1Present){bitSet(RNm[22],0);} //030 L ?? 
+if (Display2Present){bitSet(RNm[22],1);}//not showing
 RNm[23]=0; //040 H  //Pi03's
 RNm[24]=1; //040 l
 RNm[25]=0; //adc thresh
 RNm[26]=0; //050 H (ROC DISPLAYS)
-RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..
+RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as standard displays are 0x3C 0x3D
 
 
           sendMessage[0] = ROC_netid;
@@ -961,11 +964,11 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..
                 delay(100);
           }  
           if ( (ROC_Data[1] == 0) && (ROC_Data[2] == 0)) {
-            Serial.println(" .. will reset SSID settings");
+            Serial.println(F(" .. will reset SSID settings"));
             ResetWiFi = true;
           } 
           if ( (ROC_Data[1] == 1) && (ROC_Data[2] == 0)) { //256
-            Serial.println(" .. will Send all settings for records");
+            Serial.println(F(" .. will Send all settings for records"));
             PrintEEPROMSettings();
           }        
         }
@@ -1287,8 +1290,8 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
 }
 
 
-extern void Oled_Station_Display(uint8_t ADDR,int Display,String Message);
-extern void Oled_Station_Display_2(uint8_t ADDR,int Display,String Message);
+
+extern void OLED_Displays_Setup(uint8_t ADDR,int Display,String Message);
 void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
@@ -1305,9 +1308,9 @@ void ROC_DISPLAY() { //display Group 12 rocdisplay
                      Message[i]=char (ROC_Data[i+3]); 
   //                   Serial.print(char(ROC_Data[i+3]));
                      }
-    #ifdef TerminusDisplay 
-    Oled_Station_Display_2(Address,Disp,Message);
-    #endif
+  //  #ifdef TerminusDisplay 
+    OLED_Displays_Setup(Address,Disp,Message);
+  //  #endif
     
    // Serial.println(">");
    } // is display message

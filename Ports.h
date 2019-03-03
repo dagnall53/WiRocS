@@ -673,7 +673,7 @@ void FLASHING() {
 void DetachServo(int i) {
    switch (i) {
     case -1: {
-        Serial.println(" ---- Switching OFF ALL Servos---");
+        Serial.println(F(" ---- Switching OFF ALL Servos---"));
       //Loco_LOCO_SERVO_Driven_Port.detach();
         myservo1.detach();
         myservo2.detach();

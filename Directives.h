@@ -132,11 +132,16 @@
    // on oled board, 4 is oled scl 5 is oled sda for oled 
 
   #endif
- // These OLED SCL/SDA pin definitions use GPIO numbers and are the same for both ESP8266 and ESP32.
-  //static const uint8_t OLED_SCL = 4;  //also known as D2 on esp 8266 
- // static const uint8_t OLED_SDA = 5;  // also known as D1 on esp 8266
- static const uint8_t OLED_SCL = 2;  //also known as D4 on esp 8266  !! issue with signal led?
- static const uint8_t OLED_SDA = 0;  // also known as D3 on esp 8266
+ // These OLED SCL/SDA pin definitions use GPIO numbers 
+  #ifdef ESP32
+ static const uint8_t OLED_SDA = 4;  //D4 ESP32 Devkit  !! NB gpio 0 is not exposed on my Esp32 Devkit V1 (but is on some other boards..)
+ static const uint8_t OLED_SCL = 5;  //D5
+ #else
+ static const uint8_t OLED_SDA = 0;  //  known as D3 on esp 8266 
+ static const uint8_t OLED_SCL = 2;  // known as D4 on esp 8266 
+ #endif
+ 
+
 // The following hardware pinouts may differ for ESP32 and ESP8266 variants
 // for oled
 #define TerminusDisplay   // Initial define to write multiple lines of Roc-Display messages on my large 128*64 oled display for a "Terminus/TicketOffice"

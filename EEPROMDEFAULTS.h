@@ -27,12 +27,15 @@ void SetDefaultSVs(){
 // proper settings from working versions
 #ifndef ESP32  
 #ifndef _LOCO_SERVO_Driven_Port   
- //a set of defaults derived from a saved emprom set...for a station
- //This set sets 1-3 as pwm outputs 
- //( BUT use only 1 and 2 with the motor board for lights (to gnd) on outputs 2 and  due to strange DebugMsg logic in motor driver)
- //4,5 AND 6 are sensor inputs for using with hall switches
- //7 and 8 are servo outputs for points.
- Value_for_PortD[1]=0;
+ //a New set of defaults for V8 on, derived from a saved emprom set...FOR A STATION
+ //This set sets D1 and D2 as pwm outputs (station Lights ??) These work well with the NODEMCU Motor Drive board!
+ //node  expects an OLED connected to D3(SDA) D4(SCL) (In use, they effectively rapidly switch the "direction" inputs to the Motor drives, but this does not stop the drivers from being used to drive lights..
+ //D5 is a sensor inputs for using with hall switchesinput
+ //D6 is set initially as output, but is probably more useful as an input
+ //D7 and D8 are servo outputs for points.
+ //D3 and D4 can be used if OLED is not present
+ //If one or more OLEDs are found, D3 and D4  will be forced to "inputs".. but are then not usable as inputs when the oled is present!!
+  Value_for_PortD[1]=0;
  Pi02_Port_Settings_D[1]=0;
  DelaySetting_for_PortD[1]=0;
  Configuration_for_PortD[1]=1;
@@ -47,7 +50,7 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[1]=0;
  Pi03_Setting_onsteps[1]=0;
  Pi03_Setting_options[1]=128;
- Pi03_Setting_LastUpdated[1]=6469;
+ Pi03_Setting_LastUpdated[1]=41762;
  Value_for_PortD[2]=0;
  Pi02_Port_Settings_D[2]=0;
  DelaySetting_for_PortD[2]=0;
@@ -63,9 +66,9 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[2]=0;
  Pi03_Setting_onsteps[2]=0;
  Pi03_Setting_options[2]=128;
- Pi03_Setting_LastUpdated[2]=6469;
+ Pi03_Setting_LastUpdated[2]=41762;
  Value_for_PortD[3]=0;
- Pi02_Port_Settings_D[3]=0;
+ Pi02_Port_Settings_D[3]=1;
  DelaySetting_for_PortD[3]=0;
  Configuration_for_PortD[3]=1;
  EventMarker_for_PortD[3]=0;
@@ -79,9 +82,9 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[3]=0;
  Pi03_Setting_onsteps[3]=0;
  Pi03_Setting_options[3]=0;
- Pi03_Setting_LastUpdated[3]=6469;
+ Pi03_Setting_LastUpdated[3]=41762;
  Value_for_PortD[4]=0;
- Pi02_Port_Settings_D[4]=65;
+ Pi02_Port_Settings_D[4]=1;
  DelaySetting_for_PortD[4]=0;
  Configuration_for_PortD[4]=1;
  EventMarker_for_PortD[4]=0;
@@ -95,7 +98,7 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[4]=0;
  Pi03_Setting_onsteps[4]=0;
  Pi03_Setting_options[4]=0;
- Pi03_Setting_LastUpdated[4]=6469;
+ Pi03_Setting_LastUpdated[4]=41762;
  Value_for_PortD[5]=0;
  Pi02_Port_Settings_D[5]=65;
  DelaySetting_for_PortD[5]=0;
@@ -111,9 +114,9 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[5]=0;
  Pi03_Setting_onsteps[5]=0;
  Pi03_Setting_options[5]=0;
- Pi03_Setting_LastUpdated[5]=6469;
+ Pi03_Setting_LastUpdated[5]=41762;
  Value_for_PortD[6]=0;
- Pi02_Port_Settings_D[6]=65;
+ Pi02_Port_Settings_D[6]=64;
  DelaySetting_for_PortD[6]=0;
  Configuration_for_PortD[6]=1;
  EventMarker_for_PortD[6]=0;
@@ -127,7 +130,7 @@ void SetDefaultSVs(){
  Pi03_Setting_offsteps[6]=0;
  Pi03_Setting_onsteps[6]=0;
  Pi03_Setting_options[6]=0;
- Pi03_Setting_LastUpdated[6]=6469;
+ Pi03_Setting_LastUpdated[6]=41762;
  Value_for_PortD[7]=0;
  Pi02_Port_Settings_D[7]=0;
  DelaySetting_for_PortD[7]=0;
@@ -140,10 +143,10 @@ void SetDefaultSVs(){
  Pi03_Setting_offposL[7]=195;
  Pi03_Setting_onposH[7]=2;
  Pi03_Setting_onposL[7]=27;
- Pi03_Setting_offsteps[7]=0;
- Pi03_Setting_onsteps[7]=0;
- Pi03_Setting_options[7]=32;
- Pi03_Setting_LastUpdated[7]=8479;
+ Pi03_Setting_offsteps[7]=1;
+ Pi03_Setting_onsteps[7]=1;
+ Pi03_Setting_options[7]=33;
+ Pi03_Setting_LastUpdated[7]=536422;
  Value_for_PortD[8]=0;
  Pi02_Port_Settings_D[8]=0;
  DelaySetting_for_PortD[8]=0;
@@ -156,35 +159,35 @@ void SetDefaultSVs(){
  Pi03_Setting_offposL[8]=220;
  Pi03_Setting_onposH[8]=2;
  Pi03_Setting_onposL[8]=35;
- Pi03_Setting_offsteps[8]=0;
- Pi03_Setting_onsteps[8]=0;
- Pi03_Setting_options[8]=32;
- Pi03_Setting_LastUpdated[8]=8479;
+ Pi03_Setting_offsteps[8]=1;
+ Pi03_Setting_onsteps[8]=1;
+ Pi03_Setting_options[8]=33;
+ Pi03_Setting_LastUpdated[8]=537878;
  //RN and CV settings
  RN[0]=0;
  RN[1]=0;
  RN[2]=50;
- RN[3]=18;
- RN[4]=76;
- RN[5]=97;
- RN[6]=114;
- RN[7]=103;
- RN[8]=101;
- RN[9]=32;
- RN[10]=86;
- RN[11]=48;
- RN[12]=46;
- RN[13]=49;
- RN[14]=32;
- RN[15]=69;
- RN[16]=83;
- RN[17]=80;
- RN[18]=56;
- RN[19]=50;
- RN[20]=54;
- RN[21]=54;
- RN[22]=0;
- RN[23]=0;
+ RN[3]=20;
+ RN[4]=69;
+ RN[5]=83;
+ RN[6]=80;
+ RN[7]=56;
+ RN[8]=50;
+ RN[9]=54;
+ RN[10]=54;
+ RN[11]=32;
+ RN[12]=110;
+ RN[13]=101;
+ RN[14]=119;
+ RN[15]=32;
+ RN[16]=116;
+ RN[17]=101;
+ RN[18]=114;
+ RN[19]=109;
+ RN[20]=105;
+ RN[21]=110;
+ RN[22]=117;
+ RN[23]=115;
  RN[24]=0;
  RN[25]=0;
  RN[26]=0;
@@ -198,20 +201,20 @@ void SetDefaultSVs(){
  RN[34]=0;
  RN[35]=0;
  RNm[0]=0;
- RNm[1]=0;
+ RNm[1]=33;
  RNm[2]=0;
  RNm[3]=0;
  RNm[4]=0;
  RNm[5]=0;
- RNm[6]=0;
+ RNm[6]=1;
  RNm[7]=0;
  RNm[8]=0;
  RNm[9]=0;
- RNm[10]=0;
+ RNm[10]=1;
  RNm[11]=0;
  RNm[12]=0;
- RNm[13]=0;
- RNm[14]=0;
+ RNm[13]=1;
+ RNm[14]=17;
  RNm[15]=33;
  RNm[16]=0;
  RNm[17]=0;
@@ -229,13 +232,13 @@ void SetDefaultSVs(){
  RNm[29]=0;
  RNm[30]=0;
  CV[0]=0;
- CV[1]=0;
+ CV[1]=3;
  CV[2]=5;
  CV[3]=2;
  CV[4]=2;
  CV[5]=100;
  CV[6]=50;
- CV[7]=25;
+ CV[7]=7;
  CV[8]=13;
  CV[9]=0;
  CV[10]=0;
@@ -391,6 +394,7 @@ void SetDefaultSVs(){
  CV[160]=0;
 //end of defaults 
 
+
           
 #endif 
     
@@ -398,7 +402,7 @@ void SetDefaultSVs(){
 
 #ifdef _LOCO_SERVO_Driven_Port
 
-//This set is for a Loco (dcc address 3) with Audio ie: #define _LOCO_SERVO_Driven_Port 1
+//This set is for a ESP8266 Loco (dcc address 3) with Audio ie: #define _LOCO_SERVO_Driven_Port 1
 
   Value_for_PortD[1]=0;
  Pi02_Port_Settings_D[1]=0;
@@ -770,6 +774,8 @@ void SetDefaultSVs(){
 #endif //(not esp32)
 
 #if defined (ESP32) && defined (_LOCO_SERVO_Driven_Port)
+
+// ESP32 LOCO setting (untested) 
  Value_for_PortD[1]=0;
  Pi02_Port_Settings_D[1]=0;
  DelaySetting_for_PortD[1]=0;
@@ -1262,12 +1268,25 @@ void SetDefaultSVs(){
 #endif //(Esp32 loco)
 
 #if defined (ESP32) && !defined (_LOCO_SERVO_Driven_Port)
-//a set of defaults derived from a saved eeprom set...for a station
- //This set sets 1-4 as pwm outputs 
- //( BUT use only 1 and 2 with the motor board for lights (to gnd) on outputs 2 and 4 due to strange DebugMsg logic in motor driver)
- //5 AND 6 are sensor inputs for using with hall switches
- //7 and 8 are servo outputs for points.
-  Value_for_PortD[1]=0;
+//a set of defaults derived from a saved eeprom set...for a ESP32 STATION Node
+//RR Addr:1 <GPIO:19>  Output PWM Off<0> On<4095> 
+//RR Addr:2 <GPIO:12>  Output PWM Off<0> On<4095> 
+//RR Addr:3 <GPIO:13>  Input with pullup {invert}  Delay :0ms 
+//RR Addr:4 <GPIO:14>  Input with pullup {invert}  Delay :0ms 
+//RR Addr:5 <GPIO:15>  Input with pullup {invert}  Delay :0ms 
+//RR Addr:6 <GPIO:16>  Input with pullup {invert}  Delay :0ms 
+//RR Addr:7 <GPIO:17>  Output Servo Off<0> On<600> 
+//RR Addr:8 <GPIO:21>  Output Servo Off<0> On<4095> 
+//RR Addr:9 <GPIO:23>  Input with pullup Delay :0ms 
+//RR Addr:10 <GPIO:25> (Hard_Set) ESP32 Native DAC  Output PWM
+//RR Addr:11 <GPIO:26> (Hard_Set) ESP32 Native DAC  Output PWM
+//RR Addr:12 <GPIO:27>  Output Delay :400ms 
+//RR Addr:13 <GPIO:32>  Output Delay :0ms 
+//RR Addr:14 <GPIO:33>  Input with pullup {invert}  Delay :0ms 
+//RR Addr:15 <GPIO:34>Input NO PULLUP  
+//RR Addr:16 <GPIO:35>Input NO PULLUP  
+
+ Value_for_PortD[1]=0;
  Pi02_Port_Settings_D[1]=0;
  DelaySetting_for_PortD[1]=0;
  Configuration_for_PortD[1]=1;
@@ -1276,13 +1295,13 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[1]=0;
  XRef_Port[1]=0;
  Pi03_Setting_offposH[1]=0;
- Pi03_Setting_offposL[1]=160;
+ Pi03_Setting_offposL[1]=0;
  Pi03_Setting_onposH[1]=15;
- Pi03_Setting_onposL[1]=159;
- Pi03_Setting_offsteps[1]=1;
- Pi03_Setting_onsteps[1]=1;
- Pi03_Setting_options[1]=138;
- Pi03_Setting_LastUpdated[1]=7740;
+ Pi03_Setting_onposL[1]=255;
+ Pi03_Setting_offsteps[1]=0;
+ Pi03_Setting_onsteps[1]=0;
+ Pi03_Setting_options[1]=128;
+ Pi03_Setting_LastUpdated[1]=424992;
  Value_for_PortD[2]=0;
  Pi02_Port_Settings_D[2]=0;
  DelaySetting_for_PortD[2]=0;
@@ -1292,15 +1311,15 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[2]=0;
  XRef_Port[2]=0;
  Pi03_Setting_offposH[2]=0;
- Pi03_Setting_offposL[2]=160;
+ Pi03_Setting_offposL[2]=0;
  Pi03_Setting_onposH[2]=15;
- Pi03_Setting_onposL[2]=160;
- Pi03_Setting_offsteps[2]=1;
- Pi03_Setting_onsteps[2]=1;
+ Pi03_Setting_onposL[2]=255;
+ Pi03_Setting_offsteps[2]=0;
+ Pi03_Setting_onsteps[2]=0;
  Pi03_Setting_options[2]=128;
- Pi03_Setting_LastUpdated[2]=7740;
+ Pi03_Setting_LastUpdated[2]=15523;
  Value_for_PortD[3]=0;
- Pi02_Port_Settings_D[3]=0;
+ Pi02_Port_Settings_D[3]=65;
  DelaySetting_for_PortD[3]=0;
  Configuration_for_PortD[3]=1;
  EventMarker_for_PortD[3]=0;
@@ -1308,15 +1327,15 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[3]=0;
  XRef_Port[3]=0;
  Pi03_Setting_offposH[3]=0;
- Pi03_Setting_offposL[3]=160;
- Pi03_Setting_onposH[3]=15;
- Pi03_Setting_onposL[3]=160;
- Pi03_Setting_offsteps[3]=1;
- Pi03_Setting_onsteps[3]=1;
- Pi03_Setting_options[3]=128;
- Pi03_Setting_LastUpdated[3]=7740;
+ Pi03_Setting_offposL[3]=0;
+ Pi03_Setting_onposH[3]=0;
+ Pi03_Setting_onposL[3]=0;
+ Pi03_Setting_offsteps[3]=0;
+ Pi03_Setting_onsteps[3]=0;
+ Pi03_Setting_options[3]=0;
+ Pi03_Setting_LastUpdated[3]=15523;
  Value_for_PortD[4]=0;
- Pi02_Port_Settings_D[4]=0;
+ Pi02_Port_Settings_D[4]=65;
  DelaySetting_for_PortD[4]=0;
  Configuration_for_PortD[4]=1;
  EventMarker_for_PortD[4]=0;
@@ -1324,15 +1343,15 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[4]=0;
  XRef_Port[4]=0;
  Pi03_Setting_offposH[4]=0;
- Pi03_Setting_offposL[4]=160;
- Pi03_Setting_onposH[4]=15;
- Pi03_Setting_onposL[4]=160;
- Pi03_Setting_offsteps[4]=1;
- Pi03_Setting_onsteps[4]=1;
- Pi03_Setting_options[4]=128;
- Pi03_Setting_LastUpdated[4]=7740;
+ Pi03_Setting_offposL[4]=0;
+ Pi03_Setting_onposH[4]=0;
+ Pi03_Setting_onposL[4]=0;
+ Pi03_Setting_offsteps[4]=0;
+ Pi03_Setting_onsteps[4]=0;
+ Pi03_Setting_options[4]=0;
+ Pi03_Setting_LastUpdated[4]=15523;
  Value_for_PortD[5]=0;
- Pi02_Port_Settings_D[5]=1;
+ Pi02_Port_Settings_D[5]=65;
  DelaySetting_for_PortD[5]=0;
  Configuration_for_PortD[5]=1;
  EventMarker_for_PortD[5]=0;
@@ -1343,12 +1362,12 @@ void SetDefaultSVs(){
  Pi03_Setting_offposL[5]=0;
  Pi03_Setting_onposH[5]=0;
  Pi03_Setting_onposL[5]=0;
- Pi03_Setting_offsteps[5]=1;
- Pi03_Setting_onsteps[5]=1;
+ Pi03_Setting_offsteps[5]=0;
+ Pi03_Setting_onsteps[5]=0;
  Pi03_Setting_options[5]=0;
- Pi03_Setting_LastUpdated[5]=7740;
+ Pi03_Setting_LastUpdated[5]=15523;
  Value_for_PortD[6]=0;
- Pi02_Port_Settings_D[6]=1;
+ Pi02_Port_Settings_D[6]=65;
  DelaySetting_for_PortD[6]=0;
  Configuration_for_PortD[6]=1;
  EventMarker_for_PortD[6]=0;
@@ -1359,10 +1378,10 @@ void SetDefaultSVs(){
  Pi03_Setting_offposL[6]=0;
  Pi03_Setting_onposH[6]=0;
  Pi03_Setting_onposL[6]=0;
- Pi03_Setting_offsteps[6]=1;
- Pi03_Setting_onsteps[6]=1;
+ Pi03_Setting_offsteps[6]=0;
+ Pi03_Setting_onsteps[6]=0;
  Pi03_Setting_options[6]=0;
- Pi03_Setting_LastUpdated[6]=7740;
+ Pi03_Setting_LastUpdated[6]=15523;
  Value_for_PortD[7]=0;
  Pi02_Port_Settings_D[7]=0;
  DelaySetting_for_PortD[7]=0;
@@ -1372,13 +1391,13 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[7]=0;
  XRef_Port[7]=0;
  Pi03_Setting_offposH[7]=0;
- Pi03_Setting_offposL[7]=160;
+ Pi03_Setting_offposL[7]=0;
  Pi03_Setting_onposH[7]=2;
  Pi03_Setting_onposL[7]=88;
  Pi03_Setting_offsteps[7]=1;
  Pi03_Setting_onsteps[7]=1;
- Pi03_Setting_options[7]=32;
- Pi03_Setting_LastUpdated[7]=39697;
+ Pi03_Setting_options[7]=33;
+ Pi03_Setting_LastUpdated[7]=442858;
  Value_for_PortD[8]=0;
  Pi02_Port_Settings_D[8]=0;
  DelaySetting_for_PortD[8]=0;
@@ -1388,28 +1407,28 @@ void SetDefaultSVs(){
  ID_Low_for_PortD[8]=0;
  XRef_Port[8]=0;
  Pi03_Setting_offposH[8]=0;
- Pi03_Setting_offposL[8]=160;
- Pi03_Setting_onposH[8]=2;
- Pi03_Setting_onposL[8]=88;
+ Pi03_Setting_offposL[8]=0;
+ Pi03_Setting_onposH[8]=15;
+ Pi03_Setting_onposL[8]=255;
  Pi03_Setting_offsteps[8]=1;
  Pi03_Setting_onsteps[8]=1;
- Pi03_Setting_options[8]=32;
- Pi03_Setting_LastUpdated[8]=39697;
+ Pi03_Setting_options[8]=33;
+ Pi03_Setting_LastUpdated[8]=442858;
  Value_for_PortD[9]=0;
- Pi02_Port_Settings_D[9]=0;
+ Pi02_Port_Settings_D[9]=1;
  DelaySetting_for_PortD[9]=0;
  Configuration_for_PortD[9]=255;
  EventMarker_for_PortD[9]=255;
  ID_High_for_PortD[9]=0;
  ID_Low_for_PortD[9]=0;
  XRef_Port[9]=0;
- Pi03_Setting_offposH[9]=255;
- Pi03_Setting_offposL[9]=255;
- Pi03_Setting_onposH[9]=255;
- Pi03_Setting_onposL[9]=255;
- Pi03_Setting_offsteps[9]=255;
- Pi03_Setting_onsteps[9]=255;
- Pi03_Setting_options[9]=255;
+ Pi03_Setting_offposH[9]=0;
+ Pi03_Setting_offposL[9]=0;
+ Pi03_Setting_onposH[9]=0;
+ Pi03_Setting_onposL[9]=0;
+ Pi03_Setting_offsteps[9]=0;
+ Pi03_Setting_onsteps[9]=0;
+ Pi03_Setting_options[9]=0;
  Pi03_Setting_LastUpdated[9]=0;
  Value_for_PortD[10]=0;
  Pi02_Port_Settings_D[10]=0;
@@ -1419,13 +1438,13 @@ void SetDefaultSVs(){
  ID_High_for_PortD[10]=0;
  ID_Low_for_PortD[10]=0;
  XRef_Port[10]=0;
- Pi03_Setting_offposH[10]=255;
- Pi03_Setting_offposL[10]=255;
- Pi03_Setting_onposH[10]=255;
- Pi03_Setting_onposL[10]=255;
- Pi03_Setting_offsteps[10]=255;
- Pi03_Setting_onsteps[10]=255;
- Pi03_Setting_options[10]=0;
+ Pi03_Setting_offposH[10]=0;
+ Pi03_Setting_offposL[10]=2;
+ Pi03_Setting_onposH[10]=15;
+ Pi03_Setting_onposL[10]=160;
+ Pi03_Setting_offsteps[10]=0;
+ Pi03_Setting_onsteps[10]=0;
+ Pi03_Setting_options[10]=128;
  Pi03_Setting_LastUpdated[10]=0;
  Value_for_PortD[11]=0;
  Pi02_Port_Settings_D[11]=0;
@@ -1435,61 +1454,61 @@ void SetDefaultSVs(){
  ID_High_for_PortD[11]=0;
  ID_Low_for_PortD[11]=0;
  XRef_Port[11]=0;
- Pi03_Setting_offposH[11]=255;
- Pi03_Setting_offposL[11]=255;
- Pi03_Setting_onposH[11]=255;
- Pi03_Setting_onposL[11]=255;
- Pi03_Setting_offsteps[11]=255;
- Pi03_Setting_onsteps[11]=255;
- Pi03_Setting_options[11]=255;
+ Pi03_Setting_offposH[11]=0;
+ Pi03_Setting_offposL[11]=2;
+ Pi03_Setting_onposH[11]=15;
+ Pi03_Setting_onposL[11]=160;
+ Pi03_Setting_offsteps[11]=0;
+ Pi03_Setting_onsteps[11]=0;
+ Pi03_Setting_options[11]=128;
  Pi03_Setting_LastUpdated[11]=0;
  Value_for_PortD[12]=0;
  Pi02_Port_Settings_D[12]=0;
- DelaySetting_for_PortD[12]=0;
+ DelaySetting_for_PortD[12]=40;
  Configuration_for_PortD[12]=255;
  EventMarker_for_PortD[12]=255;
  ID_High_for_PortD[12]=0;
  ID_Low_for_PortD[12]=0;
  XRef_Port[12]=0;
- Pi03_Setting_offposH[12]=255;
- Pi03_Setting_offposL[12]=255;
- Pi03_Setting_onposH[12]=255;
- Pi03_Setting_onposL[12]=255;
- Pi03_Setting_offsteps[12]=255;
- Pi03_Setting_onsteps[12]=255;
- Pi03_Setting_options[12]=255;
+ Pi03_Setting_offposH[12]=0;
+ Pi03_Setting_offposL[12]=0;
+ Pi03_Setting_onposH[12]=0;
+ Pi03_Setting_onposL[12]=0;
+ Pi03_Setting_offsteps[12]=0;
+ Pi03_Setting_onsteps[12]=0;
+ Pi03_Setting_options[12]=0;
  Pi03_Setting_LastUpdated[12]=0;
  Value_for_PortD[13]=0;
- Pi02_Port_Settings_D[13]=1;
+ Pi02_Port_Settings_D[13]=0;
  DelaySetting_for_PortD[13]=0;
  Configuration_for_PortD[13]=255;
  EventMarker_for_PortD[13]=255;
  ID_High_for_PortD[13]=0;
  ID_Low_for_PortD[13]=0;
  XRef_Port[13]=0;
- Pi03_Setting_offposH[13]=255;
- Pi03_Setting_offposL[13]=255;
- Pi03_Setting_onposH[13]=255;
- Pi03_Setting_onposL[13]=255;
- Pi03_Setting_offsteps[13]=255;
- Pi03_Setting_onsteps[13]=255;
- Pi03_Setting_options[13]=255;
+ Pi03_Setting_offposH[13]=0;
+ Pi03_Setting_offposL[13]=0;
+ Pi03_Setting_onposH[13]=0;
+ Pi03_Setting_onposL[13]=0;
+ Pi03_Setting_offsteps[13]=0;
+ Pi03_Setting_onsteps[13]=0;
+ Pi03_Setting_options[13]=0;
  Pi03_Setting_LastUpdated[13]=0;
  Value_for_PortD[14]=0;
- Pi02_Port_Settings_D[14]=1;
+ Pi02_Port_Settings_D[14]=65;
  DelaySetting_for_PortD[14]=0;
  Configuration_for_PortD[14]=255;
  EventMarker_for_PortD[14]=255;
  ID_High_for_PortD[14]=0;
  ID_Low_for_PortD[14]=0;
  XRef_Port[14]=0;
- Pi03_Setting_offposH[14]=255;
- Pi03_Setting_offposL[14]=255;
- Pi03_Setting_onposH[14]=255;
- Pi03_Setting_onposL[14]=255;
- Pi03_Setting_offsteps[14]=255;
- Pi03_Setting_onsteps[14]=255;
- Pi03_Setting_options[14]=255;
+ Pi03_Setting_offposH[14]=0;
+ Pi03_Setting_offposL[14]=252;
+ Pi03_Setting_onposH[14]=2;
+ Pi03_Setting_onposL[14]=35;
+ Pi03_Setting_offsteps[14]=0;
+ Pi03_Setting_onsteps[14]=0;
+ Pi03_Setting_options[14]=1;
  Pi03_Setting_LastUpdated[14]=0;
  Value_for_PortD[15]=0;
  Pi02_Port_Settings_D[15]=1;
@@ -1499,13 +1518,13 @@ void SetDefaultSVs(){
  ID_High_for_PortD[15]=0;
  ID_Low_for_PortD[15]=0;
  XRef_Port[15]=0;
- Pi03_Setting_offposH[15]=255;
- Pi03_Setting_offposL[15]=255;
- Pi03_Setting_onposH[15]=255;
- Pi03_Setting_onposL[15]=255;
- Pi03_Setting_offsteps[15]=255;
- Pi03_Setting_onsteps[15]=255;
- Pi03_Setting_options[15]=255;
+ Pi03_Setting_offposH[15]=1;
+ Pi03_Setting_offposL[15]=45;
+ Pi03_Setting_onposH[15]=1;
+ Pi03_Setting_onposL[15]=250;
+ Pi03_Setting_offsteps[15]=0;
+ Pi03_Setting_onsteps[15]=0;
+ Pi03_Setting_options[15]=0;
  Pi03_Setting_LastUpdated[15]=0;
  Value_for_PortD[16]=0;
  Pi02_Port_Settings_D[16]=1;
@@ -1514,23 +1533,23 @@ void SetDefaultSVs(){
  EventMarker_for_PortD[16]=255;
  ID_High_for_PortD[16]=0;
  ID_Low_for_PortD[16]=0;
- XRef_Port[16]=128;
- Pi03_Setting_offposH[16]=255;
- Pi03_Setting_offposL[16]=255;
- Pi03_Setting_onposH[16]=255;
- Pi03_Setting_onposL[16]=255;
- Pi03_Setting_offsteps[16]=255;
- Pi03_Setting_onsteps[16]=255;
- Pi03_Setting_options[16]=255;
+ XRef_Port[16]=0;
+ Pi03_Setting_offposH[16]=0;
+ Pi03_Setting_offposL[16]=0;
+ Pi03_Setting_onposH[16]=15;
+ Pi03_Setting_onposL[16]=106;
+ Pi03_Setting_offsteps[16]=0;
+ Pi03_Setting_onsteps[16]=0;
+ Pi03_Setting_options[16]=0;
  Pi03_Setting_LastUpdated[16]=0;
  //RN and CV settings
  RN[0]=0;
  RN[1]=0;
  RN[2]=50;
  RN[3]=5;
- RN[4]=69;
- RN[5]=83;
- RN[6]=80;
+ RN[4]=101;
+ RN[5]=115;
+ RN[6]=112;
  RN[7]=51;
  RN[8]=50;
  RN[9]=0;
@@ -1538,8 +1557,8 @@ void SetDefaultSVs(){
  RN[11]=0;
  RN[12]=0;
  RN[13]=0;
- RN[14]=37;
- RN[15]=33;
+ RN[14]=0;
+ RN[15]=0;
  RN[16]=0;
  RN[17]=0;
  RN[18]=0;
@@ -1559,7 +1578,38 @@ void SetDefaultSVs(){
  RN[32]=0;
  RN[33]=0;
  RN[34]=0;
- RN[35]=113;
+ RN[35]=0;
+ RNm[0]=0;
+ RNm[1]=0;
+ RNm[2]=0;
+ RNm[3]=0;
+ RNm[4]=0;
+ RNm[5]=0;
+ RNm[6]=0;
+ RNm[7]=0;
+ RNm[8]=0;
+ RNm[9]=0;
+ RNm[10]=0;
+ RNm[11]=0;
+ RNm[12]=0;
+ RNm[13]=0;
+ RNm[14]=0;
+ RNm[15]=33;
+ RNm[16]=0;
+ RNm[17]=0;
+ RNm[18]=0;
+ RNm[19]=0;
+ RNm[20]=1;
+ RNm[21]=0;
+ RNm[22]=2;
+ RNm[23]=0;
+ RNm[24]=1;
+ RNm[25]=0;
+ RNm[26]=0;
+ RNm[27]=0;
+ RNm[28]=0;
+ RNm[29]=0;
+ RNm[30]=0;
  CV[0]=0;
  CV[1]=3;
  CV[2]=5;
@@ -1567,7 +1617,7 @@ void SetDefaultSVs(){
  CV[4]=2;
  CV[5]=100;
  CV[6]=50;
- CV[7]=24;
+ CV[7]=8;
  CV[8]=13;
  CV[9]=0;
  CV[10]=0;
@@ -1589,7 +1639,7 @@ void SetDefaultSVs(){
  CV[26]=0;
  CV[27]=0;
  CV[28]=0;
- CV[29]=0;
+ CV[29]=16;
  CV[30]=0;
  CV[31]=0;
  CV[32]=0;
@@ -1607,11 +1657,11 @@ void SetDefaultSVs(){
  CV[44]=0;
  CV[45]=0;
  CV[46]=0;
- CV[47]=48;
+ CV[47]=128;
  CV[48]=0;
  CV[49]=0;
  CV[50]=0;
- CV[51]=1;
+ CV[51]=51;
  CV[52]=1;
  CV[53]=1;
  CV[54]=1;
@@ -1720,15 +1770,18 @@ void SetDefaultSVs(){
  CV[157]=1;
  CV[158]=1;
  CV[159]=0;
- 
+ CV[160]=0;
 //end of defaults 
+
+
+//end of ESP Station Node defaults 
 
 
 #endif // esp32 station
 
 #ifdef _LOCO_SERVO_Driven_Port
 
-// Hand written override of whatever is set above...Simpler just to put these here...
+// Put any Hand written override of whatever is set above...Simpler just to put these here...
  CV[1]=3; //DEFAULT ADDR
  CV[2]=5; //V START
  CV[3]=2; //ACC

@@ -15,7 +15,7 @@ uint8_t offset;
 //https://github.com/ThingPulse/esp8266-oled-ssd1306
 // you will also need to add Monospaced Plain 8 size font (http://oleddisplay.squix.ch/#/home) to C:\Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
 
-
+uint32_t Disp2ReInit;
 extern char DebugMsg[127];
 extern uint8_t hrs;
 extern uint8_t mins;
@@ -28,78 +28,52 @@ extern void DebugSprintfMsgSend(int CX);
 void SetFont(uint8_t Disp,uint8_t Font){
 if (Disp==1){
   switch (Font) {
-    // Fonts need some work before being published. 
-    /*
+
     case 0: 
-          display1.setFont(ArialMT_Plain_10); // its a standard font and very readable 
-         
-          //Serial.print("Font 0 height ?");
-          //Serial.println(ArialMT_Plain_10[1]);
+          display1.setFont(Dialog_plain_10);
     break;
     case 1: 
-          display1.setFont(Roboto_8);
-          
+          display1.setFont(Dialog_plain_8);
     break;
     case 2: 
-          display1.setFont(Roboto_7);
+          display1.setFont(Dialog_plain_7);
     break;
     case 3: 
-          display1.setFont(Roboto_6_inv);
+          display1.setFont(Dialog_bold_5);
     break;
     case 4: 
-          display1.setFont(Roboto_Condensed_Light_20);
+          display1.setFont(DialogInput_plain_20);
     break;
-    case 5: 
-          display1.setFont(Roboto_Condensed_Light_16);
-    break;
-    case 6: 
-          display1.setFont(Roboto_Condensed_20);
-    break;
-    case 7: 
-          display1.setFont(Monospaced_plain_8);
-    break;
-    case 8: 
-          display1.setFont(DejaVu_Sans_Mono_14);
-    break;
-    case 9: 
-          display1.setFont(ArialMT_Plain_10);
-    break;
-    */
+    
     default:
           display1.setFont(ArialMT_Plain_10);
     break;
-}
-}
+         }
+   }
  if (Disp==2){
   switch (Font) {
-    
-    /*
     case 0: 
-          //display2.setFont(ArialMT_Plain_10);
+          display2.setFont(Dialog_plain_10);
     break;
     case 1: 
-          //display2.setFont(Dialog_plain_6);
+          display2.setFont(Dialog_plain_8);
     break;
     case 2: 
-          //display2.setFont(Crushed_Regular_6);
+          display2.setFont(Dialog_plain_7);
     break;
     case 3: 
-          //display2.setFont(Crushed_Regular_5);
+          display2.setFont(Dialog_bold_5);
     break;
     case 4: 
-          //display2.setFont(DejaVu_Sans_Mono_14);
+          display2.setFont(DialogInput_plain_20);
     break;
-    case 5: 
-          //display2.setFont(Monospaced_plain_6);
-    break;
-    case 6: 
-          //display2.setFont(Monospaced_plain_8);
-    break;
-    */
+    
     default:
           display2.setFont(ArialMT_Plain_10);
     break;
-}}
+         }
+   }
+
 }
 
 void StringToL5(char *line, String input){
@@ -154,7 +128,7 @@ bool RocDisplayFormatted(int disp, int line, String Message){
                                in_format=true;                                
                                }
  // this code to make formatting for the 128*32 displays. Needs Some work to get the fonts better, so commented out for now.       
- /*        
+         
          if ((in_format && Message[i]=='S')){  // this code looks at the Show Clock(S) coding. 
                              if (Message[i+1]=='R'){ClockSpaceOffset=0;ClockPos=127-ClockRad;ClockAnalog=true;} // 
                              if (Message[i+1]=='L'){ClockSpaceOffset=(ClockRad*2)+1;ClockPos=ClockRad;ClockAnalog=true;} // 
@@ -171,11 +145,11 @@ bool RocDisplayFormatted(int disp, int line, String Message){
                              SetFont(disp,(Message[i+1]-48));    // selects Font 0-9 Message[] is font in ascii.. 48=0
                              //i=i+1;
                                              }  
-                                             // 
-     */
+                                             // ?? add W .. Departure column width in pixels..
+     
         if ((in_format && Message[i]=='T')){  // this code looks at the Columns (T) coding. 
                              if (Message[i+1]=='0'){rowPixel=20;    } // 20 is pixel start for column for departures
-                             if (Message[i+1]=='1'){rowPixel=80;    } // 90 is pixel start for time column 
+                             if (Message[i+1]=='1'){rowPixel=100; if (ClockAnalog){rowPixel=83;}   } // (80 with clock, 96 without) is pixel start for time column 
                                          i=i+1;    }                              
           
         if (!(in_format)&&(j<=(DisplayWidth-1))){
@@ -203,11 +177,15 @@ bool RocDisplayFormatted(int disp, int line, String Message){
   return found;
 }
 
+void OLEDS_Display(String L1,String L2,String L3,String L4,String L5){
+  OLED_5_line_display(1,L1,L2,L3,L4,L5);delay(1);
+  OLED_5_line_display(2,L1,L2,L3,L4,L5);
+}
 void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5){
-if (addr==1&&Display1Present){
+if ((addr==1)&&(Display1Present)){
    display1.clear();
  // TopLine();
-  //display1.setFont(ArialMT_Plain_10);
+  display1.setFont(ArialMT_Plain_10); // set default font
   // display unformatted lines as before
   if (!RocDisplayFormatted(1,13,L1)){display1.drawString(offset, 13, L1);}
   if (!RocDisplayFormatted(1,23,L2)){display1.drawString(offset, 23, L2);}
@@ -216,10 +194,16 @@ if (addr==1&&Display1Present){
   if (!RocDisplayFormatted(1,53,L5)){display1.drawString(offset, 53, L5);}
   display1.display();
 }
-if (addr==2&&Display2Present){
+if ((addr==2)&&(Display2Present)){
+  /*if (millis()>=Disp2ReInit){ display2.init();display2.flipScreenVertically();
+                              Disp2ReInit=millis()+60000;
+                              }
+                              else{display2.clear();}
+  */
   display2.clear();
+  //display2.setBrightness(50);// 50% test
  // TopLine();
-  //display2.setFont(ArialMT_Plain_10);
+  display2.setFont(ArialMT_Plain_10); // set default font
   if (!RocDisplayFormatted(2,13,L1)){display2.drawString(offset, 13, L1);}
   if (!RocDisplayFormatted(2,23,L2)){display2.drawString(offset, 23, L2);}
   if (!RocDisplayFormatted(2,33,L3)){display2.drawString(offset, 33, L3);}
@@ -232,7 +216,7 @@ if (addr==2&&Display2Present){
 
 
 
-void Oled_Station_Display_2(uint8_t Address,int Display,String Message){
+void OLED_Displays_Setup(uint8_t Address,int Display,String Message){
    if (Address==60){
       if (Display==1){for (byte i = 0; i <= (DisplayWidth-1); i++) {L2[i]=(Message[i]);}}
       if (Display==2){for (byte i = 0; i <= (DisplayWidth-1); i++) {L3[i]=(Message[i]);}}
@@ -253,31 +237,34 @@ void Oled_Station_Display_2(uint8_t Address,int Display,String Message){
 
 extern uint16_t SW_REV;
 extern String wifiSSID;
-void OLED_initiate(byte address){
-  //sets initial font as Font 0
-
+void OLED_initiate(uint8_t address){
   String MSGText1;String MSGText2;
-  if (address=60){  
+  if (address==60){ 
+    Serial.println(F("Initiating Display 1")); 
    display1.init();  
+   //display1.setI2cAutoInit(true);
    //display1.resetDisplay();
    //display.invertDisplay();
    display1.flipScreenVertically();
    display1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    SetFont(1,0);
-   MSGText1="Looking for <";MSGText1+=wifiSSID;MSGText1+="> ";//too early for this as ssid is not read!
-   MSGText2="Code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
-   OLED_5_line_display(1,""," ","",MSGText2,"");
+   //MSGText1="Looking for <";MSGText1+=wifiSSID;MSGText1+="> ";//too early for this as ssid is not read!
+   //MSGText2="Code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
+   //OLED_5_line_display(1,""," ","",MSGText2,"");
 }
-if (address=61){  
-  display2.init();  
-  //display1.resetDisplay();
-  //display.invertDisplay();
+if (address==61){  
+   Serial.println(F("Initiating Display 2")); 
+  display2.init();Disp2ReInit=millis()+6000;
+  //display2.setI2cAutoInit(true);  
+  //display2.reconnect();
+  //display2.resetDisplay();
+  //display2.invertDisplay();
   display2.flipScreenVertically();
   display2.setTextAlignment(TEXT_ALIGN_CENTER); offset=64;
   SetFont(2,0);
-  MSGText1="Second display <";MSGText1+=wifiSSID;MSGText1+="> ";
-  MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
-  OLED_5_line_display(2,"","Second Display",MSGText2,"","");
+  //MSGText1="Second display <";MSGText1+=wifiSSID;MSGText1+="> ";
+  //MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
+  //OLED_5_line_display(2,"","Second Display",MSGText2,"","");
 }
 
 
@@ -287,7 +274,7 @@ if (address=61){
     
 void LookForOLEDs(void){
  Serial.println ();
-  Serial.println ("I2C scanner. Scanning ...");
+  Serial.print ("I2C scanner. using SDA:");Serial.print(OLED_SDA);Serial.print("  SCL:");Serial.print(OLED_SCL);Serial.println("  Scanning");
   byte count = 0;
   Wire.begin(OLED_SDA, OLED_SCL);  // ESP32 default uses 21 and 22!!!
   for (byte i = 8; i < 120; i++)
@@ -302,8 +289,8 @@ void LookForOLEDs(void){
       Serial.println (")");
       count++;
       delay (1);  // maybe unneeded?
-      if (i==60){Display1Present=true;OLED_initiate(60);}
-      if (i==61){Display2Present=true;OLED_initiate(61);}
+      if (i==60){Display1Present=true;OLED_initiate(i);}
+      if (i==61){Display2Present=true;OLED_initiate(i);}
       
       
       } // end of good response
@@ -362,8 +349,8 @@ void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl
   y1 = center_y - (clocksize * pl1) * cos(angle );
   x2 = center_x + (clocksize * pl2) * sin(angle);
   y2 = center_y - (clocksize * pl2) * cos(angle);
-  if (disp==1&&Display1Present){display1.drawLine(x1,y1,x2,y2);}
-  if (disp==2&&Display2Present){display2.drawLine(x1,y1,x2,y2);}
+  if ((disp==1)&&(Display1Present)){display1.drawLine(x1,y1,x2,y2);}
+  if ((disp==2)&&(Display2Present)){display2.drawLine(x1,y1,x2,y2);}
 }
 
 void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int center_y, double pl1, double pl2, double pl3)
@@ -376,15 +363,15 @@ void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int 
   y1 = center_y - (clocksize * pl1) * cos(angle );
   x2 = center_x + (clocksize * pl2) * sin(angle);
   y2 = center_y - (clocksize * pl2) * cos(angle);
-  if (disp==1&&Display1Present){display1.drawCircle(x2, y2,circsize);}
-  if (disp==2&&Display2Present){display2.drawCircle(x2,y2,circsize);}
+  if ((disp==1)&&(Display1Present)){display1.drawCircle(x2, y2,circsize);}
+  if ((disp==2)&&(Display2Present)){display2.drawCircle(x2,y2,circsize);}
 }
 
 void BigClock(int disp,int clocksize){
   int center_x,center_y;
   center_x=64;
   center_y=clocksize;
-  if (disp==1&&Display1Present){
+  if ((disp==1)&&(Display1Present)){
       if (clocksize>=20){
           display1.drawCircle(center_x, center_y, clocksize);
           for (int i=1;i<=12;i++){showTimeAnalog(1,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}
@@ -405,7 +392,7 @@ void BigClock(int disp,int clocksize){
             display1.display();
         }}
   
-  if (disp==2&&Display2Present){
+  if ((disp==2)&&(Display2Present)){
       if (clocksize>=20){
           display2.drawCircle(center_x, center_y, clocksize);
           for (int i=1;i<=12;i++){showTimeAnalog(2,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}

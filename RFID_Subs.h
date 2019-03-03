@@ -63,7 +63,7 @@ int RFID_read = 0;
 
 bool bRFIDquiet;
 void SetupRFID(void ){
-   Serial.println("------------------------ MFRC 522 testing -----------------");
+   Serial.println(F("------------------------ MFRC 522 testing -----------------"));
   //* Setup rfidstuff *************************
   SPI.begin();        //Init SPI bus//
   mfrc522.PCD_Init(); //Init MFRC522 card
