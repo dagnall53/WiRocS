@@ -4,7 +4,7 @@
   #include "Directives.h"
   
 //  https://github.com/ThingPulse/esp8266-oled-ssd1306
-//  you will also need to add Monospaced Plain 8 size font (http://oleddisplay.squix.ch/#/home) to ..Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
+//  you will also need to add fonts (http://oleddisplay.squix.ch/#/home) to ..Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
 
 // Moved to to directives.. #define DisplayWidth 33  // to give 32 chars
 
@@ -17,7 +17,7 @@ void OLED_Displays_Setup(uint8_t Address,int Display,String Message);
 void OLED_initiate(uint8_t address);
     
 void LookForOLEDs(void);
-
+void LookForOLED_secondary(void);
 
 void drawRect(void) ;
 

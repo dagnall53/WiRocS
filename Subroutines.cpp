@@ -130,26 +130,35 @@ void Show_MSG() {
 extern void DebugSprintfMsgSend(int CX);
 extern char DebugMsg[127];
 extern uint16_t RocNodeID;
-extern bool Display1Present,Display2Present;
+extern bool Display1Present,Display2Present,Display3Present,Display4Present;
+extern void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+
 extern void SetFont(uint8_t Disp,uint8_t Font);
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
-  String IAM,IAM2;
-  IAM=" RN:";IAM+=RocNodeID;IAM+=" Display Addr:";
-  IAM2=IAM+"61";
-  IAM+="60";
+  String IAM,IAM2,IAM3,IAM4;
+  IAM=" RN:";IAM+=RocNodeID;
+   IAM2=IAM+" Display 5-8";
+   IAM3=IAM+" Display 1-2";
+   IAM4=IAM+" Display 3-4";
+   IAM+=" Display 1-4";
   Serial.println(msg);
   DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG"));
 
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
-   
-   if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"",msg,"",""); } 
-    if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"",msg,"","");   }
+   //OLEDS_Display(msg,IAM,"","",""); 
+   if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,msg,"","",""); } 
+   if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,msg,"","","");   }
+   if(Display3Present){SetFont(3,99);OLED_5_line_display(3,IAM3,msg,"","","");   }
+   if(Display4Present){SetFont(4,99);OLED_5_line_display(4,IAM4,msg,"","","");   }
       SignOfLifeFlash( SignalON) ; ///turn on
     delay(ON);
-    if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"","","","");   }
-     if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"","","","");   }
+    //OLEDS_Display("",IAM,"","","");   
+    if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"","","",""); } 
+    if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"","","","");   }
+    if(Display3Present){SetFont(3,99);OLED_5_line_display(3,IAM3,"","","","");   }
+    if(Display4Present){SetFont(4,99);OLED_5_line_display(4,IAM4,"","","","");   }
     SignOfLifeFlash( SignalOFF) ; ///turn OFF
     delay(Off);
     

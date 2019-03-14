@@ -32,7 +32,8 @@ int MSG_content_length(){
 }
 
 extern void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);
-  
+
+
 
 void CheckForSerialInput(){
   String MSGText;
@@ -72,8 +73,8 @@ void CheckForSerialInput(){
     while ((countdown>= 0) || UpdateInProgress) {
       if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" ";Count+=countdown;
                                                         LAMP=!LAMP; FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash( LAMP) ;
-                                                        if (LAMP){ OLEDS_Display("",Count,"Pausing for Serial I/O","","");                    }
-                                                            else { OLEDS_Display("",Count,"Pausing for Serial I/O","type 'xxx' to start","");}
+                                                        if (LAMP){ OLEDS_Display(Count,"Pausing for Serial I/O","","","");                    }
+                                                            else { OLEDS_Display(Count,"Pausing for Serial I/O","type 'xxx' to start","","");}
                                                           countdown=countdown-1;
                                                           }
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      

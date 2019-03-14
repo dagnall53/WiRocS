@@ -37,7 +37,8 @@ extern int DCC_Speed_Demand;
 extern int Last_DCC_Speed_Demand;
 uint8_t DIRF = 0 ;
 extern IPAddress mosquitto;
-extern bool Display1Present,Display2Present;
+extern bool Display1Present,Display2Present,Display3Present,Display4Present;
+extern uint8_t ClockSettings[5];
 
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
@@ -303,6 +304,9 @@ for (int i = 1; i <= 35 ; i++) {
     EEPROM.write(BrokerEEPROMLocation,BrokerAddr);
     EEPROM.write(RocNodeIDLocation,RN[1]);
     EEPROM.write(RocNodeIDLocation+1,RN[2]);
+    for (byte i = 1; i <= 4; i++) {
+      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),ClockSettings[i]);
+            }
     Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
     delay(100); // or EEPROMRocNodeID
 }
@@ -371,9 +375,14 @@ void ReadEEPROM() {
   EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
+  for (byte i = 1; i <= 4; i++) {
+     ClockSettings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
+            }
+  
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
    Serial.print(" RocNodeID:");Serial.println(RocNodeID);
    Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
+   
 }
 
 

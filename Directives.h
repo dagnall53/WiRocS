@@ -136,7 +136,11 @@
   #ifdef ESP32
  static const uint8_t OLED_SDA = 4;  //D4 ESP32 Devkit  !! NB gpio 0 is not exposed on my Esp32 Devkit V1 (but is on some other boards..)
  static const uint8_t OLED_SCL = 5;  //D5
+ static const uint8_t OLED_SDA2 = 19;  //D19
+ static const uint8_t OLED_SCL2 = 21;  //D21
  #else
+ static const uint8_t OLED_SDA2 = 5;  //D1 is 5 //used only for display 3
+ static const uint8_t OLED_SCL2 = 4;//d2 is 4
  static const uint8_t OLED_SDA = 0;  //  known as D3 on esp 8266 
  static const uint8_t OLED_SCL = 2;  // known as D4 on esp 8266 
  #endif

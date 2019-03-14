@@ -266,7 +266,7 @@ void reconnect() {
       //can advise this node is connected now:
       
             DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
-            cx=sprintf( DebugMsg, "Found Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
+            cx=sprintf( DebugMsg, "Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
             FlashMessage(DebugMsg, 10, 500, 100);  //Flash message 
             MSGText1="";StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
             
