@@ -9,7 +9,7 @@
 // Moved to to directives.. #define DisplayWidth 33  // to give 32 chars
 
 void SetFont(uint8_t Disp,uint8_t Font);
-void StringToL5(char *line, String input);
+void StringToChar(char *line, String input);
 void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
 bool RocDisplayFormatted(int disp, int line, String Message);
 void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);

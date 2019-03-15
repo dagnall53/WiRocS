@@ -237,11 +237,11 @@ extern void WriteWiFiSettings();
 extern uint16_t SW_REV;
 extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
 extern void SetFont(uint8_t Disp,uint8_t Font);
-extern char L5[DisplayWidth],L10[DisplayWidth];
-extern void StringToL5(char *line, String input);
+
+extern void StringToChar(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 uint32_t TimeLimit;
-
+char Lx5[100],Lx10[100]; //lx is local 
 void reconnect() {
   bool ConnectedNow; int cx;
   char ClientName[80];
@@ -254,21 +254,23 @@ void reconnect() {
       MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
       MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
       Serial.print("MQTT trying ");Serial.println(MSGText1);
-      StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should display progress via L5/L10 and oledsatus
+                     //StringToChar(Lx5,MSGText1);StringToChar(Lx10,MSGText1);// should display progress via L5/L10 and oledsatus
       ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
       if (ConnectedNow) {
             connects=0;
             if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
                    DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));
+                   cx=sprintf( DebugMsg, "Trying :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
+                   FlashMessage(DebugMsg, 2, 200, 100);
                    BrokerAddr=mosquitto[3];
                    WriteWiFiSettings();
                    }
       //can advise this node is connected now:
       
             DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
-            cx=sprintf( DebugMsg, "Broker :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
-            FlashMessage(DebugMsg, 10, 500, 100);  //Flash message 
-            MSGText1="";StringToL5(L5,MSGText1);StringToL5(L10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
+            cx=sprintf( DebugMsg, "Broker OK :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
+            FlashMessage(DebugMsg, 4, 500, 100);  //Flash message sends to oled displays
+                         //MSGText1="";StringToChar(Lx5,MSGText1);StringToChar(Lx10,MSGText1);// should clear the L5/10 messages now so the big clock will display in main loop 
             
         //... and now subscribe to topics  http://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en#groups
             client.subscribe("rocnet/lc", 1 ); //loco

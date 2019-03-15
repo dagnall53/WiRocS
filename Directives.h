@@ -150,7 +150,7 @@
 // for oled
 #define TerminusDisplay   // Initial define to write multiple lines of Roc-Display messages on my large 128*64 oled display for a "Terminus/TicketOffice"
                           // Code will then ignore the "Display" number and display on a line on the terminus display as defined by the "display" number.
-#define DisplayWidth 100  //100 for passing {} formatting to give 32 chars
+//#define DisplayWidth 300  //100 for passing {} formatting to give 32 chars
 
 
 #endif

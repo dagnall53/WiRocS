@@ -1305,15 +1305,16 @@ void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
   uint8_t Disp;
-  char Message[127]; // big to accept long msg from rocrail
+  char Message[150];                                                                       // big to accept long msg from rocrail
   if  ((ROC_recipient ==   RocNodeID)||(ROC_recipient ==  0)){ // node 0 is global message
       Address= ROC_Data[1];
       Disp= ROC_Data[2];
-   //Serial.println("Display  message for this node (or global)");Serial.print(" Display Addr:");Serial.print(Address);
-   // Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);Serial.print("> len:");Serial.print(ROC_len);
+   //Serial.print("Display  message for this node (or global)");//Serial.print(" Display Addr:");Serial.print(Address);
+   //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
+   //Serial.print("> len:");Serial.println(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
-    if (ROC_len-3>=126){ROC_len==128;}
-    for (byte i = 0; i <= (ROC_len-3); i++) { 
+    if (ROC_len-3>=114){ROC_len==114;}                                                     //  Rocrail seems to limit to 113 anyway
+    for (uint16_t i = 0; i <= (ROC_len-3); i++) { 
                      Message[i]=char (ROC_Data[i+3]); 
   //                   Serial.print(char(ROC_Data[i+3]));
                      }

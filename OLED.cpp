@@ -13,7 +13,7 @@
   SSD1306 display4(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplay 3&4
   //
   
-#define DisplayWidth 100  //100 to allow passing of {} formatting    33to allow up to 32 chars width for monspaced display
+#define DisplayWidth 255  //100 to allow passing of {} formatting    33to allow up to 32 chars width for monspaced display
 #define TerminalDisplayFont 6
  
 char L1[DisplayWidth],L2[DisplayWidth],L3[DisplayWidth],L4[DisplayWidth],L5[DisplayWidth],L6[DisplayWidth],L7[DisplayWidth],L8[DisplayWidth],L9[DisplayWidth],L10[DisplayWidth];
@@ -165,7 +165,7 @@ if (Disp==4){
    
 }
 
-void StringToL5(char *line, String input){
+void StringToChar(char *line, String input){
   for (int i=0;i<=DisplayWidth-1; i++){
     if (i <= input.length()){
       line[i]=input[i];
@@ -186,21 +186,24 @@ int GetNumber(String Message, int i){
 }
 
 bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
-  bool found;
-  int rowPixel,rowPixel1, NewLineOffset;int MsgLength;
+  bool found;  bool in_format;
+  int j,DisplayLine,RowPixel[15],NewLineOffset,MsgLength,TabOne,TabZero;
   int ClockSpaceOffset,ClockPos,ClockRad;
   //bool ClockAnalog,ClockLeft;
   String FormattedMsg,BitMsg; char BitChar;
-  int j,DisplayLine;
-  bool in_format;
+  
+
   uint8_t ClockSettingBefore;
   ClockSettingBefore=ClockSettings[disp];
   // get clock analog/left from eeprom??
-  ClockRad =8;
+  ClockRad =9;
   NewLineOffset=8;
   DisplayLine=0;// 
+  TabZero=10;TabOne=102;
   j=0;
-  rowPixel=0;
+  for (int i=0;i<=10; i++){
+      RowPixel[i]=0;
+      }
   found=false;
    for (int i=0;i<=DisplayWidth-1; i++){
     if (i <= Message.length()){
@@ -208,10 +211,10 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
     }}
   if (found){//do RocDisplay formatting and send to display
     // do formatting stuff to format for display if we have formatting { and } 
-    
-   //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d PixelsDown%d full <%s>",disp,PixelsDown,Message.c_str()));
-  
-  
+    //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d PixelsDown%d full <%s>",disp,PixelsDown,Message.c_str()));
+ 
+   // set default font to RocDisplay Font F0
+  SetFont(disp,0);
                                    
   if ( (bitRead(ClockSettings[disp],_ClockLeft))&&(bitRead(ClockSettings[disp],_ClockAna))&&(bitRead(ClockSettings[disp],_ClockON)  ) )
              {  ClockSpaceOffset=(ClockRad*2)+1; ClockPos= ClockRad;}
@@ -224,12 +227,12 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
   //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d PixelsDown%d Before format<%s>",disp,PixelsDown,Message.c_str()));
   if (Message.length()>=1){  
     for (int i=0;i<=(Message.length()-1);i++){
-         if (Message[i]=='{'){ if (disp==1){display1.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);rowPixel=rowPixel+display1.getStringWidth(FormattedMsg);}
-                               if (disp==2){display2.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);rowPixel=rowPixel+display2.getStringWidth(FormattedMsg);}
-                               if (disp==3){display3.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);rowPixel=rowPixel+display3.getStringWidth(FormattedMsg);}
-                               if (disp==4){display4.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);rowPixel=rowPixel+display4.getStringWidth(FormattedMsg);}
+         if (Message[i]=='{'){ if (disp==1){display1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display1.getStringWidth(FormattedMsg);}
+                               if (disp==2){display2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display2.getStringWidth(FormattedMsg);}
+                               if (disp==3){display3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display3.getStringWidth(FormattedMsg);}
+                               if (disp==4){display4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display4.getStringWidth(FormattedMsg);}
                                
-                               // using .getStringWidth(FormattedMsg)to move cursor across in case we have more text to print on the same line before next (T) Tab
+                               // code uses .getStringWidth(FormattedMsg)to move each line's cursor (RowPixel) across in case we have more text to print on the same line before next (T) Tab
                                in_format=true;                                
                                }
      
@@ -249,25 +252,34 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
                                          }
    
                                          
-         if ((in_format && Message[i]=='L')){  // this code looks at the Lines (L) coding. 
-                             if (Message[i+1]=='0'){ if (DisplayLine!=0){rowPixel=0;} DisplayLine=0;   } // reset rowpixel if changing lines
-                             if (Message[i+1]=='1'){ if (DisplayLine!=1){rowPixel=0;} DisplayLine=1;   } // 
-                                         i=i+1;    }
+         if ((in_format && Message[i]=='L')){  // this code looks at the Lines (L) coding.
+                                            DisplayLine=GetNumber(Message,i+1);
+                                            //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Changing Line number to %d GN<%d>",disp,DisplayLine,GetNumber(Message,i+1)));
+                                            i=i+1;
+                                            } 
+                             //if (Message[i+1]=='0'){ if (DisplayLine!=0){RowPixel[DisplayLine]=0;} DisplayLine=0;   } // reset rowpixel if changing lines
+                             //if (Message[i+1]=='1'){ if (DisplayLine!=1){RowPixel[DisplayLine]=0;} DisplayLine=1;   } // 
+                             //                }
                                
          if ((in_format && Message[i]=='F')){  // this code looks at the Fonts (F) coding. 
-                              //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Changing font to %d  getnumber<%d>",disp,(Message[i+1]-48),GetNumber(Message,i+1)));
+                             
                              SetFont(disp,GetNumber(Message,i+1));    // selects Font  Message[] (now not limited to just 9)
-                             //i=i+1;
+                             i=i+1;
                                              } 
        
-                                            
-                                             
-                                             // ?? add W .. Departure column width in pixels..
+         if ((in_format && Message[i]=='W')){  // this code looks at the Departure column width (W) coding. 
+                               TabOne=GetNumber(Message,i+1); //S               
+                                            } 
+                                             // ?? W .. "Departure column width" IF set sets the second tab position in pixels..Is volatile, and lost for next message!
      
         if ((in_format && Message[i]=='T')){  // this code looks at the Columns (T) coding. 
-                             if (Message[i+1]=='0'){rowPixel=rowPixel+1; if ((rowPixel<=10)||(DisplayLine==1)) {rowPixel=10;}    } // 10 is pixel start for column for departures, unless initial stuff is bigger.
-                             if (Message[i+1]=='1'){rowPixel=102; if ( bitRead(ClockSettings[disp],_ClockAna)) {rowPixel=86;}   } // (80 with analog clock, 102 without) is pixel start for time column 
-                                         i=i+1;    }  
+              if ((in_format && Message[i+2]=='L')){DisplayLine=GetNumber(Message,i+3);}// Check for 'TxLx' codes, as they are common! Saves changing to "correct" 'LxTx' structure
+                             if (Message[i+1]=='0'){if (RowPixel[DisplayLine]<=TabZero) {RowPixel[DisplayLine]=TabZero;}}  
+                             if (Message[i+1]=='1'){RowPixel[DisplayLine]=TabOne; 
+                                                    if ( bitRead(ClockSettings[disp],_ClockAna)) {RowPixel[DisplayLine]=RowPixel[DisplayLine]-(2*ClockRad);}   
+                                                    } // offset if Analog clock is in operation
+                                            i=i+1;
+                                            }  
 
         if ((in_format && Message[i]=='B')){  // this code looks at the Bitmaps (B) coding. 
                                BitChar=GetNumber(Message,i+1)+1; //Select char from bitmaps with offset to avoid asking for char 0 
@@ -275,20 +287,20 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
                               FontVOffset=0;
                               //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Byte %d  %d",disp,(Message[i+1]-48),GetNumber(Message,i+1)));
                                if (disp==1){display1.setFont(RocBitMap);
-                                            display1.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            rowPixel=rowPixel+display1.getStringWidth(BitMsg);
+                                            display1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display1.getStringWidth(BitMsg);
                                              }
                                if (disp==2){display2.setFont(RocBitMap);
-                                            display2.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            rowPixel=rowPixel+display2.getStringWidth(BitMsg);
+                                            display2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display2.getStringWidth(BitMsg);
                                             }
                                if (disp==3){display3.setFont(RocBitMap);
-                                            display3.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            rowPixel=rowPixel+display3.getStringWidth(BitMsg);
+                                            display3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display3.getStringWidth(BitMsg);
                                            }
                                if (disp==4){display4.setFont(RocBitMap);
-                                            display4.drawString(rowPixel+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            rowPixel=rowPixel+display4.getStringWidth(BitMsg);
+                                            display4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display4.getStringWidth(BitMsg);
                                             }            
                                
                               SetFont(disp,FontSelected); // set back to last selected font; 
@@ -299,9 +311,9 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
                                                                      
           
         if (!(in_format)&&(j<=(DisplayWidth-1))){
-                                        if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
+                                       // if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
                                             FormattedMsg+=Message[i];j=j+1; } 
-                                            }
+                                           // }
                                             
           if (Message[i]=='}'){ in_format=false;j=0;FormattedMsg="";}
           
@@ -317,31 +329,31 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
     if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==1) ){  
                                 display1.fillCircle(ClockPos,ClockRad,ClockRad);
                                 display1.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.6, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.9, mins);
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
                                 display1.setColor(WHITE);
                                }
     
     if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==2) ){  
                                 display2.fillCircle(ClockPos,ClockRad,ClockRad);
                                 display2.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.6, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.9, mins);
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
                                 display2.setColor(WHITE);
                                }
     
       if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==3) ){  
                                 display3.fillCircle(ClockPos,ClockRad,ClockRad);
                                 display3.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.6, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.9, mins);
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
                                 display3.setColor(WHITE);
                                }
      if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==4) ){  
                                 display4.fillCircle(ClockPos,ClockRad,ClockRad);
                                 display4.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.6, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.9, mins);
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
                                 display4.setColor(WHITE);
                                }
      
@@ -360,13 +372,13 @@ void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String
   just_text=false;
 if ((addr==3)&&(Display3Present)){
     display3.clear();SetFont(addr,10);
-    if (!RocDisplayFormatted(3,0,L1)){display3.drawString(offset, 0, L1);}
+    if (!RocDisplayFormatted(3,0,L1)){display3.drawStringMaxWidth(offset, 0,128, L1);}   // Top lines (ONLY) are allowed to wrap if Too long so a single long text can be used on the display 
     if (!RocDisplayFormatted(3,16,L2)){display3.drawString(offset, 16, L2);}
     display3.display();
     }
 if ((addr==4)&&(Display4Present)){
     display4.clear();SetFont(addr,10);
-    if (!RocDisplayFormatted(4,0,L1)){display4.drawString(offset, 0, L1);}
+    if (!RocDisplayFormatted(4,0,L1)){display4.drawStringMaxWidth(offset, 0,128, L1);}
     if (!RocDisplayFormatted(4,16,L2)){display4.drawString(offset, 16, L2);}
     display4.display();
     }
@@ -375,7 +387,7 @@ if ((addr==1)&&(Display1Present)){
    display1.clear();SetFont(addr,10);
    // display 4 lines 
   
-  if (!RocDisplayFormatted(1,0,L1)){display1.drawString(offset, 0, L1);}
+  if (!RocDisplayFormatted(1,0,L1)){display1.drawStringMaxWidth(offset, 0,128, L1);}
   if (!RocDisplayFormatted(1,16,L2)){display1.drawString(offset, 16, L2);}
   if (!RocDisplayFormatted(1,32,L3)){display1.drawString(offset, 32, L3);}
   if (!RocDisplayFormatted(1,48,L4)){display1.drawString(offset, 48, L4);}
@@ -384,7 +396,7 @@ if ((addr==1)&&(Display1Present)){
 }
 if ((addr==2)&&(Display2Present)){
    display2.clear();SetFont(addr,10);// set default font
-  if (!RocDisplayFormatted(2,0,L1)){display2.drawString(offset, 0, L1);}
+  if (!RocDisplayFormatted(2,0,L1)){display2.drawStringMaxWidth(offset, 0,128, L1);}
   if (!RocDisplayFormatted(2,16,L2)){display2.drawString(offset,16, L2);}
   if (!RocDisplayFormatted(2,32,L3)){display2.drawString(offset, 32, L3);}
   if (!RocDisplayFormatted(2,48,L4)){display2.drawString(offset, 48, L4);}
@@ -398,15 +410,15 @@ if ((addr==2)&&(Display2Present)){
 
 void OLED_Displays_Setup(uint8_t Address,int Display,String Message){
      // use both for 4 line termius display and also for 4 option of 2 x32 displays 
-      if (Display==1){for (byte i = 0; i <= (DisplayWidth-1); i++) {L1[i]=(Message[i]);}}
-      if (Display==2){for (byte i = 0; i <= (DisplayWidth-1); i++) {L2[i]=(Message[i]);}}
-      if (Display==3){for (byte i = 0; i <= (DisplayWidth-1); i++) {L3[i]=(Message[i]);}}
-      if (Display==4){for (byte i = 0; i <= (DisplayWidth-1); i++) {L4[i]=(Message[i]);}}
+      if (Display==1){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L1[i]=(Message[i]);}}
+      if (Display==2){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L2[i]=(Message[i]);}}
+      if (Display==3){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L3[i]=(Message[i]);}}
+      if (Display==4){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L4[i]=(Message[i]);}}
    
-      if (Display==5){for (byte i = 0; i <= (DisplayWidth-1); i++) {L5[i]=(Message[i]);}}
-      if (Display==6){for (byte i = 0; i <= (DisplayWidth-1); i++) {L6[i]=(Message[i]);}}
-      if (Display==7){for (byte i = 0; i <= (DisplayWidth-1); i++) {L7[i]=(Message[i]);}}
-      if (Display==8){for (byte i = 0; i <= (DisplayWidth-1); i++) {L8[i]=(Message[i]);}}
+      if (Display==5){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L5[i]=(Message[i]);}}
+      if (Display==6){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L6[i]=(Message[i]);}}
+      if (Display==7){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L7[i]=(Message[i]);}}
+      if (Display==8){for (uint16_t i = 0; i <= (DisplayWidth-1); i++) {L8[i]=(Message[i]);}}
    
 }
 
