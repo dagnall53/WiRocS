@@ -1,7 +1,11 @@
 # WiRocS
+From V12 I am not going to keep changing the Ino to WiRocs.ino, but keep it as WiRocS-vxx.ino, as this is how I keep it on home my system. 
+You will need to rename the most recent .ino to "WiRocS.ino" after you have downloaded the sketch. (sorry)
+
 WiFi Rocnet node for esp 32 and 8266
 For documentation please read https://wiki.rocrail.net/doku.php?id=users:dagnall53:description
 Use of this software is at your own risk!
+V15 Internally the 
 
 V8(a) Revised interface to OLEDS. I had some issues with my ESP32 board so could not use the same I2C pins for both ESP8266 and ESP32. The code now expects 
 ESP8266: (OLED SCL to connect to ESP8266/NodeMCU D4 , OLED SDA to ESP8266/NodeMCU D3)
