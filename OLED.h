@@ -10,9 +10,9 @@
 
 void SetFont(uint8_t Disp,uint8_t Font);
 void StringToChar(char *line, String input);
-void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
-bool RocDisplayFormatted(int disp, int line, String Message);
-void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);
+void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
+bool RocDisplayFormatted(int OLed_x, int line, String Message);
+void OLEDS_Display(String L1,String L2,String L3,String L4);
 void OLED_Displays_Setup(uint8_t Address,int Display,String Message);
 void OLED_initiate(uint8_t address);
     

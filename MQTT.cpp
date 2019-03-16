@@ -235,11 +235,12 @@ extern bool ScanForBroker;
 extern int BrokerAddr;
 extern void WriteWiFiSettings();
 extern uint16_t SW_REV;
-extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 extern void SetFont(uint8_t Disp,uint8_t Font);
 
 extern void StringToChar(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
+extern void OLEDS_Display(String L1,String L2,String L3,String L4);
 uint32_t TimeLimit;
 char Lx5[100],Lx10[100]; //lx is local 
 void reconnect() {
@@ -254,6 +255,7 @@ void reconnect() {
       MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
       MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
       Serial.print("MQTT trying ");Serial.println(MSGText1);
+      OLEDS_Display("Lost Broker trying",MSGText1,"","");
                      //StringToChar(Lx5,MSGText1);StringToChar(Lx10,MSGText1);// should display progress via L5/L10 and oledsatus
       ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
       if (ConnectedNow) {

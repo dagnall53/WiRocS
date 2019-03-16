@@ -130,9 +130,9 @@ void Show_MSG() {
 extern void DebugSprintfMsgSend(int CX);
 extern char DebugMsg[127];
 extern uint16_t RocNodeID;
-extern bool Display1Present,Display2Present,Display3Present,Display4Present;
-extern void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);
-extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
+extern void OLEDS_Display(String L1,String L2,String L3,String L4);
+extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 
 extern void SetFont(uint8_t Disp,uint8_t Font);
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
@@ -147,18 +147,18 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
 
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
-   //OLEDS_Display(msg,IAM,"","",""); 
-   if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,msg,"","",""); } 
-   if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,msg,"","","");   }
-   if(Display3Present){SetFont(3,99);OLED_5_line_display(3,IAM3,msg,"","","");   }
-   if(Display4Present){SetFont(4,99);OLED_5_line_display(4,IAM4,msg,"","","");   }
+   //OLEDS_Display(msg,IAM,"",""); 
+   if(OLED1Present){SetFont(1,99);OLED_4_RN_displays(1,IAM,msg,"",""); } 
+   if(OLED2Present){SetFont(2,99);OLED_4_RN_displays(2,IAM2,msg,"","");   }
+   if(OLED3Present){SetFont(3,99);OLED_4_RN_displays(3,IAM3,msg,"","");   }
+   if(OLED4Present){SetFont(4,99);OLED_4_RN_displays(4,IAM4,msg,"","");   }
       SignOfLifeFlash( SignalON) ; ///turn on
     delay(ON);
-    //OLEDS_Display("",IAM,"","","");   
-    if(Display1Present){SetFont(1,99);OLED_5_line_display(1,IAM,"","","",""); } 
-    if(Display2Present){SetFont(2,99);OLED_5_line_display(2,IAM2,"","","","");   }
-    if(Display3Present){SetFont(3,99);OLED_5_line_display(3,IAM3,"","","","");   }
-    if(Display4Present){SetFont(4,99);OLED_5_line_display(4,IAM4,"","","","");   }
+    //OLEDS_Display("",IAM,"","");   
+    if(OLED1Present){SetFont(1,99);OLED_4_RN_displays(1,IAM,"","",""); } 
+    if(OLED2Present){SetFont(2,99);OLED_4_RN_displays(2,IAM2,"","","");   }
+    if(OLED3Present){SetFont(3,99);OLED_4_RN_displays(3,IAM3,"","","");   }
+    if(OLED4Present){SetFont(4,99);OLED_4_RN_displays(4,IAM4,"","","");   }
     SignOfLifeFlash( SignalOFF) ; ///turn OFF
     delay(Off);
     

@@ -4,29 +4,29 @@
   #include "Directives.h"
   //#include "Globals.h"
    #include <SSD1306.h> // alias for `#include "SSD1306Wire.h"` //https://github.com/ThingPulse/esp8266-oled-ssd1306
-   // options are 3c 3d on bus 1 (disp1 and 2)  or 3c on bus 2 is 32 high so 3c on bus 1 is also 32 hi (becoming disp 3 and disp4)  
-   
-  SSD1306  display1(0x3c, OLED_SDA, OLED_SCL);//== RocDisplay 1,2,3&4
-  SSD1306  display2(0x3d, OLED_SDA, OLED_SCL);// RocDisplay 5,6,7,8  
+   // options are 0x3c 0x3d on bus 1 (OLED1 and OLED2)  or - IF 0x3c is seen on bus 2 it assumes this is 32 high so any 0x3c on bus 1 must also be 32 hi (becoming OLED3 and OLED4)  
+  SSD1306  OLED1(0x3c, OLED_SDA, OLED_SCL);//== RocDisplay 1,2,3&4
+  SSD1306  OLED2(0x3d, OLED_SDA, OLED_SCL);// RocDisplays 5,6,7,8  
   // small displays
-  SSD1306 display3(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); // RocDisplay 1&2 //Display 3 is the only one to use the secondary ports
-  SSD1306 display4(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplay 3&4
-  //
+  SSD1306 OLED3(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); // RocDisplays 1&2 //Display 3 is the only one to use the secondary ports
+  SSD1306 OLED4(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplays 3&4
+   //
   
-#define DisplayWidth 255  //100 to allow passing of {} formatting    33to allow up to 32 chars width for monspaced display
-#define TerminalDisplayFont 6
+#define DisplayWidth 255  //>100 to allow passing of {} formatting but Rocnet protocol limits the length sent to about 110    
+#define TerminalDisplayFont 0
  
 char L1[DisplayWidth],L2[DisplayWidth],L3[DisplayWidth],L4[DisplayWidth],L5[DisplayWidth],L6[DisplayWidth],L7[DisplayWidth],L8[DisplayWidth],L9[DisplayWidth],L10[DisplayWidth];
-bool Display1Present,Display2Present,Display3Present,Display4Present;
+bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
 uint8_t offset;
-int FontVOffset;
-uint8_t ClockSettings[5]; ///bit settings
+
+uint8_t OLed_Clock_Settings[5]; ///bit settings
 #define _ClockON 0
 #define _ClockLeft 1
 #define _ClockAna 2
+bool RocFormatUsed[5];
 
 //https://github.com/ThingPulse/esp8266-oled-ssd1306
-// you will also need to add Monospaced Plain 8 size font (http://oleddisplay.squix.ch/#/home) to C:\Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
+// you will also need to add RodDisplay fonts (see https://github.com/dagnall53/Fonts-for-WiRocs)  to C:\Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
 
 uint32_t Disp2ReInit;
 extern char DebugMsg[127];
@@ -41,124 +41,124 @@ extern bool Data_Updated;
 extern uint32_t EPROM_Write_Delay;
 extern void WriteEEPROM(void);
 int FontSelected;
-
-void SetFont(uint8_t Disp,uint8_t Font){
+int MaxWidth;
+void SetFont(uint8_t OLed_x,uint8_t Font){
 FontSelected=Font;
-  // note, FontVOffset is to align the various fonts. It can only be +ve or it will fail on the top line (vertical =0)print. 
-if (Disp==1){
+ 
+if (OLed_x==1){
   switch (Font) { 
     case 0: 
-          display1.setFont(Font_7x5);
-          FontVOffset=0;
+          OLED1.setFont(Font_7x5);
+          
     break;
     case 1: 
-          display1.setFont(Font_6x5w);
-          FontVOffset=0;
+          OLED1.setFont(Font_6x5w);
+          
     break;
     case 2: 
-          display1.setFont(Font_6x5n);
-          FontVOffset=0;
+          OLED1.setFont(Font_6x5n);
+          
     break;
     case 3: 
-          display1.setFont(Font_5x5inv);
-          FontVOffset=0;
+          OLED1.setFont(Font_5x5inv);
+          
     break;
     case 4: 
-          display1.setFont(Font_High);
-          FontVOffset=0;
+          OLED1.setFont(Font_High);
+          
     break;
     
     default:
-          display1.setFont(ArialMT_Plain_10);
-          FontVOffset=0;
+          OLED1.setFont(Font_7x5);
+          
     break;
          }
    }
- if (Disp==2){
+ if (OLed_x==2){
   switch (Font) {
     case 0: 
-          display2.setFont(Font_7x5);
-          FontVOffset=0;
+          OLED2.setFont(Font_7x5);
+          
     break;
     case 1: 
-          display2.setFont(Font_6x5w);
-          FontVOffset=0;
+          OLED2.setFont(Font_6x5w);
+          
     break;
     case 2: 
-          display2.setFont(Font_6x5n);
-          FontVOffset=0;
+          OLED2.setFont(Font_6x5n);
+          
     break;
     case 3: 
-          display2.setFont(Font_5x5inv);
-          FontVOffset=0;
+          OLED2.setFont(Font_5x5inv);
+          
     break;
     case 4: 
-          display2.setFont(Font_High);
-          FontVOffset=0;
+          OLED2.setFont(Font_High);
+          
     break;
     
     default:
-          display2.setFont(ArialMT_Plain_10);
-          FontVOffset=0;
+          OLED2.setFont(Font_7x5);
+          
     break;
          }
    }
-if (Disp==3){
+if (OLed_x==3){
   switch (Font) {
     case 0: 
-          display3.setFont(Font_7x5);
-          FontVOffset=0;
+          OLED3.setFont(Font_7x5);
+          
     break;
     case 1: 
-          display3.setFont(Font_6x5w);
-          FontVOffset=0;
+          OLED3.setFont(Font_6x5w);
+          
     break;
     case 2: 
-          display3.setFont(Font_6x5n);
-          FontVOffset=0;
+          OLED3.setFont(Font_6x5n);
+          
     break;
     case 3: 
-          display3.setFont(Font_5x5inv);
-          FontVOffset=0;
+          OLED3.setFont(Font_5x5inv);
+          
     break;
     case 4: 
-          display3.setFont(Font_High);
-          FontVOffset=0;
+          OLED3.setFont(Font_High);
+          
     break;
     
     default:
-          display3.setFont(ArialMT_Plain_10);
-          FontVOffset=0;
+          OLED3.setFont(Font_7x5);
+          
     break;
          }
    }
 
-if (Disp==4){
+if (OLed_x==4){
   switch (Font) {
     case 0: 
-          display4.setFont(Font_7x5);
-          FontVOffset=0;
+          OLED4.setFont(Font_7x5);
+          
     break;
     case 1: 
-          display4.setFont(Font_6x5n);
-          FontVOffset=0;
+          OLED4.setFont(Font_6x5n);
+          
     break;
     case 2: 
-          display4.setFont(Font_6x5w);
-          FontVOffset=0;
+          OLED4.setFont(Font_6x5w);
+          
     break;
     case 3: 
-          display4.setFont(Font_5x5inv);
-          FontVOffset=0;
+          OLED4.setFont(Font_5x5inv);
+          
     break;
     case 4: 
-          display4.setFont(Font_High);
-          FontVOffset=0;
+          OLED4.setFont(Font_High);
+          
     break;
     
     default:
-          display4.setFont(ArialMT_Plain_10);
-          FontVOffset=0;
+          OLED4.setFont(Font_7x5);
+          
     break;
          }
    }
@@ -184,17 +184,20 @@ int GetNumber(String Message, int i){
     }
   return Number;
 }
-
-bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
+int ClockRad;
+bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   bool found;  bool in_format;
   int j,DisplayLine,RowPixel[15],NewLineOffset,MsgLength,TabOne,TabZero;
-  int ClockSpaceOffset,ClockPos,ClockRad;
+  int ClockSpaceOffset,ClockPos;
   //bool ClockAnalog,ClockLeft;
   String FormattedMsg,BitMsg; char BitChar;
+  bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2;
+  FlashON=secs%2;
+  ignoreJ1=false;inJ1=false;
+  ignoreJ2=false;inJ2=false;
   
-
   uint8_t ClockSettingBefore;
-  ClockSettingBefore=ClockSettings[disp];
+  ClockSettingBefore=OLed_Clock_Settings[OLed_x];
   // get clock analog/left from eeprom??
   ClockRad =9;
   NewLineOffset=8;
@@ -207,16 +210,16 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
   found=false;
    for (int i=0;i<=DisplayWidth-1; i++){
     if (i <= Message.length()){
-      if (Message[i]=='{'){found=true;}
+      if (Message[i]=='{'){found=true; RocFormatUsed[OLed_x]=true;}
     }}
   if (found){//do RocDisplay formatting and send to display
     // do formatting stuff to format for display if we have formatting { and } 
-    //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d PixelsDown%d full <%s>",disp,PixelsDown,Message.c_str()));
+    //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d PixelsDown%d full <%s>",OLed_x,PixelsDown,Message.c_str()));
  
    // set default font to RocDisplay Font F0
-  SetFont(disp,0);
+  SetFont(OLed_x,0);
                                    
-  if ( (bitRead(ClockSettings[disp],_ClockLeft))&&(bitRead(ClockSettings[disp],_ClockAna))&&(bitRead(ClockSettings[disp],_ClockON)  ) )
+  if ( (bitRead(OLed_Clock_Settings[OLed_x],_ClockLeft))&&(bitRead(OLed_Clock_Settings[OLed_x],_ClockAna))&&(bitRead(OLed_Clock_Settings[OLed_x],_ClockON)  ) )
              {  ClockSpaceOffset=(ClockRad*2)+1; ClockPos= ClockRad;}
            else{ClockSpaceOffset= 0;             ClockPos= 127-ClockRad;}                     
   
@@ -224,13 +227,14 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
   //clean out Formatted message.
   FormattedMsg="";
   MsgLength=Message.length();
-  //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d PixelsDown%d Before format<%s>",disp,PixelsDown,Message.c_str()));
+//  DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d PixelsDown%d Before format<%s>",OLed_x,PixelsDown,Message.c_str()));
+  //Serial.print("UF text<");Serial.print(Message);Serial.println(">");
   if (Message.length()>=1){  
     for (int i=0;i<=(Message.length()-1);i++){
-         if (Message[i]=='{'){ if (disp==1){display1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display1.getStringWidth(FormattedMsg);}
-                               if (disp==2){display2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display2.getStringWidth(FormattedMsg);}
-                               if (disp==3){display3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display3.getStringWidth(FormattedMsg);}
-                               if (disp==4){display4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+display4.getStringWidth(FormattedMsg);}
+         if (Message[i]=='{'){ if (OLed_x==1){OLED1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED1.getStringWidth(FormattedMsg);}
+                               if (OLed_x==2){OLED2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED2.getStringWidth(FormattedMsg);}
+                               if (OLed_x==3){OLED3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED3.getStringWidth(FormattedMsg);}
+                               if (OLed_x==4){OLED4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED4.getStringWidth(FormattedMsg);}
                                
                                // code uses .getStringWidth(FormattedMsg)to move each line's cursor (RowPixel) across in case we have more text to print on the same line before next (T) Tab
                                in_format=true;                                
@@ -238,13 +242,13 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
      
    
          if ((in_format && Message[i]=='S')){  // this code looks at the Show Clock(S) coding. 
-                             if (Message[i+1]=='R'){bitSet(ClockSettings[disp],_ClockON); bitClear(ClockSettings[disp],_ClockLeft);bitSet(ClockSettings[disp],_ClockAna);} // 
-                             if (Message[i+1]=='L'){bitSet(ClockSettings[disp],_ClockON); bitSet(ClockSettings[disp],_ClockLeft);bitSet(ClockSettings[disp],_ClockAna);}
-                             if (Message[i+1]=='0'){bitClear(ClockSettings[disp],_ClockON);bitClear(ClockSettings[disp],_ClockAna);} // 
-                             if (Message[i+1]=='1'){bitSet(ClockSettings[disp],_ClockON); bitClear(ClockSettings[disp],_ClockAna);}
-                             Serial.print("<");Serial.print(disp);Serial.print(">");Serial.print(Message[i+1]);Serial.print("_ ");
+                             if (Message[i+1]=='R'){bitSet(OLed_Clock_Settings[OLed_x],_ClockON); bitClear(OLed_Clock_Settings[OLed_x],_ClockLeft);bitSet(OLed_Clock_Settings[OLed_x],_ClockAna);} // 
+                             if (Message[i+1]=='L'){bitSet(OLed_Clock_Settings[OLed_x],_ClockON); bitSet(OLed_Clock_Settings[OLed_x],_ClockLeft);bitSet(OLed_Clock_Settings[OLed_x],_ClockAna);}
+                             if (Message[i+1]=='0'){bitClear(OLed_Clock_Settings[OLed_x],_ClockON);bitClear(OLed_Clock_Settings[OLed_x],_ClockAna);} // 
+                             if (Message[i+1]=='1'){bitSet(OLed_Clock_Settings[OLed_x],_ClockON); bitClear(OLed_Clock_Settings[OLed_x],_ClockAna);}
+                            // Serial.print("<");Serial.print(OLed_x);Serial.print(">");Serial.print(Message[i+1]);Serial.print("_ ");
                                          i=i+1;  
-                                        if (ClockSettings[disp]!=ClockSettingBefore){
+                                        if (OLed_Clock_Settings[OLed_x]!=ClockSettingBefore){  
                                             Data_Updated = true;
                                             WriteEEPROM();
                                             EPROM_Write_Delay = millis() + 1000;
@@ -254,7 +258,7 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
                                          
          if ((in_format && Message[i]=='L')){  // this code looks at the Lines (L) coding.
                                             DisplayLine=GetNumber(Message,i+1);
-                                            //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Changing Line number to %d GN<%d>",disp,DisplayLine,GetNumber(Message,i+1)));
+                                            //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Changing Line number to %d GN<%d>",OLed_x,DisplayLine,GetNumber(Message,i+1)));
                                             i=i+1;
                                             } 
                              //if (Message[i+1]=='0'){ if (DisplayLine!=0){RowPixel[DisplayLine]=0;} DisplayLine=0;   } // reset rowpixel if changing lines
@@ -263,7 +267,13 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
                                
          if ((in_format && Message[i]=='F')){  // this code looks at the Fonts (F) coding. 
                              
-                             SetFont(disp,GetNumber(Message,i+1));    // selects Font  Message[] (now not limited to just 9)
+                             SetFont(OLed_x,GetNumber(Message,i+1));    // selects Font  Message[] (now not limited to just 9)
+                             i=i+1;
+                                             } 
+         if ((in_format && Message[i]=='J')){  // this code looks at the Flash (J) coding. 
+                             if (Message[i+1]=='0'){inJ1=false;inJ2=false;ignoreJ1=false;ignoreJ2=false;  } // reset at J0
+                             if (Message[i+1]=='1'){inJ1=true;ignoreJ1=true^FlashON;} // 
+                             if (Message[i+1]=='2'){inJ2=true;inJ1=false;ignoreJ1=false;ignoreJ2=false^FlashON; } //NB false in ignorej2 here inverts when flashon acts !!
                              i=i+1;
                                              } 
        
@@ -276,35 +286,36 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
               if ((in_format && Message[i+2]=='L')){DisplayLine=GetNumber(Message,i+3);}// Check for 'TxLx' codes, as they are common! Saves changing to "correct" 'LxTx' structure
                              if (Message[i+1]=='0'){if (RowPixel[DisplayLine]<=TabZero) {RowPixel[DisplayLine]=TabZero;}}  
                              if (Message[i+1]=='1'){RowPixel[DisplayLine]=TabOne; 
-                                                    if ( bitRead(ClockSettings[disp],_ClockAna)) {RowPixel[DisplayLine]=RowPixel[DisplayLine]-(2*ClockRad);}   
+                                                    if ( bitRead(OLed_Clock_Settings[OLed_x],_ClockAna)) {RowPixel[DisplayLine]=RowPixel[DisplayLine]-(2*ClockRad);}   
                                                     } // offset if Analog clock is in operation
                                             i=i+1;
                                             }  
 
-        if ((in_format && Message[i]=='B')){  // this code looks at the Bitmaps (B) coding. 
+        if (((in_format && Message[i]=='B'))&& !((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1))){  // this code looks at the Bitmaps (B) coding. 
+                                                            // adding flash capability ignore bitmaps after J1 or J2
                                BitChar=GetNumber(Message,i+1)+1; //Select char from bitmaps with offset to avoid asking for char 0 
                                BitMsg=BitChar;BitMsg+="";
-                              FontVOffset=0;
-                              //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Byte %d  %d",disp,(Message[i+1]-48),GetNumber(Message,i+1)));
-                               if (disp==1){display1.setFont(RocBitMap);
-                                            display1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display1.getStringWidth(BitMsg);
+                              
+                              //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));
+                               if (OLed_x==1){OLED1.setFont(RocBitMap);
+                                            OLED1.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED1.getStringWidth(BitMsg);
                                              }
-                               if (disp==2){display2.setFont(RocBitMap);
-                                            display2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display2.getStringWidth(BitMsg);
+                               if (OLed_x==2){OLED2.setFont(RocBitMap);
+                                            OLED2.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED2.getStringWidth(BitMsg);
                                             }
-                               if (disp==3){display3.setFont(RocBitMap);
-                                            display3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display3.getStringWidth(BitMsg);
+                               if (OLed_x==3){OLED3.setFont(RocBitMap);
+                                            OLED3.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED3.getStringWidth(BitMsg);
                                            }
-                               if (disp==4){display4.setFont(RocBitMap);
-                                            display4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+display4.getStringWidth(BitMsg);
+                               if (OLed_x==4){OLED4.setFont(RocBitMap);
+                                            OLED4.drawString(RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                                            RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLED4.getStringWidth(BitMsg);
                                             }            
-                               
-                              SetFont(disp,FontSelected); // set back to last selected font; 
-                             //DebugSprintfMsgSend(sprintf ( DebugMsg, "Disp:%d Byte %d  %d",disp,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
+                                          
+                              SetFont(OLed_x,FontSelected); // set back to last selected font; 
+                             //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
                              i=i+1;
                                              } 
 
@@ -312,7 +323,7 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
           
         if (!(in_format)&&(j<=(DisplayWidth-1))){
                                        // if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
-                                            FormattedMsg+=Message[i];j=j+1; } 
+                                     if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)))   {    FormattedMsg+=Message[i];j=j+1;} } 
                                            // }
                                             
           if (Message[i]=='}'){ in_format=false;j=0;FormattedMsg="";}
@@ -322,86 +333,87 @@ bool RocDisplayFormatted(int disp, int PixelsDown, String Message){
      }
     //draw small real time clock in the top line only 
     
-    if (bitRead(ClockSettings[disp],_ClockLeft)){ClockSpaceOffset=(ClockRad*2)+1;ClockPos=ClockRad;}
+    if (bitRead(OLed_Clock_Settings[OLed_x],_ClockLeft)){ClockSpaceOffset=(ClockRad*2)+1;ClockPos=ClockRad;}
                                             else{ClockSpaceOffset=0;             ClockPos=127-ClockRad;}
 
 
-    if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==1) ){  
-                                display1.fillCircle(ClockPos,ClockRad,ClockRad);
-                                display1.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
-                                display1.setColor(WHITE);
+    if ( (bitRead(OLed_Clock_Settings[OLed_x],_ClockAna)) && (bitRead(OLed_Clock_Settings[OLed_x],_ClockON))&& (OLed_x==1) ){  
+                                OLED1.fillCircle(ClockPos,ClockRad,ClockRad);
+                                OLED1.setColor(BLACK);
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 1, mins);
+                                OLED1.setColor(WHITE);
                                }
     
-    if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==2) ){  
-                                display2.fillCircle(ClockPos,ClockRad,ClockRad);
-                                display2.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
-                                display2.setColor(WHITE);
+    if ( (bitRead(OLed_Clock_Settings[OLed_x],_ClockAna)) && (bitRead(OLed_Clock_Settings[OLed_x],_ClockON))&& (OLed_x==2) ){  
+                                OLED2.fillCircle(ClockPos,ClockRad,ClockRad);
+                                OLED2.setColor(BLACK);
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 1, mins);
+                                OLED2.setColor(WHITE);
                                }
     
-      if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==3) ){  
-                                display3.fillCircle(ClockPos,ClockRad,ClockRad);
-                                display3.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
-                                display3.setColor(WHITE);
+      if ( (bitRead(OLed_Clock_Settings[OLed_x],_ClockAna)) && (bitRead(OLed_Clock_Settings[OLed_x],_ClockON))&& (OLed_x==3) ){  
+                                OLED3.fillCircle(ClockPos,ClockRad,ClockRad);
+                                OLED3.setColor(BLACK);
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 1, mins);
+                                OLED3.setColor(WHITE);
                                }
-     if ( (bitRead(ClockSettings[disp],_ClockAna)) && (bitRead(ClockSettings[disp],_ClockON))&& (disp==4) ){  
-                                display4.fillCircle(ClockPos,ClockRad,ClockRad);
-                                display4.setColor(BLACK);
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
-                                  showTimeAnalog(disp,ClockRad,ClockPos,ClockRad, 0, 1, mins);
-                                display4.setColor(WHITE);
+     if ( (bitRead(OLed_Clock_Settings[OLed_x],_ClockAna)) && (bitRead(OLed_Clock_Settings[OLed_x],_ClockON))&& (OLed_x==4) ){  
+                                OLED4.fillCircle(ClockPos,ClockRad,ClockRad);
+                                OLED4.setColor(BLACK);
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 0.5, hrs * 5 + (int)(mins * 5 / 60));
+                                  showTimeAnalog(OLed_x,ClockRad,ClockPos,ClockRad, 0, 1, mins);
+                                OLED4.setColor(WHITE);
                                }
      
     }
   return found;
 }
 
-void OLEDS_Display(String L1,String L2,String L3,String L4,String L5){
-  OLED_5_line_display(1,L1,L2,L3,L4,L5);
-  OLED_5_line_display(2,L1,L2,L3,L4,L5);
-  OLED_5_line_display(3,L1,L2,"","","");
-  OLED_5_line_display(4,L1,L2,"","","");
+void OLEDS_Display(String L1,String L2,String L3,String L4){
+  OLED_4_RN_displays(1,L1,L2,L3,L4);
+  OLED_4_RN_displays(2,L1,L2,L3,L4);
+  OLED_4_RN_displays(3,L1,L2,"","");
+  OLED_4_RN_displays(4,L1,L2,"","");
 }
-void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5){
-  bool just_text;
-  just_text=false;
-if ((addr==3)&&(Display3Present)){
-    display3.clear();SetFont(addr,10);
-    if (!RocDisplayFormatted(3,0,L1)){display3.drawStringMaxWidth(offset, 0,128, L1);}   // Top lines (ONLY) are allowed to wrap if Too long so a single long text can be used on the display 
-    if (!RocDisplayFormatted(3,16,L2)){display3.drawString(offset, 16, L2);}
-    display3.display();
+void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
+  if ((OLed_x==1)&&(OLED1Present)){
+   OLED1.clear();
+   // display 4 lines 
+   RocFormatUsed[1]=false;
+     
+      if (!RocDisplayFormatted(1,0,L1)) {OLED1.drawStringMaxWidth(offset,  0,MaxWidth, L1);}
+      if (!RocDisplayFormatted(1,16,L2)){OLED1.drawStringMaxWidth(offset, 16,MaxWidth, L2);}
+      if (!RocDisplayFormatted(1,32,L3)){OLED1.drawStringMaxWidth(offset, 32,MaxWidth, L3);}
+      if (!RocDisplayFormatted(1,48,L4)){OLED1.drawStringMaxWidth(offset, 48,MaxWidth, L4);}
+   OLED1.display();
+}
+if ((OLed_x==3)&&(OLED3Present)){
+    OLED3.clear();// display 2 lines 
+       RocFormatUsed[3]=false;
+     if (!RocDisplayFormatted(3,0,L1)) {OLED3.drawStringMaxWidth(offset,  0,MaxWidth, L1);}
+     if (!RocDisplayFormatted(3,16,L2)){OLED3.drawStringMaxWidth(offset, 16,MaxWidth, L2);}
+    OLED3.display();
     }
-if ((addr==4)&&(Display4Present)){
-    display4.clear();SetFont(addr,10);
-    if (!RocDisplayFormatted(4,0,L1)){display4.drawStringMaxWidth(offset, 0,128, L1);}
-    if (!RocDisplayFormatted(4,16,L2)){display4.drawString(offset, 16, L2);}
-    display4.display();
+if ((OLed_x==4)&&(OLED4Present)){
+    OLED4.clear();// display 2 lines
+       RocFormatUsed[4]=false; 
+     if (!RocDisplayFormatted(4,0,L1)) {OLED4.drawStringMaxWidth(offset,  0,MaxWidth, L1);}
+     if (!RocDisplayFormatted(4,16,L2)){OLED4.drawStringMaxWidth(offset, 16,MaxWidth, L2);}
+    OLED4.display();
     }
     
-if ((addr==1)&&(Display1Present)){
-   display1.clear();SetFont(addr,10);
-   // display 4 lines 
-  
-  if (!RocDisplayFormatted(1,0,L1)){display1.drawStringMaxWidth(offset, 0,128, L1);}
-  if (!RocDisplayFormatted(1,16,L2)){display1.drawString(offset, 16, L2);}
-  if (!RocDisplayFormatted(1,32,L3)){display1.drawString(offset, 32, L3);}
-  if (!RocDisplayFormatted(1,48,L4)){display1.drawString(offset, 48, L4);}
-  
-  display1.display();
-}
-if ((addr==2)&&(Display2Present)){
-   display2.clear();SetFont(addr,10);// set default font
-  if (!RocDisplayFormatted(2,0,L1)){display2.drawStringMaxWidth(offset, 0,128, L1);}
-  if (!RocDisplayFormatted(2,16,L2)){display2.drawString(offset,16, L2);}
-  if (!RocDisplayFormatted(2,32,L3)){display2.drawString(offset, 32, L3);}
-  if (!RocDisplayFormatted(2,48,L4)){display2.drawString(offset, 48, L4);}
 
-  display2.display();
+if ((OLed_x==2)&&(OLED2Present)){
+   OLED2.clear();// display 4 lines
+      RocFormatUsed[2]=false; 
+    if (!RocDisplayFormatted(2,0,L1)) {OLED2.drawStringMaxWidth(offset,  0,MaxWidth, L1);}
+    if (!RocDisplayFormatted(2,16,L2)){OLED2.drawStringMaxWidth(offset, 16,MaxWidth, L2);}
+    if (!RocDisplayFormatted(2,32,L3)){OLED2.drawStringMaxWidth(offset, 32,MaxWidth, L3);}
+    if (!RocDisplayFormatted(2,48,L4)){OLED2.drawStringMaxWidth(offset, 48,MaxWidth, L4);}
+   OLED2.display();
   }
 }
 
@@ -432,34 +444,34 @@ void OLED_initiate(uint8_t address,int I2CBus){
   String MSGText1;String MSGText2;
   if (address==1){ 
    Serial.println(F("Initiating Display 1")); 
-   display1.init();  
-   display1.setI2cAutoInit(true);
-   display1.flipScreenVertically();
-   display1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+   OLED1.init();  
+   OLED1.setI2cAutoInit(true);
+   OLED1.flipScreenVertically();
+   OLED1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    SetFont(1,0);
    }
   if (address==2){  
    Serial.println(F("Initiating Display 2")); 
-  display2.init();Disp2ReInit=millis()+6000;
-  display2.setI2cAutoInit(true);  
-  display2.flipScreenVertically();
-  display2.setTextAlignment(TEXT_ALIGN_CENTER); offset=64;
+  OLED2.init();Disp2ReInit=millis()+6000;
+  OLED2.setI2cAutoInit(true);  
+  OLED2.flipScreenVertically();
+  OLED2.setTextAlignment(TEXT_ALIGN_CENTER); offset=64;
   SetFont(2,0);
     }
   if (address==3){ 
     Serial.println(F("Initiating Display 3")); 
-   display3.init(); 
-   display3.setI2cAutoInit(true); 
-   display3.flipScreenVertically();
-   display3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+   OLED3.init(); 
+   OLED3.setI2cAutoInit(true); 
+   OLED3.flipScreenVertically();
+   OLED3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    SetFont(3,0);
    }
    if (address==4){ 
     Serial.println(F("Initiating Display 4")); 
-   display4.init(); 
-   display4.setI2cAutoInit(true); 
-   display4.flipScreenVertically();
-   display4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+   OLED4.init(); 
+   OLED4.setI2cAutoInit(true); 
+   OLED4.flipScreenVertically();
+   OLED4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    SetFont(4,0);
    }
 }
@@ -480,7 +492,7 @@ Serial.println ();
       Serial.print (" (0x");
       Serial.print (i, HEX);
       Serial.print (")");
-      if (i==60){Serial.println (" Display 3 ");Display3Present=true;OLED_initiate(3,2);count++;}
+      if (i==60){Serial.println (" OLED 3 ");OLED3Present=true;OLED_initiate(3,2);count++;}
       } // end of good response
   } // end of for loop
   Serial.println ();
@@ -496,14 +508,14 @@ Serial.println ();
       Serial.print (" (0x");
       Serial.print (i, HEX);
       Serial.print (")");
-      // if display 3 is present assume any address 60 disp 1 here will be 32 high == disp 4
+      // if OLED3 is present assume any address 60 on Bus 1here will be 32 high therefor== OLED4
       if ((OLED_SDA!=OLED_SDA2)&& (OLED_SCL!=OLED_SCL2)){
-       if (i==60){if (Display3Present){Serial.println (" Display 4 "); Display4Present=true;OLED_initiate(4,1);count++;}
-                                       else{Serial.println (" Display 1 ");Display1Present=true;OLED_initiate(1,1);count++;}
+       if (i==60){if (OLED3Present){Serial.println (" OLED 4 "); OLED4Present=true;OLED_initiate(4,1);count++;}
+                                       else{Serial.println (" OLED 1 ");OLED1Present=true;OLED_initiate(1,1);count++;}
                                        }
                                        }
            
-        if (i==61){Serial.println (" Display 2 ");Display2Present=true;OLED_initiate(2,1);count++;}
+        if (i==61){Serial.println (" OLED 2 ");OLED2Present=true;OLED_initiate(2,1);count++;}
  
       } // end of good response
   } // end of for loop
@@ -518,17 +530,17 @@ Serial.println ();
 
 void RRPowerOnIndicator(int Disp) {
 if (!POWERON){
-  if((Disp==1)&&(Display1Present)){display1.drawRect(0,0,8,8);}
-  if((Disp==2)&&(Display2Present)){display2.drawRect(0,0,8,8);}
-  if((Disp==3)&&(Display3Present)){display3.drawRect(0,0,8,8);}
-  if((Disp==4)&&(Display4Present)){display4.drawRect(0,0,8,8);}
+  if((Disp==1)&&(OLED1Present)){OLED1.drawRect(0,0,8,8);}
+  if((Disp==2)&&(OLED2Present)){OLED2.drawRect(0,0,8,8);}
+  if((Disp==3)&&(OLED3Present)){OLED3.drawRect(0,0,8,8);}
+  if((Disp==4)&&(OLED4Present)){OLED4.drawRect(0,0,8,8);}
 
   }else
   {
-  if((Disp==1)&&(Display1Present)){display1.fillRect(0,0,8,8);}
-  if((Disp==2)&&(Display2Present)){display2.fillRect(0,0,8,8);}
-  if((Disp==3)&&(Display3Present)){display3.fillRect(0,0,8,8);}
-  if((Disp==4)&&(Display4Present)){display4.fillRect(0,0,8,8);}
+  if((Disp==1)&&(OLED1Present)){OLED1.fillRect(0,0,8,8);}
+  if((Disp==2)&&(OLED2Present)){OLED2.fillRect(0,0,8,8);}
+  if((Disp==3)&&(OLED3Present)){OLED3.fillRect(0,0,8,8);}
+  if((Disp==4)&&(OLED4Present)){OLED4.fillRect(0,0,8,8);}
   
   }
 
@@ -540,65 +552,65 @@ if (!POWERON){
 
 void SignalStrengthBar(int disp, int32_t rssi) { //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
   int PosX,PosY;
- if((Display1Present)&&(disp==1)){
+ if((OLED1Present)&&(disp==1)){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
   PosX=108;  // position left right  max = 128
   PosY=0; // top left position up / down max 64
-  display1.drawVerticalLine(PosX,PosY,10);
-  display1.drawLine(PosX,PosY+4,PosX-4,PosY);
-  display1.drawLine(PosX,PosY+4,PosX+4,PosY);
-  if (rssi >= -50) { display1.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
-  if (rssi >= -55){display1.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
-  if (rssi >= -65){display1.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
-  if (rssi >= -70){display1.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
-  if (rssi >= -80){display1.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
+  OLED1.drawVerticalLine(PosX,PosY,10);
+  OLED1.drawLine(PosX,PosY+4,PosX-4,PosY);
+  OLED1.drawLine(PosX,PosY+4,PosX+4,PosY);
+  if (rssi >= -50) { OLED1.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
+  if (rssi >= -55){OLED1.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
+  if (rssi >= -65){OLED1.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
+  if (rssi >= -70){OLED1.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
+  if (rssi >= -80){OLED1.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
  }
 
-if((Display2Present)&&(disp==2)){
+if((OLED2Present)&&(disp==2)){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
   PosX=108;  // position left right  max = 128
   PosY=0; // top left position up / down max 64
-  display2.drawVerticalLine(PosX,PosY,10);
-  display2.drawLine(PosX,PosY+4,PosX-4,PosY);
-  display2.drawLine(PosX,PosY+4,PosX+4,PosY);
-  if (rssi >= -50) { display2.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
-  if (rssi >= -55){display2.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
-  if (rssi >= -65){display2.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
-  if (rssi >= -70){display2.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
-  if (rssi >= -80){display2.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
+  OLED2.drawVerticalLine(PosX,PosY,10);
+  OLED2.drawLine(PosX,PosY+4,PosX-4,PosY);
+  OLED2.drawLine(PosX,PosY+4,PosX+4,PosY);
+  if (rssi >= -50) { OLED2.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
+  if (rssi >= -55){OLED2.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
+  if (rssi >= -65){OLED2.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
+  if (rssi >= -70){OLED2.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
+  if (rssi >= -80){OLED2.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
  }
 
  
-if((Display3Present)&&(disp==3)){
+if((OLED3Present)&&(disp==3)){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
   PosX=108;  // position left right  max = 128
   PosY=0; // top left position up / down max 64
-  display3.drawVerticalLine(PosX,PosY,10);
-  display3.drawLine(PosX,PosY+4,PosX-4,PosY);
-  display3.drawLine(PosX,PosY+4,PosX+4,PosY);
-  if (rssi >= -50) { display3.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
-  if (rssi >= -55){display3.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
-  if (rssi >= -65){display3.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
-  if (rssi >= -70){display3.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
-  if (rssi >= -80){display3.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
+  OLED3.drawVerticalLine(PosX,PosY,10);
+  OLED3.drawLine(PosX,PosY+4,PosX-4,PosY);
+  OLED3.drawLine(PosX,PosY+4,PosX+4,PosY);
+  if (rssi >= -50) { OLED3.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
+  if (rssi >= -55){OLED3.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
+  if (rssi >= -65){OLED3.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
+  if (rssi >= -70){OLED3.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
+  if (rssi >= -80){OLED3.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
  }
 
-if((Display3Present)&&(disp==4)){
+if((OLED3Present)&&(disp==4)){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
   PosX=108;  // position left right  max = 128
   PosY=0; // top left position up / down max 64
-  display4.drawVerticalLine(PosX,PosY,10);
-  display4.drawLine(PosX,PosY+4,PosX-4,PosY);
-  display4.drawLine(PosX,PosY+4,PosX+4,PosY);
-  if (rssi >= -50) { display4.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
-  if (rssi >= -55){display4.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
-  if (rssi >= -65){display4.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
-  if (rssi >= -70){display4.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
-  if (rssi >= -80){display4.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
+  OLED4.drawVerticalLine(PosX,PosY,10);
+  OLED4.drawLine(PosX,PosY+4,PosX-4,PosY);
+  OLED4.drawLine(PosX,PosY+4,PosX+4,PosY);
+  if (rssi >= -50) { OLED4.drawLine(PosX+10,PosY,PosX+10,PosY+10);}
+  if (rssi >= -55){OLED4.drawLine(PosX+8,PosY+2,PosX+8,PosY+10);}
+  if (rssi >= -65){OLED4.drawLine(PosX+6,PosY+4,PosX+6,PosY+10);}
+  if (rssi >= -70){OLED4.drawLine(PosX+4,PosY+6,PosX+4,PosY+10);}
+  if (rssi >= -80){OLED4.drawLine(PosX+2,PosY+8,PosX+2,PosY+10);}
  }
 
 
@@ -617,10 +629,10 @@ void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl
   y1 = center_y - (clocksize * pl1) * cos(angle );
   x2 = center_x + (clocksize * pl2) * sin(angle);
   y2 = center_y - (clocksize * pl2) * cos(angle);
-  if ((disp==1)&&(Display1Present)){display1.drawLine(x1,y1,x2,y2);}
-  if ((disp==2)&&(Display2Present)){display2.drawLine(x1,y1,x2,y2);}
-  if ((disp==3)&&(Display3Present)){display3.drawLine(x1,y1,x2,y2);}
-  if ((disp==4)&&(Display4Present)){display4.drawLine(x1,y1,x2,y2);}
+  if ((disp==1)&&(OLED1Present)){OLED1.drawLine(x1,y1,x2,y2);}
+  if ((disp==2)&&(OLED2Present)){OLED2.drawLine(x1,y1,x2,y2);}
+  if ((disp==3)&&(OLED3Present)){OLED3.drawLine(x1,y1,x2,y2);}
+  if ((disp==4)&&(OLED4Present)){OLED4.drawLine(x1,y1,x2,y2);}
 }
 
 void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int center_y, double pl1, double pl2, double pl3)
@@ -633,59 +645,59 @@ void showTimeAnalogCircle(int disp,int clocksize,int circsize,int center_x, int 
   y1 = center_y - (clocksize * pl1) * cos(angle );
   x2 = center_x + (clocksize * pl2) * sin(angle);
   y2 = center_y - (clocksize * pl2) * cos(angle);
-  if ((disp==1)&&(Display1Present)){display1.drawCircle(x2, y2,circsize);}
-  if ((disp==2)&&(Display2Present)){display2.drawCircle(x2,y2,circsize);}
-   if ((disp==3)&&(Display3Present)){display3.drawCircle(x2,y2,circsize);}
-    if ((disp==4)&&(Display4Present)){display4.drawCircle(x2,y2,circsize);}
+  if ((disp==1)&&(OLED1Present)){OLED1.drawCircle(x2, y2,circsize);}
+  if ((disp==2)&&(OLED2Present)){OLED2.drawCircle(x2,y2,circsize);}
+   if ((disp==3)&&(OLED3Present)){OLED3.drawCircle(x2,y2,circsize);}
+    if ((disp==4)&&(OLED4Present)){OLED4.drawCircle(x2,y2,circsize);}
 }
 
 void BigClock(int disp,int clocksize){
   int center_x,center_y;
   center_x=64;
   center_y=clocksize;
-  if ((disp==1)&&(Display1Present)){
-          display1.drawCircle(center_x, center_y, clocksize);
+  if ((disp==1)&&(OLED1Present)){
+          OLED1.drawCircle(center_x, center_y, clocksize);
           for (int i=1;i<=12;i++){showTimeAnalog(1,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}
           showTimeAnalog(1,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
           showTimeAnalog(1,clocksize,center_x,center_y, -0.1, 0.9, mins);
          if (divider==1){ showTimeAnalog(1,clocksize,center_x,center_y, -0.2, 0.5, secs);
           showTimeAnalogCircle(1,clocksize,4, center_x,center_y, -0.2, 0.65, secs);
           showTimeAnalog(1,clocksize,center_x,center_y, 0.8, 0.9, secs);}
-          display1.display();
+          OLED1.display();
           }
   
-  if ((disp==2)&&(Display2Present)){
-         display2.drawCircle(center_x, center_y, clocksize);
+  if ((disp==2)&&(OLED2Present)){
+         OLED2.drawCircle(center_x, center_y, clocksize);
           for (int i=1;i<=12;i++){showTimeAnalog(2,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}
           showTimeAnalog(2,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
           showTimeAnalog(2,clocksize,center_x,center_y, -0.1, 0.9, mins);
          if (divider==1){ showTimeAnalog(2,clocksize,center_x,center_y, -0.2, 0.5, secs);
           showTimeAnalogCircle(2,clocksize,4, center_x,center_y, -0.2, 0.65, secs);
           showTimeAnalog(2,clocksize,center_x,center_y, 0.8, 0.9, secs);}
-          display2.display();
+          OLED2.display();
           }
           
 
-if ((disp==3)&&(Display3Present)){
-          display3.drawCircle(center_x, center_y, clocksize);
+if ((disp==3)&&(OLED3Present)){
+          OLED3.drawCircle(center_x, center_y, clocksize);
             for (int i=1;i<=12;i++){showTimeAnalog(disp,clocksize,center_x,center_y, 0.8 ,0.9, (i * 5) );}
             showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
             showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.9, mins);
             if (divider==1){ showTimeAnalog(disp,clocksize,center_x,center_y, -0.2, 0.5, secs);
               showTimeAnalogCircle(disp,clocksize,2, center_x,center_y, -0.2, 0.65, secs);
               showTimeAnalog(disp,clocksize,center_x,center_y, 0.8, 0.9, secs);}
-          display3.display();
+          OLED3.display();
           }
 
-if ((disp==4)&&(Display3Present)){
-          display4.drawCircle(center_x, center_y, clocksize);
+if ((disp==4)&&(OLED3Present)){
+          OLED4.drawCircle(center_x, center_y, clocksize);
             for (int i=1;i<=12;i++){showTimeAnalog(disp,clocksize,center_x,center_y, 0.8 ,0.9, (i * 5) );}
             showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
             showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.9, mins);
             if (divider==1){ showTimeAnalog(disp,clocksize,center_x,center_y, -0.2, 0.5, secs);
               showTimeAnalogCircle(disp,clocksize,2, center_x,center_y, -0.2, 0.65, secs);
               showTimeAnalog(disp,clocksize,center_x,center_y, 0.8, 0.9, secs);}
-          display4.display();
+          OLED4.display();
           }
   
 }
@@ -701,36 +713,53 @@ void OLED_Status(){
   
   //Digital Time display 
               cx=sprintf(MSGTextC,"%02d:%02d:%02d",hrs,mins,secs);  
-  
-if (Display1Present){ 
-   display1.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
-   SetFont(1,TerminalDisplayFont);               
-   OLED_5_line_display(1,L1,L2,L3,L4,L5);
-   display1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+  MaxWidth=128; // for word wrap
+if (OLED1Present){ 
+  OLED1.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;  SetFont(1,TerminalDisplayFont);  
+  if ( (RocFormatUsed[1])&&(bitRead(OLed_Clock_Settings[1],_ClockAna))&&(bitRead(OLed_Clock_Settings[1],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
+      if (!bitRead(OLed_Clock_Settings[1],_ClockLeft) ){
+                            offset=0;MaxWidth=127-(ClockRad*2);}else{
+                            offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} }
+                      
+   OLED_4_RN_displays(1,L1,L2,L3,L4);
+   
+   OLED1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64; // reset to centered for anything else
    RRPowerOnIndicator(1);
    if ((L1[0]==0)&&(L2[0]==0)&&(L3[0]==0)&&(L4[0]==0)&&(L5[0]==0)){ SignalStrengthBar(1,SigStrength());BigClock(1,30); }
    }// adds time display 1
-if (Display2Present){ 
-   display2.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
-   SetFont(2,TerminalDisplayFont);  
-   OLED_5_line_display(2,L5,L6,L7,L8,L9);
-   display2.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+if (OLED2Present){ 
+   OLED2.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
+   SetFont(2,TerminalDisplayFont); 
+   if ( (RocFormatUsed[2])&&(bitRead(OLed_Clock_Settings[2],_ClockAna))&&(bitRead(OLed_Clock_Settings[2],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
+      if (!bitRead(OLed_Clock_Settings[2],_ClockLeft) ){
+                            offset=0;MaxWidth=127-(ClockRad*2);}else{
+                            offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} } 
+   OLED_4_RN_displays(2,L5,L6,L7,L8);
+   OLED2.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    if ((L6[0]==0)&&(L7[0]==0)&&(L8[0]==0)&&(L9[0]==0)&&(L5[0]==0)){RRPowerOnIndicator(2);SignalStrengthBar(2,SigStrength());BigClock(2,30);}
    } // display 2
    
-if (Display3Present){ 
-   display3.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
+if (OLED3Present){ 
+   OLED3.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
    SetFont(3,TerminalDisplayFont);  
-   OLED_5_line_display(3,L1,L2,"","","");
-   display3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+   if ( (RocFormatUsed[3])&&(bitRead(OLed_Clock_Settings[3],_ClockAna))&&(bitRead(OLed_Clock_Settings[3],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
+      if (!bitRead(OLed_Clock_Settings[3],_ClockLeft) ){
+                            offset=0;MaxWidth=127-(ClockRad*2);}else{
+                            offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} }
+   OLED_4_RN_displays(3,L1,L2,"","");
+   OLED3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    if ((L1[0]==0)&&(L2[0]==0)){RRPowerOnIndicator(3);SignalStrengthBar(3,SigStrength());BigClock(3,15);} 
    } // display 3 is x32
 
-if (Display4Present){ 
-   display4.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
+if (OLED4Present){ 
+   OLED4.setTextAlignment(TEXT_ALIGN_LEFT); offset=0;
    SetFont(4,TerminalDisplayFont);  
-   OLED_5_line_display(4,L3,L4,"","","");
-   display4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
+   if ( (RocFormatUsed[4])&&(bitRead(OLed_Clock_Settings[4],_ClockAna))&&(bitRead(OLed_Clock_Settings[4],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
+      if (!bitRead(OLed_Clock_Settings[4],_ClockLeft) ){
+                            offset=0;MaxWidth=127-(ClockRad*2);}else{
+                            offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} }
+   OLED_4_RN_displays(4,L3,L4,"","");
+   OLED4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    if ((L3[0]==0)&&(L4[0]==0)){RRPowerOnIndicator(4);SignalStrengthBar(4,SigStrength());BigClock(4,15);} 
    } // display 4 is x32
 }

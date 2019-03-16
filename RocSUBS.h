@@ -37,8 +37,8 @@ extern int DCC_Speed_Demand;
 extern int Last_DCC_Speed_Demand;
 uint8_t DIRF = 0 ;
 extern IPAddress mosquitto;
-extern bool Display1Present,Display2Present,Display3Present,Display4Present;
-extern uint8_t ClockSettings[5];
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
+extern uint8_t OLed_Clock_Settings[5];
 
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
@@ -305,10 +305,10 @@ for (int i = 1; i <= 35 ; i++) {
     EEPROM.write(RocNodeIDLocation,RN[1]);
     EEPROM.write(RocNodeIDLocation+1,RN[2]);
     for (byte i = 1; i <= 4; i++) {
-      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),ClockSettings[i]);
+      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLed_Clock_Settings[i]);
             }
     Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
-    delay(100); // or EEPROMRocNodeID
+    delay(100); // 
 }
 
 void ReadEEPROM() {
@@ -376,12 +376,12 @@ void ReadEEPROM() {
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
   for (byte i = 1; i <= 4; i++) {
-     ClockSettings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
+     OLed_Clock_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
             }
   
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
    Serial.print(" RocNodeID:");Serial.println(RocNodeID);
-   Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
+   //Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
    
 }
 
@@ -885,8 +885,8 @@ RNm[19]=0;  //020H  //Pi o2's
 RNm[20]=1; //020 l
 RNm[21]=0; //030 H //Pi04's? / here is 0x38
 RNm[22]=0;
-if (Display1Present){bitSet(RNm[22],0);} //030 L ?? 
-if (Display2Present){bitSet(RNm[22],1);}//not showing
+if (OLED1Present){bitSet(RNm[22],0);} //030 L ?? 
+if (OLED2Present){bitSet(RNm[22],1);}//not showing
 RNm[23]=0; //040 H  //Pi03's
 RNm[24]=1; //040 l
 RNm[25]=0; //adc thresh
@@ -1301,26 +1301,32 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
 
 
 extern void OLED_Displays_Setup(uint8_t ADDR,int Display,String Message);
+
 void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
-  uint8_t Disp;
-  char Message[150];                                                                       // big to accept long msg from rocrail
+  uint8_t Disp,MaxLen;
+  bool RocDFormat,Truncated;
+  char Message[150]; // big to accept long msg from rocrail
+  MaxLen=110;
+  RocDFormat=false;Truncated=false;
   if  ((ROC_recipient ==   RocNodeID)||(ROC_recipient ==  0)){ // node 0 is global message
       Address= ROC_Data[1];
       Disp= ROC_Data[2];
-   //Serial.print("Display  message for this node (or global)");//Serial.print(" Display Addr:");Serial.print(Address);
+  // Serial.print("Display  message for this node (or global)");//Serial.print(" Display Addr:");Serial.print(Address);
    //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
    //Serial.print("> len:");Serial.println(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
-    if (ROC_len-3>=114){ROC_len==114;}                                                     //  Rocrail seems to limit to 113 anyway
+    if (ROC_len-3>=MaxLen){ROC_len==MaxLen+3;Truncated=true; }              //  Rocrail seems to limit to len=113 anyway
     for (uint16_t i = 0; i <= (ROC_len-3); i++) { 
-                     Message[i]=char (ROC_Data[i+3]); 
+                     Message[i]=char (ROC_Data[i+3]);
+                     if (ROC_Data[i+3]==123){RocDFormat=true;}               // testing for RocDisplay format and Adding a '{' if we have to truncate
   //                   Serial.print(char(ROC_Data[i+3]));
                      }
-  //  #ifdef TerminusDisplay 
+    if (Truncated&&RocDFormat){Message[ROC_len-3]=123;}                                // give it a { to initiate printing last bits of message                 
+
     OLED_Displays_Setup(Address,Disp,Message);
-  //  #endif
+
     
    // Serial.println(">");
    } // is display message

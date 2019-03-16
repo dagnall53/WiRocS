@@ -365,7 +365,7 @@ void ReadInputPorts() {
  
   
 }
-extern bool Display1Present,Display2Present,Display3Present,Display4Present;
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
 
 void Port_Mode_Set(int i) {
   boolean hardset,setElsewhere, output,pullup;
@@ -491,12 +491,12 @@ void Port_Mode_Set(int i) {
                       hardset =true;setElsewhere = false;output=true;
                       }
     
-    if((Display1Present||Display2Present||Display4Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
+    if((OLED1Present||OLED2Present||OLED4Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
       description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;
       }
-       if((Display3Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
+       if((OLED3Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
       description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;

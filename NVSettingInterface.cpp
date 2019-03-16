@@ -3,7 +3,7 @@
  
 extern String wifiSSID ;
 extern String wifiPassword;
-extern void OLED_5_line_display(int addr,String L1,String L2,String L3,String L4,String L5);
+extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 extern void SetFont(uint8_t Disp,uint8_t Font);
 //extern void OLED_5_line_display_p(String L1,String L2,String L3,String L4,String L5);
 extern int BrokerAddr;
@@ -31,8 +31,8 @@ int MSG_content_length(){
   return Length;
 }
 
-extern void OLEDS_Display(String L1,String L2,String L3,String L4,String L5);
-
+extern void OLEDS_Display(String L1,String L2,String L3,String L4);
+extern void OLED_Status(void);
 
 
 void CheckForSerialInput(){
@@ -55,7 +55,7 @@ void CheckForSerialInput(){
                                     Serial.println("--Serial port update Started--");
                                     Serial.print("  SSID currently is <");Serial.print(wifiSSID);Serial.print("> Password is <");Serial.print(wifiPassword); Serial.println(">");
                                     Serial.println("Type in New SSID");newData = false;SerioLevel=1;
-                                    countdown=100;OLEDS_Display("EEPROM settings required","Use Serial port @115200","To enter new data"," ","");
+                                    countdown=100;OLEDS_Display("EEPROM settings required","Use Serial port @115200","To enter new data"," ");
                                     
                                  }else{
                                     Serial.println("");
@@ -63,20 +63,19 @@ void CheckForSerialInput(){
                                     Serial.println(F("                   -- Use 'Newline' OR 'CR' to end input line  --"));
                                     Serial.println(F("Starting~~~~~~~~~~~~~~~~~~~~~~~~waiting~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Timeout "));
                                     delay(10);Serial.print(CtrlE);delay(100);
-                                    countdown=10;OLEDS_Display("Node Start-Up","","","","");delay(1000);
+                                    countdown=10;OLEDS_Display("Node Start-Up","","","");delay(1000);
                                     
                                        }
     Timestarted=millis();
     FlashTime=millis();
     bool LAMP;
-  
+    OLED_Status();// set up fonts etc?
     while ((countdown>= 0) || UpdateInProgress) {
-      if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" ";Count+=countdown;
-                                                        LAMP=!LAMP; FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash( LAMP) ;
-                                                        if (LAMP){ OLEDS_Display(Count,"Pausing for Serial I/O","","","");                    }
-                                                            else { OLEDS_Display(Count,"Pausing for Serial I/O","type 'xxx' to start","","");}
-                                                          countdown=countdown-1;
-                                                          }
+      if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" Countdown:";Count+=countdown;
+                                                        FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash(LAMP) ;
+                                                        OLEDS_Display("Pausing for Serial I/O",Count,"","");delay(100);                    
+                                                        LAMP=!LAMP; countdown=countdown-1;}
+                                                          
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
       if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 
@@ -88,7 +87,7 @@ void CheckForSerialInput(){
                                  if ((TestData=="xxx\0")|| !(digitalRead(0))){
                                     UpdateInProgress=true;
                                     //display.clear(); display.drawString(64, 32, "Type in New SSID"); display.display();
-                                    OLEDS_Display("Type in New SSID",""," ","","");
+                                    OLEDS_Display("Type in New SSID",""," ","");
                                     Serial.println("-");
                                     Serial.println("--Update EEPROM Started--");
                                     Serial.print("  SSID currently is <");Serial.print(wifiSSID);Serial.println(">"); 
@@ -99,7 +98,7 @@ void CheckForSerialInput(){
                           MSGText1="SSID     <";
                           MSGText1+=wifiSSID;
                           MSGText1+=">";
-                                   OLEDS_Display(MSGText1,"Type Password"," "," "," ");
+                                   OLEDS_Display(MSGText1,"Type Password"," "," ");
                                    //display.clear(); display.drawString(64, 12, MSGText); display.display();
                                    Serial.print(" SSID<");Serial.print(wifiSSID);Serial.print("> current Password<");Serial.print(wifiPassword); Serial.println(">");
                                    Serial.println("Type in New Password");
@@ -111,7 +110,7 @@ void CheckForSerialInput(){
                                  MSGText2="Password <";
                                  MSGText2+=wifiPassword;
                                  MSGText2+=">";
-                                 OLEDS_Display(MSGText1,MSGText2,"Broker addr?"," "," ");  //display.drawString(64, 24, MSGText); display.display();
+                                 OLEDS_Display(MSGText1,MSGText2,"Broker addr?"," ");  //display.drawString(64, 24, MSGText); display.display();
                                  Serial.print(" SSID<");Serial.print(wifiSSID);Serial.print("> Password<");Serial.print(wifiPassword); Serial.println(">");
                                  Serial.print("Broker Addr:");Serial.println(BrokerAddr);Serial.println("Type in MQTT Broker address");
                                     
@@ -121,7 +120,7 @@ void CheckForSerialInput(){
                                  MSGText3="Broker Addr<";
                                  MSGText3+=BrokerAddr;
                                  MSGText3+=">";
-                                 OLEDS_Display(MSGText1,MSGText2,MSGText3," 'sss' to save","");
+                                 OLEDS_Display(MSGText1,MSGText2,MSGText3," 'sss' to save");
                                  //display.drawString(64, 32, MSGText); display.display();
                                  Serial.print("Broker Addr:");Serial.print(BrokerAddr);Serial.print(" WiFi SSID<");Serial.print(wifiSSID);Serial.print("> Password<");Serial.print(wifiPassword); Serial.println(">");
                                  Serial.println("Please type 'sss' to save, or 'rrr' to return to start");
@@ -130,7 +129,7 @@ void CheckForSerialInput(){
                           case 4:
                                 Serial.print("Settings are: Broker Addr:");Serial.print(BrokerAddr);Serial.print(" WiFi SSID<");Serial.print(wifiSSID);Serial.print("> Password<");Serial.print(wifiPassword); Serial.println(">");
                                  if (TestData=="sss\0"){
-                                    OLEDS_Display(MSGText1,MSGText2,MSGText3," Saving to EEPROM","");
+                                    OLEDS_Display(MSGText1,MSGText2,MSGText3," Saving to EEPROM");
                                     Serial.println("I will now save this data and continue");
                                     WriteWiFiSettings();
                                     UpdateInProgress=false;
@@ -138,7 +137,7 @@ void CheckForSerialInput(){
                                     }
                              else {
                               if (TestData=="rrr\0"){ 
-                                OLEDS_Display("Resuming Serial Input","Type in xxx to restart","the input sequence"," ","");
+                                OLEDS_Display("Resuming Serial Input","Type in xxx to restart","the input sequence"," ");
                                 Serial.println("-----------------");Serial.println("---Starting again---");Serial.println(" Type xxx again to re-start sequence");
                                 newData = false;SerioLevel=0;
                                  }else{Serial.println("Please type 'sss' to save, or 'rrr' to return to start");newData = false;}
