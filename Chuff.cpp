@@ -135,8 +135,7 @@ void SetUpAudio(uint32_t TimeNow){
 #ifdef _Audio
   Serial.printf("-- Sound System Initiating -- \n");
  #ifdef _AudioDAC
-  out = new AudioOutputI2SDAC();
-   Serial.printf("-- Using I2S DAC -- \n");
+  out = new AudioOutputI2S();     Serial.printf("-- Using I2S DAC -- \n");
   #endif
  #ifdef _AudioNoDAC
   out = new AudioOutputI2SNoDAC(); Serial.printf("-- Using I2S No DAC -- \n");
@@ -177,7 +176,7 @@ CV[110]=127; //volume for chuffs
 CV[111]=127; //volume for Brake Squeal
 //
 */  
-long timer;
+ long timer;
  bitWrite(SoundEffect_Request[2],0,0); //set F9 is chuffs off initially
  // need these because Beginplay tries to close file on new play and audio loop has issues if stuff is not defined??
  BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, but does not do the file, stub,wav deletes, because nothing should be open yet.
@@ -192,7 +191,9 @@ long timer;
 #endif //_Audio 
 }
 
-
+bool Playing(int Channel){
+  return wav[Channel]->isRunning();
+}
 
 
 void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
@@ -223,11 +224,17 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
     wav[Channel] = new AudioGeneratorWAV();
     wav[Channel]->begin(file[Channel], stub[Channel]); 
   
-  ChuffDebugState=1; 
-  if (Channel==1){PlayingSoundEffect=true;  //if ch1 (SFX) works ch 0 (Chuffs) will, but we do not need lots of debug messages for chuffs
+  ChuffDebugState=1;
+  #ifdef _LOCO_SERVO_Driven_Port  
+  if (Channel==1){PlayingSoundEffect=true;  // Stops any more playing on this channel until sound is finished //if ch1 (SFX) works ch 0 (Chuffs) will, but we do not need lots of debug messages for chuffs
                   Volume=Volume*100; // convert to % just for message
-                        DebugSprintfMsgSend( sprintf ( DebugMsg, " Playing SFX file <%s> at %.0f%% volume",wavfilename,Volume));
+                  DebugSprintfMsgSend( sprintf ( DebugMsg, " Playing SFX file <%s> at %.0f%% volume",wavfilename,Volume));
                  }
+   #else   // options for stationary nodes
+                  Volume=Volume*100; // convert to % just for message
+                  DebugSprintfMsgSend( sprintf ( DebugMsg, " Playing SFX file <%s> at %.0f%% volume",wavfilename,Volume));
+                 
+   #endif              
 #endif
 }
 
@@ -371,8 +378,12 @@ SoundPlaying=false;
   bool SoundEffectPlaying(void){
     return PlayingSoundEffect;
     }
+extern int LastSFX1,LastSFX0;
+    
   void SoundEffects(void) {
- 
+    if (!Playing(1)){LastSFX1=-1;}
+    if (!Playing(0)){LastSFX0=-1;}
+    
     if (!PlayingSoundEffect){
           if(bitRead(SoundEffect_Request[1],0)==1){
             BeginPlay(1,"/F1.wav",CV[101]);

@@ -60,9 +60,21 @@
  #endif 
 //-- end of audio defines
 
+//---------------OLED types
+//Default is: Display 1-4 write to OLED 1 (Address 60)on primary I2C bus which is 64 high
+//            Display 5-8 write to OLED 2 (Address 61)on primary I2C bus
+// IF address 60 seen on SECONDARY BUS Then:
+//    Display 1-2  write to OLED 3 (Address 60)on secondary I2C bus which is 32 high
+//    Display 3-4  write to OLED 4 (Address 60)on primary I2C bus
 
-//----SET THESE WHEN INITIALLY SETTING UP THE CODE -------------- to set the eeprom to reasonably sensible defaults.
-//from ver 15 equivalents to these should be automatically set if the eeprom is empty.. So they may not be needed, but if you have to reset anything, they may be useful.
+
+
+
+#define _all64High       // OLED 3 and 4 are 60 and 61 on secondary bus, display messages 9-16 
+//#define _oneTextPerRow
+
+// Setup Defines for completely blank hardware
+//from ver 15 equivalents to these defines should be automatically set if the eeprom is empty.. So they may not be needed, but if you have to reset anything, they may be useful.
 //If used, After running ONCE with them set, comment them out and re-program so that the rocrail i/o,  loco addr and pin functions etc can be set via rocrail
 
 //#define _ForceRocnetNodeID_to_subIPL //stops the ability of rocnet to change the node number, but prevents the possibility of two nodes having same node number
@@ -74,13 +86,16 @@
  //---------------------------------------------------------------end of main compiler #defines--------------
  //old define
 
- //#define _RFID 1  //if using rfid reader THIS IS AN OLD part of the code and not tested recently. 
+ //#define _RFID 1  //if using rfid reader THIS IS A VERY OLD part of the ESPWIFI code and not tested recently. 
  //               It adds a RFID reader and sends sensor messages depending on the RFID tag "read.
- //               it's interaction with the new code is UNTESTED.
+ //               it's interaction with the new WiRocS code is UNTESTED.
+//------------------------------------------------------------------
 
  //#define _Use_Wifi_Manager //uncomment this to use a "standard" fixed SSID and Password
  //----------------DEBUG Defines 
  ////Debug settings
+ //
+#define _OLED             // define oleds, not properly tested for stability if off , normally left defined..// Saves 42kB program on ESP8266 if NOT defined (for OTA)
 
  // uncomment these to add extra debug messages. - useful after modifyng the code and something unexpected happens.. 
  // a minimum number of Mqtt debug message will always be set to allow monitoring of node status 
@@ -103,13 +118,13 @@
   #ifdef ESP32
     //used in subroutines.h see  https://desire.giesecke.tk/index.php/2018/07/06/reserved-gpios/ 
     // note for GPIO pin 12 Make sure it is not pulled high by a peripheral device during boot or the module might not be able to start!
-//21,22 for audio (Audio uses I2C defaults SPI 21,22) 
-// inputs only with external pullup? 34 35 36 37 38 39 note GPIO34 ... GPIO39 do not have pu/pd circuits.
-// NO USE SPIO flash 6 7 8 9 10 (11?)  
-// ?? not working as expected             18(VSPI CLK)
-//                                                          25,26 default to dac mode give square wave, 11 khz 50% DAC!
-// following work fine  12 13 14 15 16 17    19   (21!) 23       27     32 33 
-// not exposed on my board / untested           20        24       28 29     36 37 38 39
+    //21,22 for audio (Audio uses I2C defaults SPI 21,22) 
+    // inputs only with external pullup? 34 35 36 37 38 39 note GPIO34 ... GPIO39 do not have pu/pd circuits.
+    // NO USE SPIO flash 6 7 8 9 10 (11?)  
+    // ?? not working as expected             18(VSPI CLK)
+    //                                                          25,26 default to dac mode give square wave, 11 khz 50% DAC!
+    // following work fine  12 13 14 15 16 17    19   (21!) 23       27     32 33 
+    // not exposed on my board / untested           20        24       28 29     36 37 38 39
 
   static const  uint8_t D0   = 2;  // V5 'D0' is not used now, used to be special pin identifier for signal led. 
   static const  uint8_t D1   = 19;//
@@ -132,6 +147,10 @@
    // on oled board, 4 is oled scl 5 is oled sda for oled 
 
   #endif
+
+
+
+ //--------------------------------OLED I2C------------------- 
  // These OLED SCL/SDA pin definitions use GPIO numbers 
   #ifdef ESP32
  static const uint8_t OLED_SDA = 4;  //D4 ESP32 Devkit  !! NB gpio 0 is not exposed on my Esp32 Devkit V1 (but is on some other boards..)
@@ -146,11 +165,7 @@
  #endif
  
 
-// The following hardware pinouts may differ for ESP32 and ESP8266 variants
-// for oled
-#define TerminusDisplay   // Initial define to write multiple lines of Roc-Display messages on my large 128*64 oled display for a "Terminus/TicketOffice"
-                          // Code will then ignore the "Display" number and display on a line on the terminus display as defined by the "display" number.
-//#define DisplayWidth 300  //100 for passing {} formatting to give 32 chars
+
 
 
 #endif

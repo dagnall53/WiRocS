@@ -33,8 +33,9 @@ int MSG_content_length(){
 
 extern void OLEDS_Display(String L1,String L2,String L3,String L4);
 extern void OLED_Status(void);
-
-
+extern void DoFTP();
+extern void Status();
+extern void SetupFTP();
 void CheckForSerialInput(){
   String MSGText;
   String MSGText1;
@@ -71,6 +72,14 @@ void CheckForSerialInput(){
     bool LAMP;
     OLED_Status();// set up fonts etc?
     while ((countdown>= 0) || UpdateInProgress) {
+      if (SerioLevel==6){
+                            newData = false;
+                            OLEDS_Display("Stage 6"," ","","");
+                             
+                            DoFTP();
+                            Serial.println("Connected and waiting ftp HARD reset to escape");
+      }
+      
       if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" Countdown:";Count+=countdown;
                                                         FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash(LAMP) ;
                                                         OLEDS_Display("Pausing for Serial I/O",Count,"","");delay(100);                    
@@ -135,11 +144,15 @@ void CheckForSerialInput(){
                                     UpdateInProgress=false;
                                     newData = false;SerioLevel=5;
                                     }
-                             else {
-                              if (TestData=="rrr\0"){ 
-                                OLEDS_Display("Resuming Serial Input","Type in xxx to restart","the input sequence"," ");
-                                Serial.println("-----------------");Serial.println("---Starting again---");Serial.println(" Type xxx again to re-start sequence");
-                                newData = false;SerioLevel=0;
+                                else {
+                                     if (TestData=="rrr\0"){ 
+                                      OLEDS_Display("Resuming Serial Input","Type in xxx to restart","the input sequence"," ");
+                                         Serial.println("-----------------");Serial.println("---Starting again---");Serial.println(" Type xxx again to re-start sequence");
+                                        newData = false;SerioLevel=0;
+                                 }if (TestData=="ftp\0"){ 
+                                      OLEDS_Display("Attempting WiFi connect for FTP"," ","","");
+                                        Status();SetupFTP();
+                                        newData = false;SerioLevel=6;
                                  }else{Serial.println("Please type 'sss' to save, or 'rrr' to return to start");newData = false;}
                                   }
                          
@@ -148,6 +161,10 @@ void CheckForSerialInput(){
                           case 5:
                             newData = false;
                             Serial.println("Wait to try reconnect, or turn off to restart with new values");
+
+                          break;
+                          case 6:
+                            //special case that just waits for  FTP.. to see if this improves capability to send large files without MQTT getting in the way
 
                           break;
                           default:

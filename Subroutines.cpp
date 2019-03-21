@@ -139,11 +139,18 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
   String IAM,IAM2,IAM3,IAM4;
   IAM=" RN:";IAM+=RocNodeID;
    IAM2=IAM+" Display 5-8";
+#ifdef _all64High 
+   IAM3=IAM+" Display 9-12";
+   IAM4=IAM+" Display 13-16";
+#else
    IAM3=IAM+" Display 1-2";
    IAM4=IAM+" Display 3-4";
+#endif
+   
+   
    IAM+=" Display 1-4";
   Serial.println(msg);
-  DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG"));
+  DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG <%s>",msg.c_str()));
 
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");

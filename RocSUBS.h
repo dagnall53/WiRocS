@@ -24,7 +24,7 @@ uint8_t Pi03_Setting_offsteps[PortsRange];
 uint8_t Pi03_Setting_onsteps[PortsRange];
 uint8_t Pi03_Setting_options[PortsRange];
 uint32_t Pi03_Setting_LastUpdated[PortsRange];
-
+int LastSFX1,LastSFX0;
 
 extern void SERVOS(void);
 extern uint16_t servoLR(int state, int port);
@@ -543,6 +543,7 @@ void ROC_CS() { //group 1
             CVNum = ((ROC_Data[3] * 256) + ROC_Data[4]);
             DebugSprintfMsgSend( sprintf ( DebugMsg, "Get CV[%d]=%d",CVNum,CV[CVNum]));
           } //get end
+
 
           //Serial.println("    Building and sending response"); Send response for both GET and SET...
           //----------------SEND CV Starts-----------------
@@ -1181,6 +1182,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
 }//end group 5
 
 extern uint32_t PortTimingDelay[PortsRange]; //Number of ports +2
+extern bool Playing(int Channel);
 #ifdef _Audio
 extern bool PlayingSoundEffect;
 #endif
@@ -1251,8 +1253,8 @@ void ROC_Outputs() { //group 9
 
         } // End of is output
         } //a node we understand
-    else {  // New bit for Sounds has own check for nodes avilability
-      #if defined (_Audio) && !defined (_LOCO_SERVO_Driven_Port)  // add ability to play 8 sound effects by triggering switches but only for stationary nodes, not locos
+    else {  // New bit for Sounds for Satationary nodes has own check for nodes avilability
+    #if defined (_Audio) && !defined (_LOCO_SERVO_Driven_Port)  // add ability to play 8 sound effects by triggering switches but only for stationary nodes, not locos
       if (STATE &&!PlayingSoundEffect){
         int SFXNum;
         char Filename[31]; Filename[0]='\0';
@@ -1260,12 +1262,17 @@ void ROC_Outputs() { //group 9
           SFXNum=ROC_Data[4]-100; //  101 is sfx 1 triggers F1 etc.. 
           if (SFXNum<=1){SFXNum=1;}//set range of SFX available
           if (SFXNum>=10){SFXNum=10;}//set range
+          
           sprintf (Filename,"/F%d.wav",SFXNum);
-          BeginPlay(1,Filename,120);//Play at a set volume until I work out a way to set volumes through rocrail 
+          if (!Playing(1)){if (LastSFX0!=SFXNum){BeginPlay(1,Filename,120);LastSFX1=SFXNum;}}// use track 1 first but try not to duplicate playing of the othertrac
+          else{if (LastSFX1!=SFXNum){BeginPlay(0,Filename,120);LastSFX0=SFXNum;}}//Play at a set volume until I work out a way to set volumes through rocrail 
+          
           //DebugSprintfMsgSend( sprintf ( DebugMsg, "Rd1%d Rd2%d Rd3%d Rd4%d Rd5%d Playing %s ",ROC_Data[1],ROC_Data[2],ROC_Data[3],ROC_Data[4],ROC_Data[5],Filename));
           // Message_Decoded = false;
         }          }
-      #endif
+
+        
+    #endif
       }// sounds 
    } //recipient = node
    } //end case 1
@@ -1300,32 +1307,33 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
 
 
 
-extern void OLED_Displays_Setup(uint8_t ADDR,int Display,String Message);
+extern void SetupTextArrays(uint8_t ADDR,int Display,String Message);
 
 void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
-  uint8_t Disp,MaxLen;
+  uint8_t Display,MaxLen;
   bool RocDFormat,Truncated;
   char Message[150]; // big to accept long msg from rocrail
   MaxLen=110;
   RocDFormat=false;Truncated=false;
   if  ((ROC_recipient ==   RocNodeID)||(ROC_recipient ==  0)){ // node 0 is global message
       Address= ROC_Data[1];
-      Disp= ROC_Data[2];
-  // Serial.print("Display  message for this node (or global)");//Serial.print(" Display Addr:");Serial.print(Address);
-   //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
-   //Serial.print("> len:");Serial.println(ROC_len);
+      Display= ROC_Data[2];
+  //Serial.print("Display  message for this node (or global)");
+  Serial.print(" Display Addr:");Serial.print(Address);
+  Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
+  Serial.print("> len:");Serial.println(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
     if (ROC_len-3>=MaxLen){ROC_len==MaxLen+3;Truncated=true; }              //  Rocrail seems to limit to len=113 anyway
     for (uint16_t i = 0; i <= (ROC_len-3); i++) { 
                      Message[i]=char (ROC_Data[i+3]);
-                     if (ROC_Data[i+3]==123){RocDFormat=true;}               // testing for RocDisplay format and Adding a '{' if we have to truncate
+                     if (ROC_Data[i+3]==123){RocDFormat=true;}               // testing for RocDisplay format and Adding a '{' so the last bits print if we have to truncate
   //                   Serial.print(char(ROC_Data[i+3]));
                      }
     if (Truncated&&RocDFormat){Message[ROC_len-3]=123;}                                // give it a { to initiate printing last bits of message                 
 
-    OLED_Displays_Setup(Address,Disp,Message);
+    SetupTextArrays(Address,Display,Message);
 
     
    // Serial.println(">");
