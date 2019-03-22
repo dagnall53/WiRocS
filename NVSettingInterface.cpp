@@ -62,7 +62,7 @@ void CheckForSerialInput(){
                                     Serial.println("");
                                     Serial.println(F("       --- To enter new wifi SSID / Password type 'xxx' BEFORE wifi connects--- "));
                                     Serial.println(F("                   -- Use 'Newline' OR 'CR' to end input line  --"));
-                                    Serial.println(F("Starting~~~~~~~~~~~~~~~~~~~~~~~~waiting~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Timeout "));
+                                    Serial.println(F("~~~waiting~~~"));
                                     delay(10);Serial.print(CtrlE);delay(100);
                                     countdown=10;OLEDS_Display("Node Start-Up","","","");delay(1000);
                                     

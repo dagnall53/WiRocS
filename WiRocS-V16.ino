@@ -94,7 +94,7 @@ extern bool PortInvert( uint8_t i);
 extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 extern void SetFont(uint8_t Disp,uint8_t Font);
 
-extern uint8_t OLed_Clock_Settings[5];
+extern uint8_t OLED_Settings[7];
 
 
 
@@ -368,11 +368,12 @@ void SetupFTP(){
 void setup() {  
    bool UsedDefaults;
    Serial.begin(115200);
- // oled if fitted
+   // oled if fitted
+ EEPROM.begin(Serial_EEPROM_Starts+EEPROM_Serial_store_Size);
 #ifdef _OLED   
-   LookForOLEDs();   // includes OLED_initiate() see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu
+   LookForOLEDs();   // needs eeprom begin before in order to workcvincludes OLED_initiate() see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu
 #endif
- // oled end
+ // oled end 
   Ten_Sec = 10000;
  
  // SetPortPinIndex();  //sets up nodemcucross references 
@@ -384,7 +385,7 @@ void setup() {
 //----------------------Setup from eeprom
 
   Data_Updated = false;
-  EEPROM.begin(Serial_EEPROM_Starts+EEPROM_Serial_store_Size);
+  
   #ifndef _ForceDefaultEEPROM
       if ((EEPROM.read(ssidEEPROMLocation) == 0xFF) && (EEPROM.read(ssidEEPROMLocation+1) == 0xFF)){SetDefaultEEPROM();} //good chance the eeprom is empty, or we are forcing this probably this is a first run. Can also set via CV[8]=8
   #endif
@@ -402,7 +403,7 @@ void setup() {
          BrokerAddr=BrokerAddrDefault;
          Serial.print(" Using Default Broker Addr:");Serial.println(BrokerAddr);
   #endif
-   
+
   if ((wifiSSID=="")||(wifiSSID.length()>=90)){wifiSSID=SSID_RR;UsedDefaults=true;Serial.println("Using Default SSID");}         //if empty, or if bigger than 90 use the secrets default
   if ((wifiPassword=="")||(wifiPassword.length()>=90)){wifiPassword=PASS_RR;UsedDefaults=true;Serial.println("Using Default Password");} //if empty, or if bigger than 90 use the secrets default
   if ((BrokerAddr==0)||(BrokerAddr==255)){BrokerAddr=BrokerAddrDefault;UsedDefaults=true;Serial.println("Using Default Broker address");}   //zero and 255 are not  valid Ip for the broker, use default instead
@@ -510,7 +511,7 @@ void setup() {
                   //and you can, for example, use those two pins to read a button or sensor.
   
   
-  SetFont(1,99); SetFont(2,99); SetFont(3,99); SetFont(4,99);// set to default 
+  SetFont(1,99); SetFont(2,99); SetFont(3,99); SetFont(4,99);SetFont(5,99); SetFont(6,99);// set to default 
   OLEDS_Display("In Main Loop","","","");
  #endif 
  }  ///end of setup ///////
@@ -564,7 +565,7 @@ void loop() {
     SignOfLifeFlash(SignalON) ; ///turn On
     lastsec = lastsec +1000;secs = secs + divider;  
    #ifdef _OLED 
-    //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLed_Clock_Settings[1],OLed_Clock_Settings[2],OLed_Clock_Settings[3],OLed_Clock_Settings[4]));
+    //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
     TimeGears(); 
     OLED_Status();Serial.print(".");
    #endif

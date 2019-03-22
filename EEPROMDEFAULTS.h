@@ -1779,9 +1779,15 @@ void SetDefaultSVs(){
 
 #endif // esp32 station
 
+
+//-------------- put any hand crafted special settings here..-------------------
+//Set Clock ON, Analog and Right and NOT 32 display
+extern void SetOLEDDefaults();
+SetOLEDDefaults();
+
 #ifdef _LOCO_SERVO_Driven_Port
 
-// Put any Hand written override of whatever is set above...Simpler just to put these here...
+// Put any Hand written override for lof whatever is set above...Simpler just to put these here...
  CV[1]=3; //DEFAULT ADDR
  CV[2]=5; //V START
  CV[3]=2; //ACC

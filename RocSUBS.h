@@ -32,13 +32,14 @@ extern int FlashHL(int state, int port);
 extern bool IsServo(uint8_t i);
 extern bool IsPWM(uint8_t i);
 extern bool IsInput(uint8_t i);
+extern bool IsSetElsewhere(uint8_t i);
 extern bool PortInvert(uint8_t i);
 extern int DCC_Speed_Demand;
 extern int Last_DCC_Speed_Demand;
 uint8_t DIRF = 0 ;
 extern IPAddress mosquitto;
-extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
-extern uint8_t OLed_Clock_Settings[5];
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
+extern uint8_t OLED_Settings[7];
 
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
@@ -304,8 +305,8 @@ for (int i = 1; i <= 35 ; i++) {
     EEPROM.write(BrokerEEPROMLocation,BrokerAddr);
     EEPROM.write(RocNodeIDLocation,RN[1]);
     EEPROM.write(RocNodeIDLocation+1,RN[2]);
-    for (byte i = 1; i <= 4; i++) {
-      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLed_Clock_Settings[i]);
+    for (byte i = 0; i <=6; i++) {
+      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLED_Settings[i]);
             }
     Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
     delay(100); // 
@@ -375,8 +376,8 @@ void ReadEEPROM() {
   EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
-  for (byte i = 1; i <= 4; i++) {
-     OLed_Clock_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
+  for (byte i = 0; i <=6; i++) {
+     OLED_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
             }
   
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
@@ -384,7 +385,11 @@ void ReadEEPROM() {
    //Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
    
 }
-
+uint8_t OLED_EEPROM_Setting(int OLed_x){
+  uint8_t Setting;
+  Setting=EEPROM.read(DisplayClockBoolEEPROMLocation+OLed_x);  
+  return Setting;
+ }
 
 void ROCSerialPrint(uint8_t *msg)   {
   Serial.print("NetId  RidH  RidL   SidH  SidL  Grp   Code  Len");
@@ -1287,7 +1292,7 @@ void ROC_Outputs() { //group 9
 
 
 void SendPortChange(int RNID, boolean ST, uint8_t i) {
-  Serial.print(" I/O change, Node :"); Serial.print(RNID);  Serial.print(" Sends io:");  Serial.print (i);  Serial.print(" is now:"); Serial.print(ST); Serial.println(" ");
+ 
   //new format send
   sendMessage[0] = ROC_netid;
   sendMessage[1] = 0x00;
@@ -1301,7 +1306,7 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
   sendMessage[10] = ST;             sendMessage[11] = i; //port
   MQTTSend("rocnet/sr", sendMessage);
   DebugSprintfMsgSend(sprintf ( DebugMsg, "Sensor change Seen Address:%d State:%d", i, ST));
-  
+  Serial.print(" I/O change, Node :"); Serial.print(RNID);  Serial.print(" Sends io:");  Serial.print (i);  Serial.print(" is now:"); Serial.print(ST); Serial.println(" ");
 
 }
 
@@ -1321,9 +1326,9 @@ void ROC_DISPLAY() { //display Group 12 rocdisplay
       Address= ROC_Data[1];
       Display= ROC_Data[2];
   //Serial.print("Display  message for this node (or global)");
-  Serial.print(" Display Addr:");Serial.print(Address);
-  Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
-  Serial.print("> len:");Serial.println(ROC_len);
+  //Serial.print(" Display Addr:");Serial.print(Address);
+  //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
+  //Serial.print("> len:");Serial.println(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
     if (ROC_len-3>=MaxLen){ROC_len==MaxLen+3;Truncated=true; }              //  Rocrail seems to limit to len=113 anyway
     for (uint16_t i = 0; i <= (ROC_len-3); i++) { 

@@ -4,6 +4,7 @@
 
 
 bool ButtonState[PortsRange];
+boolean STATE[PortsRange];
 bool LastDebounceButtonState[PortsRange]; //Number of ports +2
 bool LastSentButtonState[PortsRange]; //Number of ports +2
 uint32_t PortDebounceDelay[PortsRange]; //Number of ports +2
@@ -13,7 +14,7 @@ uint32_t PortTimingDelay[PortsRange]; //Number of ports +2
 uint32_t Motor_Setting_Update_Time;
 
 
-uint16_t ServoLastPos[10];
+uint16_t ServoLastPos[PortsRange];
 uint32_t WaitUntill;
 
 
@@ -67,9 +68,14 @@ uint16_t servoLR(int state, int port);
 void SERVOS(void);
 
 //the actual code follows
+#define _input 1;
+
 
 bool IsInput(uint8_t i){
 return ((Pi02_Port_Settings_D[i] & 0x01) == 1); //
+}
+bool SetElsewhere(uint8_t i){
+return ((Pi02_Port_Settings_D[i] & 0x02) == 2); //
 }
 bool PortToggle(uint8_t i){
 return ((Pi02_Port_Settings_D[i] & 0x32)==32);
@@ -328,31 +334,39 @@ void DoLocoMotor(void){  //uses Last_DCC_Speed_Demand and DCC_Speed_Demand globa
 }
 
 void READ_PORT( int i) {
-  boolean STATE;
+  //boolean STATE;
   uint8_t TEMP;
   uint16_t senderADDR;
-  if (IsInput(i) && (!IsServo(i)||!IsPWM(i)))  { //only do this if this port is an "INPUT" and not a "SERVO"  // ??  this was probably left over from early code and now is input would suffice?
-    if (Debounce(i)) {              //debounce is true if switch has changed  could add timing based on   millis()>= PortTimingDelay[i] here if needed
-      if ((PortToggle(i))  && (PortInvert(i)^digitalRead(NodeMCUPinD[i]) == 1)) {
-           ButtonState[i] = !ButtonState[i]; //TOGGLE change only change on one state..
+  if ( IsInput(i) && (!IsServo(i)||!IsPWM(i)))  { //only do this if this port is an "INPUT" and not a "SERVO"  // ??  hard set also sets inputstate to OUTPUT
+    if ((Debounce(i))&&(millis()>=PortTimingDelay[i])){              //debounce is true if switch has changed for longer than the debounce time (~10ms) 
+                                                                      //&& has the message been sent for long enough (port timing delay)?
+      if ((PortToggle(i))&&(PortInvert(i)^digitalRead(NodeMCUPinD[i]) == 1)) {
+           ButtonState[i] = !ButtonState[i]; //TOGGLE change only changes on one state!..
            }
       if (PortToggle(i))   {
-        STATE = ButtonState[i]; // record toggle state
+        STATE[i] = ButtonState[i]; // record toggle state
            }
       else {  // not toggle, just use it  
-        STATE = PortInvert(i)^digitalRead(NodeMCUPinD[i]);
+        STATE[i] = PortInvert(i)^digitalRead(NodeMCUPinD[i]);
            }
       
 #if defined (_SERIAL_DEBUG) || defined (_Input_DEBUG)
       Serial.print ("Change on IO port : ");
       Serial.print(i);
       Serial.print(" State");
-      Serial.println(STATE);
+      Serial.println(STATE[i]);
 #endif
-      SendPortChange(RocNodeID, STATE, i);
+      SendPortChange(RocNodeID, STATE[i], i);
       PortTimingDelay[i] = millis() + (DelaySetting_for_PortD[i] * 10);
-      LastSentButtonState[i]=STATE;
+      LastSentButtonState[i]=STATE[i];
     }//if debounce
+    // if not sent because of delays ?
+    if ((millis()>=PortTimingDelay[i])&& (LastSentButtonState[i]!=STATE[i])){
+      SendPortChange(RocNodeID, STATE[i], i);
+      PortTimingDelay[i] = millis() + (DelaySetting_for_PortD[i] * 10);
+      LastSentButtonState[i]=STATE[i];
+   }
+    
   }// input and not servo
 }//end read port
 
@@ -365,7 +379,7 @@ void ReadInputPorts() {
  
   
 }
-extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
 
 void Port_Mode_Set(int i) {
   boolean hardset,setElsewhere, output,pullup;
@@ -491,12 +505,12 @@ void Port_Mode_Set(int i) {
                       hardset =true;setElsewhere = false;output=true;
                       }
     
-    if((OLED1Present||OLED2Present||OLED4Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
+    if((OLED1Present||OLED3Present||OLED5Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
       description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;
       }
-       if((OLED3Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
+       if((OLED2Present||OLED4Present||OLED6Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
       description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;
@@ -515,7 +529,11 @@ void Port_Mode_Set(int i) {
                       Pi03_Setting_options[i] = 128;  
                       hardset =true;output=true;setElsewhere = false;
         }
-      
+
+        //setting hardset message
+      if (hardset||setElsewhere){
+        Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0x2;
+      }
     
     // now do the setting proper and send some useful messages out on the serial interface 
     #ifdef ESP32
@@ -612,24 +630,22 @@ void ResetDebounce(){
   }
 }
 
-boolean Debounce(int i) {  //Tests for inputs having changed, ues PortDebounceDelay[i] 
+boolean Debounce(int i) {  //Tests for inputs having changed, 
  //new
- unsigned long debounceDelay = 50;
+ unsigned long debounceDelay = 10;  //ms
  bool Reading;
  boolean SwitchSensed;
       SwitchSensed = false ;
       Reading= (PortInvert(i)^digitalRead(NodeMCUPinD[i]));
      //filter out any noise by setting a time buffer
      if ( (millis() - lastDebounceTime[i]) > debounceDelay) {
-          if (Reading != LastSentButtonState[i]){  // changed state ?
+          if (Reading != LastSentButtonState[i]){  // changed state ? Check against SENT state
               SwitchSensed = true;
               LastDebounceButtonState[i]=Reading;
-              LastSentButtonState[i]= Reading;
-              //PortTimingDelay[i] = millis() + ((DelaySetting_for_PortD[i] * 10) + 1);
-              }
+               }
      }
      if (Reading != LastDebounceButtonState[i]) {
-        LastDebounceButtonState[i] = Reading; // update until it stays the same!.. 
+        LastDebounceButtonState[i] = Reading; // update until it stays the same
         lastDebounceTime[i]=millis();  
          }
     
