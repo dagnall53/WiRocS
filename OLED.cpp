@@ -11,6 +11,8 @@
   #define _32 7
   #ifdef _OLED
   //#include "Globals.h"
+  #include "OLEDDisplayFonts.h"
+  //#include "OLED_Font_High.h"
    #include <SSD1306.h> // alias for `#include "SSD1306Wire.h"` //https://github.com/ThingPulse/esp8266-oled-ssd1306
    // options are 0x3c 0x3d on bus 1 (OLED1 and OLED2)  or - IF 0x3c is seen on bus 2 it assumes this is 32 high so any 0x3c on bus 1 must also be 32 hi (becoming OLED3 and OLED4)  
   

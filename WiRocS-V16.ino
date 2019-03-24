@@ -4,7 +4,7 @@
 //----DO NOT FORGET TO UPLOAD THE SKETCH DATA ---
 //  To check the code is working, in command prompt, set up a MQTT "debug" monitor: (e.g. For MQTT broker at 192.18.0.18) "CD C:\mosquitto  mosquitto_sub -h 192.168.0.18 -i "CMD_Prompt" -t debug -q 0" 
 //  YOU MUST compile ESP8266 with FLASH SIZE 4M(3M SPIFFS)
-//  From V15, the main ESP8266 program is too big to OTA, so change to 4M(2M SPIFFS), but remember to upload the data !!
+//  From V15, the main ESP8266 program is too big to OTA, so change to 4M(2M SPIFFS), but remember to re-upload the sketch data !!
 
 //-----ESP32 compatibility--------
 // use latest esp32fs https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
@@ -14,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 16;
+uint8_t SW_REV = 17;
 
 #ifdef _Use_Wifi_Manager
        #include <WiFiManager.h>
