@@ -179,8 +179,8 @@ CV[111]=127; //volume for Brake Squeal
  long timer;
  bitWrite(SoundEffect_Request[2],0,0); //set F9 is chuffs off initially
  // need these because Beginplay tries to close file on new play and audio loop has issues if stuff is not defined??
- BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, but does not do the file, stub,wav deletes, because nothing should be open yet.
- BeginPlayND(1,"/F3.wav",64);// Toot  this wav file will play before anything else.
+ BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, setting up channel 0 but does not do the file, stub,wav deletes, because nothing should be open yet.
+ BeginPlayND(1,"/F3.wav",64);//   this wav file will play next before anything else, setting up channel 1.
  timer=millis();
   while (wav[0]->isRunning() ||wav[1]->isRunning()) {
          if (millis()>=timer){Serial.print("~");timer=millis()+100;}
@@ -192,7 +192,9 @@ CV[111]=127; //volume for Brake Squeal
 }
 
 bool Playing(int Channel){
+  #ifdef _Audio
   return wav[Channel]->isRunning();
+  #endif
 }
 
 

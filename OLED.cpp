@@ -17,7 +17,7 @@
    // options are 0x3c 0x3d on bus 1 (OLED1 and OLED2)  or - IF 0x3c is seen on bus 2 it assumes this is 32 high so any 0x3c on bus 1 must also be 32 hi (becoming OLED3 and OLED4)  
   
   // small displays
-  #ifdef  _all64High
+  
   SSD1306 OLED1(0x3c, OLED_SDA, OLED_SCL);//== RocDisplays 1,2,3&4
   SSD1306 OLED3(0x3d, OLED_SDA, OLED_SCL); // RocDisplays 9,10,11,12
   SSD1306 OLED2(0x3c, OLED_SDA2, OLED_SCL2); // RocDisplays 5,6,7,8 
@@ -26,12 +26,7 @@
   SSD1306 OLED5(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplays 1&2
   SSD1306 OLED6(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); // RocDisplays 3&4? 
  
-  #else
-  SSD1306  OLED1(0x3c, OLED_SDA, OLED_SCL);//== RocDisplay 1,2,3&4
-  SSD1306  OLED2(0x3d, OLED_SDA, OLED_SCL);// RocDisplays 5,6,7,8  
-  SSD1306 OLED3(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); // RocDisplays 1&2 //Display 3 is the only one to use the secondary ports
-  SSD1306 OLED4(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplays 3&4
-  #endif 
+ 
    //
   
 #define TextObjectLength 150  //>100 to allow passing of {} formatting but Rocnet protocol limits the length sent to about 110    
@@ -463,6 +458,7 @@ void OLEDS_Display(String L1,String L2,String L3,String L4){
   OLED_4_RN_displays(6,L1,L2,"","");
 }
 extern int32_t SigStrength(void);
+
 void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
   if (OLEDPresent(OLed_x)){
    OLEDclear(OLed_x);
@@ -472,21 +468,13 @@ void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
       if (!RocDisplayFormatted(OLed_x,16,L2)){OLEDdrawStringMaxWidth(OLed_x,offset, 16,MaxWidth, L2);}
       if (!RocDisplayFormatted(OLed_x,32,L3)){OLEDdrawStringMaxWidth(OLed_x,offset, 32,MaxWidth, L3);}
       if (!RocDisplayFormatted(OLed_x,48,L4)){OLEDdrawStringMaxWidth(OLed_x,offset, 48,MaxWidth, L4);}
-   OLEDDisplay(OLed_x);
-
-   if ((L1[0]==0)&&(L2[0]==0)&&(L3[0]==0)&&(L4[0]==0)){
+      if ((L1[0]==0)&&(L2[0]==0)&&(L3[0]==0)&&(L4[0]==0)){
             RRPowerOnIndicator(OLed_x); 
-            SignalStrengthBar(OLed_x,SigStrength());
-     #ifdef _all64High
-            //BigClock(OLed_x,30); 
-            if ( (bitRead(OLED_Settings[0],_32))  && (OLed_x>=5) ){BigClock(OLed_x,15);}else{BigClock(OLed_x,30);}
-         
-     #else
-            if(OLed_x>=3){BigClock(OLed_x,15);}else{BigClock(OLed_x,30);}
-     #endif
-            
+            SignalStrengthBar(OLed_x);
+         if ( (bitRead(OLED_Settings[0],_32))  && (OLed_x>=5) ){BigClock(OLed_x,15);}else{BigClock(OLed_x,30);}// only oleds 5 and 6 (x32 high)need small clock
             }   
-  }
+            OLEDDisplay(OLed_x);
+   }
 
 }
 
@@ -496,16 +484,13 @@ void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
 void SetupTextArrays(uint8_t Address,int Display,String Message){
      // move the roc messsages to the TS stores where we will look at  them every second!
 
-#ifdef _all64High
       if (Address==60){for (uint16_t i = 0; i <= (TextObjectLength-1); i++) {TS[Display][i]=(Message[i]);}
              // Serial.print("setting up TS");Serial.println(Display);
               }
       if (Address==61){for (uint16_t i = 0; i <= (TextObjectLength-1); i++) {TS[Display+8][i]=(Message[i]);} 
              // Serial.print("setting up TS");Serial.println(Display+8);              
               }
-#else
-      for (uint16_t i = 0; i <= (TextObjectLength-1); i++) {TS[Display][i]=(Message[i]);}
-#endif      
+  
 }
 
 
@@ -597,14 +582,12 @@ Serial.println ();
       Serial.print (" (0x");
       Serial.print (i, HEX);
       Serial.print (")");
- #ifdef _all64High
+ 
       if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 6 ");OLED6Present=true;OLED_initiate(6,2);count++;} // if _32 set, we have _32 displays
                                                else{Serial.println (" OLED 2 ");OLED2Present=true;OLED_initiate(2,2);count++;}
                 }
       if (i==61){Serial.println (" OLED 4 ");OLED4Present=true;OLED_initiate(4,2);count++;}
- #else
-     if (i==60){Serial.println (" OLED 3 ");OLED3Present=true;OLED_initiate(3,2);count++;}
- #endif
+ 
       
       } // end of good response
   } // end of for loop
@@ -622,20 +605,12 @@ Serial.println ();
       Serial.print (i, HEX);
       Serial.print (")");
       
-#ifdef _all64High
+
       if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 5 ");OLED5Present=true;OLED_initiate(5,1);count++;} // if _32 set, we have _32 displays
                                                else{Serial.println (" OLED 1 ");OLED1Present=true;OLED_initiate(1,1);count++;}
                 }
       if (i==61){Serial.println (" OLED 3 ");OLED3Present=true;OLED_initiate(3,1);count++;}
- #else
-      if ((OLED_SDA!=OLED_SDA2)&& (OLED_SCL!=OLED_SCL2)){// if not all 64 high if OLED3 is present assume any address 60 on Bus switches to *32 displays therefor== OLED4
-       if (i==60){if (OLED3Present){Serial.println (" OLED 4 "); OLED4Present=true;OLED_initiate(4,1);count++;}
-                                       else{Serial.println (" OLED 1 ");OLED1Present=true;OLED_initiate(1,1);count++;}
-                                       }
-                                       }
-           
-        if (i==61){Serial.println (" OLED 2 ");OLED2Present=true;OLED_initiate(2,1);count++;}
- #endif
+ 
       } // end of good response
   } // end of for loop
   Serial.println ("Done.");
@@ -655,8 +630,10 @@ void RRPowerOnIndicator(int OLED_x) {
 
 
 
-void SignalStrengthBar(int OLED_x, int32_t rssi) { //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
+void SignalStrengthBar(int OLED_x) { //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
   int PosX,PosY;
+  int32_t rssi;
+  rssi=SigStrength();
  if((OLEDPresent(OLED_x))){
   // rssi -90 is just about dropout..
   // rssi -40 is a great signal
@@ -711,17 +688,19 @@ void BigClock(int disp,int clocksize){
           OLEDdrawCircle(disp,center_x, center_y, clocksize);
           for (int i=1;i<=12;i++){
                 showTimeAnalog(disp,clocksize,center_x,center_y, 0.8 ,0.95 , (i * 5) );}
+                
           showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.6, hrs * 5 + (int)(mins * 5 / 60));
           showTimeAnalog(disp,clocksize,center_x,center_y, -0.1, 0.9, mins);
          if (divider==1){ showTimeAnalog(disp,clocksize,center_x,center_y, -0.2, 0.5, secs);
               showTimeAnalogCircle(disp,clocksize,4, center_x,center_y, -0.2, 0.65, secs);
               showTimeAnalog(disp,clocksize,center_x,center_y, 0.8, 0.9, secs);}
-          OLEDDisplay(disp);
+
           }
  }
 
 extern int32_t SigStrength(void);
-
+extern uint32_t Timer[8];
+extern int LoopCount;
 void OLED_Status(){
   String MSGText;
   char MSGTextC[20];
@@ -732,6 +711,7 @@ void OLED_Status(){
   //Digital Time display 
               cx=sprintf(MSGTextC,"%02d:%02d:%02d",hrs,mins,secs);  
   MaxWidth=128; // for word wrap
+ // Timer[0]=millis();
   for (int i=1;i<=6;i++){
    //Serial.print(" Display:");Serial.print(i);Serial.print(" present");Serial.println(OLEDPresent(i));
     if (OLEDPresent(i)){ 
@@ -740,28 +720,18 @@ void OLED_Status(){
             if (!bitRead(OLED_Settings[i],_ClockLeft) ){
                             offset=0;MaxWidth=127-(ClockRad*2);}else{
                             offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} }
-
-  
-     
-  #ifdef _all64High 
       if ((i==1) ){OLED_4_RN_displays(i,TS[1],TS[2],TS[3],TS[4]);}      
       if ((i==5) ){OLED_4_RN_displays(i,TS[1],TS[2],"","");}
       if ((i==6) ){OLED_4_RN_displays(i,TS[3],TS[4],"","");}
       if ((i==2) ){OLED_4_RN_displays(i,TS[5],TS[6],TS[7],TS[8]);}
       if ((i==3) ){OLED_4_RN_displays(i,TS[9],TS[10],TS[11],TS[12]);}
       if ((i==4) ){OLED_4_RN_displays(i,TS[13],TS[14],TS[15],TS[16]);}
-
-  #else
-      if ((i==1) ){OLED_4_RN_displays(i,TS[1],TS[2],TS[3],TS[4]);}
-      if ((i==2) ){OLED_4_RN_displays(i,TS[5],TS[6],TS[7],TS[8]);}
-      if ((i==3) ){OLED_4_RN_displays(i,TS[1],TS[2],"","");}
-      if ((i==4) ){OLED_4_RN_displays(i,TS[3],TS[4],"","");}
-  #endif
-  
       OLEDsetTextAlignment(i,TEXT_ALIGN_CENTER);offset=64; // reset to centered for anything else
        }
+    //   Timer[i]=millis();
   }// adds time displays
- 
+ // DebugSprintfMsgSend(sprintf ( DebugMsg, "OLedTiming 1<%d> 2<%d>  3<%d> 4<%d> Loop count<%d>",Timer[1]-Timer[0],Timer[2]-Timer[1],Timer[3]-Timer[2],Timer[4]-Timer[3],LoopCount) );// gets number from Message next byte(s)
+ // LoopCount=0;                          
 }
 
 void TimeGears(){
@@ -803,7 +773,7 @@ void drawRect(void){} ;
 void fillRect(void) {};
 
 
-void SignalStrengthBar(int oled, int32_t rssi){};  //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
+void SignalStrengthBar(int oled){};  //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
 
 
 void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl1, double pl2, double pl3){};

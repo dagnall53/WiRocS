@@ -195,9 +195,9 @@ void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 12
   Signal=SigStrength();
   
   #ifdef _LOCO_SERVO_Driven_Port
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
   #endif
 
 
@@ -213,16 +213,20 @@ if ((hrs==0)&&(mins==0)){//not Synchronised yet..
 
  
     if ((cx <= 120)) {
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
+                    //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
                      }
     if ((cx >= 120) && (strlen(payload) <= 100)) {
-      cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
-                                          }//print just msg  line
+                   cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
+              //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+                     }//print just msg  line
     if (strlen(payload) >= 101) {
       cx= sprintf ( DebugMsgLocal, "Node:%d Loco:%d Time %d:%d:%ds Msg TOO Big to print", RocNodeID, MyLocoAddr, hrs, mins, secs);
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
-    }
+                  //     client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+                     }
+    // all ends with sending the message!
+        client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+
+  
 
  }
 

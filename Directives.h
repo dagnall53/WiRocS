@@ -38,9 +38,11 @@
 
 //---------------AUDIO--------------------
 
-//#define _AudioDAC  //to use Earle F Philhowers's audio libraries and I2C dac for audio 
+
 #define _AudioNoDAC  //to use Earle F Philhowers's audio libraries and his clever single transistor 1 bit oversampling dac for audio (connect D9 (rx)to base of NPN via a 1K, Emitter to ground and Collector is drive to speaker connected to V+) 
 
+// -- only used with the Audio DAc version.. --
+//#define _AudioDAC  //to use Earle F Philhowers's audio libraries and I2C dac for audio 
 //--- audio dac interface control ports---These are set depending on the two defines above..
 
  #if defined (_AudioDAC) || defined(_AudioNoDAC)
@@ -68,11 +70,6 @@
 //    Display 3-4  write to OLED 4 (Address 60)on primary I2C bus
 
 
-
-
-#define _all64High       // OLED 3 and 4 are 60 and 61 on secondary bus, display messages 9-16 
-//#define _oneTextPerRow
-
 // Setup Defines for completely blank hardware
 //from ver 15 equivalents to these defines should be automatically set if the eeprom is empty.. So they may not be needed, but if you have to reset anything, they may be useful.
 //If used, After running ONCE with them set, comment them out and re-program so that the rocrail i/o,  loco addr and pin functions etc can be set via rocrail
@@ -92,11 +89,12 @@
 //------------------------------------------------------------------
 
  //#define _Use_Wifi_Manager //uncomment this to use a "standard" fixed SSID and Password
- //----------------DEBUG Defines 
- ////Debug settings
+ 
  //
 #define _OLED             // define oleds, not properly tested for stability if off , normally left defined..// Saves 42kB program on ESP8266 if NOT defined (for OTA)
 
+ //----------------DEBUG Defines 
+ ////Debug settings
  // uncomment these to add extra debug messages. - useful after modifyng the code and something unexpected happens.. 
  // a minimum number of Mqtt debug message will always be set to allow monitoring of node status 
  //(typically the time synch is very useful to tell a node is prenet and working.) 

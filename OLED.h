@@ -25,7 +25,7 @@ void drawRect(void) ;
 void fillRect(void) ;
 
 
-void SignalStrengthBar(int OLED, int32_t rssi);  //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
+void SignalStrengthBar(int OLED);  //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
 
 
 void showTimeAnalog(int disp,int clocksize,int center_x, int center_y, double pl1, double pl2, double pl3);
