@@ -1,4 +1,13 @@
 # WiRocS
+
+V17b 
+--NOTE for self.(  Servo numbers are hard fixed and have range of only 1-8 so on ESP32, SERVO option will not work on I/O 9-16.
+  any Possible clashes with the way the LOCO PWM/SERVO settings has not been tested.(Possible issues if SERVO and PWM both set? - NEEDS to be checked out, and the 6616 driver option needs to be written properly and tested))---- 
+Updated:   
+Revised addressing of PI02 and Pi03 parameters - Using Set bit etc. 
+Faster BigClock - (Removed duplicate of OLED.Display which saved ~30ms per OLED display time. Even with two audio files running, the main loop executes at least 100 times per second, meaning that events should be reliably detected (Button test has ~10ms debounce test anyway). Events faster than this will be ignored 
+Revised Debug Message MQTT send should now not be "retained", so should not be repeatedly resent by Mosquitto (not very important, but should make debug messages easier to follow if they are not repeated automatically) 
+
 V16(b) moved the OledDisplayfonts into the arduino sketch. - Removes the need to modify the version in teh SSD1306 library.
 - I may separate out the various fint .h files later to make them easier to edit, but for now I use Notepad++ and Glypheditor
 
