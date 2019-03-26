@@ -111,7 +111,7 @@ void SetChuffPeriod(uint8_t Speed, int WavsPerRevolution ){
       Chuff_wav_period=(CV[47]*inv_Speed)/(WavsPerRevolution*48);  // setting is period of one revolution in ms calcs assume a 4 cycle sound effect. New code allows other cyclles
                                             //  CV[47]/48 is   adjusters into it later
              #if defined (_SERIAL_Audio_DEBUG) ||  defined (_PWM_DEBUG)
-               DebugSprintfMsgSend( sprintf ( DebugMsg, "Chuff_wav_period for<%d> phase sounds set %d ms",WavsPerRevolution, Chuff_wav_period));
+              // DebugSprintfMsgSend( sprintf ( DebugMsg, "Chuff_wav_period for<%d> phase sounds set %d ms",WavsPerRevolution, Chuff_wav_period));
              #endif
      if (Chuff_wav_period<=50){Chuff_wav_period=50;} //sets a minimum 50ms chuff period
 }
@@ -297,7 +297,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
    
    
    #ifdef SteamOutputPin  //steamoutputpin stuff  here for one puff per wav send 
-      SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH); //steamoutputpin stuff  here for one puff per chuff 
+      SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH); //steamoutputpin stuff  here for one puff per chuff 
    #endif
 
    if (Speed <= ChuffSwitchSpeed){ 
@@ -310,7 +310,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
                   
                               case 0:Chuff=ChuffChoice+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=1;
                                   //Stuff here only for strobe use, one per rev to help set chuff rate
-                                  //SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH);
+                                  //SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH);
                                                                                                               break;
                               case 1:Chuff=ChuffChoice+"2.wav"; if (FileExists(Chuff.c_str())){BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=2;}
                                                                    else{Chuff=ChuffChoice+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=1;} break;
@@ -327,7 +327,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
                   switch (ChuffCycle){ 
                               case 0:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0; // select which wav phase sound best when running fast, or use a completely separate fast wav file
                               //Stuff here only for strobe use, one per rev to help set chuff rate
-                                  //SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH);
+                                  //SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH);
                               break;
                               case 1:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0;break;
                               case 2:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0;break;
@@ -343,7 +343,7 @@ void AudioLoop(int32_t TimeNow){
 #ifdef _Audio
    
  #ifdef SteamOutputPin
-              if ((SteamOnStarted+SteamPulseDuration)<=TimeNow){digitalWrite (NodeMCUPinD[SteamOutputPin],LOW);}
+              if ((SteamOnStarted+SteamPulseDuration)<=TimeNow){digitalWrite(NodeMCUPinD[SteamOutputPin],LOW);}
  #endif 
 bool SoundPlaying;
 SoundPlaying=false;   

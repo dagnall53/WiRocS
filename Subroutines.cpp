@@ -197,7 +197,7 @@ void SetPortPinIndex() {
   
 #else
 //index for ESP8266, which has defines for D0 etc..
-  NodeMCUPinD[0] = D0;//the pins that relate to my D0-10 are set in directives 
+  NodeMCUPinD[0] = D0;  //the pins that relate to my D0-10 are set in ESP nodemcu etc directives 
   NodeMCUPinD[1] = D1;
   NodeMCUPinD[2] = D2;
   NodeMCUPinD[3] = D3;
@@ -205,7 +205,7 @@ void SetPortPinIndex() {
   NodeMCUPinD[5] = D5;
   NodeMCUPinD[6] = D6;
   NodeMCUPinD[7] = D7;
-  NodeMCUPinD[8] = D8;// 
+  NodeMCUPinD[8] = D8; // 
   NodeMCUPinD[9] = D9; //RX
   NodeMCUPinD[10] = D10;// TX 
   

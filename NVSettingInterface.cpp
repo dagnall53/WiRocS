@@ -36,6 +36,7 @@ extern void OLED_Status(void);
 extern void DoFTP();
 extern void Status();
 extern void SetupFTP();
+
 void CheckForSerialInput(){
   String MSGText;
   String MSGText1;
@@ -87,13 +88,13 @@ void CheckForSerialInput(){
                                                           
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
-      if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 
+      if ( ( (SerioLevel==0) )||(newData == true) ) 
                 {
                   if (newData == true) {TestData=receivedChars;}
                           //Serial.print("<");Serial.print(TestData);Serial.print("> Looking for {");Serial.print(LookFor);Serial.println("}");
                           switch (SerioLevel){ 
                           case 0:
-                                 if ((TestData=="xxx\0")|| !(digitalRead(0))){
+                                 if ((TestData=="xxx\0")){
                                     UpdateInProgress=true;
                                     //display.clear(); display.drawString(64, 32, "Type in New SSID"); display.display();
                                     OLEDS_Display("Type in New SSID",""," ","");
@@ -137,6 +138,7 @@ void CheckForSerialInput(){
                           break;
                           case 4:
                                 Serial.print("Settings are: Broker Addr:");Serial.print(BrokerAddr);Serial.print(" WiFi SSID<");Serial.print(wifiSSID);Serial.print("> Password<");Serial.print(wifiPassword); Serial.println(">");
+                                Serial.print("input was:");Serial.println(TestData);
                                  if (TestData=="sss\0"){
                                     OLEDS_Display(MSGText1,MSGText2,MSGText3," Saving to EEPROM");
                                     Serial.println("I will now save this data and continue");
@@ -153,7 +155,7 @@ void CheckForSerialInput(){
                                       OLEDS_Display("Attempting WiFi connect for FTP"," ","","");
                                         Status();SetupFTP();
                                         newData = false;SerioLevel=6;
-                                 }else{Serial.println("Please type 'sss' to save, or 'rrr' to return to start");newData = false;}
+                                 }else{if (TestData=="\0")Serial.println("using set");UpdateInProgress=false;SerioLevel=5;newData = false;}
                                   }
                          
                           break;
@@ -194,7 +196,7 @@ void recvWithEndMarker() {
                  }
                  else { 
                       newData = true;
-                      receivedChars[ndx] = '\0'; //replace NL/CR with /0 terminator. Mark that new data is available, but do not increment ndx
+                      receivedChars[ndx] = '\0'; //replace NL/CR with '\0' terminator. Mark that new data is available, but do not increment ndx
                       }
            }
            ndx = 0; //once all serial data has been processed, reset ndx

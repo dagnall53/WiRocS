@@ -92,7 +92,7 @@ uint8_t Interpolate(uint8_t Input,uint8_t lowerout,uint8_t upperout,uint8_t lowe
   ResultInt=abs(Result);            
  
    #ifdef _PWM_DEBUG
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "Interpolate<%d> INRange(<%d>to<%d>) OUTrange(<%d> to<%d>) Result<%d>",Input,lowerin,upperin,lowerout,upperout,Result));
+   //    DebugSprintfMsgSend( sprintf ( DebugMsg, "Interpolate<%d> INRange(<%d>to<%d>) OUTrange(<%d> to<%d>) Result<%d>",Input,lowerin,upperin,lowerout,upperout,Result));
      #endif
  
   
@@ -110,32 +110,34 @@ uint8_t UseSpeedTablesorCV6(uint8_t Input){
           LightsOn= bitRead(DIRF,4);
           DirInvert=bitRead(CV[29],0);
           UseSpeedTable=bitRead(CV[29],4);
-      ReverseTrim=CV[95];
-      ForwardTrim=CV[66];
+          ReverseTrim=CV[95];
+          ForwardTrim=CV[66];
            if (CV[95]>=127){ReverseTrim=128-CV[95];}// can use negatives
            if (CV[66]>=127){ForwardTrim=128-CV[66];}// use msb ss -ve sign
            if (CV[95]<=1){ReverseTrim=0;}
            if (CV[65]<=1){ForwardTrim=0;}
-           
-   
  // assume simple CV5/6 table to start 
   MaxThrottle=128;// assume 0- 128 range
   MidThrottle=MaxThrottle/2;  
   if (!UseSpeedTable){
-  if (Input>=MidThrottle){Result= Interpolate(Input,CV[6],CV[5],MidThrottle,MaxThrottle);}
+          if (Input>=MidThrottle){Result= Interpolate(Input,CV[6],CV[5],MidThrottle,MaxThrottle);}
                              else{Result=Interpolate(Input,0,CV[6],0,MidThrottle);}
-  }else{ // speed table from cvs
-    Bin=abs(NumBins*Input/MaxThrottle);
-    Result=Interpolate(Input,CV[Bin+67],CV[Bin+68],(Bin*MaxThrottle/NumBins),((Bin+1)*MaxThrottle/NumBins));
+          }else
+      { // speed table from cvs
+      Bin=abs(NumBins*Input/MaxThrottle);
+      Result=Interpolate(Input,CV[Bin+67],CV[Bin+68],(Bin*MaxThrottle/NumBins),((Bin+1)*MaxThrottle/NumBins));
        }
   
   if (DirInvert^Dir) {Result = Result + ForwardTrim; }  //trims.. 
                else {Result =  Result + ReverseTrim; }
    if (abs(Input)>=1){
-   Result=Result+CV[2];}            
+                      Result=Result+CV[2];}  //add Vstart          
   if (Result>=255) {Result=255;} 
-  #ifdef _PWM_DEBUG
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "Speed TableInput<%d>  Result<%d>",Input,Result));
+  #ifdef _SpeedTableDEBUG
+    if(UseSpeedTable){
+           DebugSprintfMsgSend( sprintf ( DebugMsg, "Speed Table Input<%d>  Result<%d>",Input,Result));}
+            else{ DebugSprintfMsgSend( sprintf ( DebugMsg, "CV5 CV6 Interpolated Input<%d>  Result<%d>",Input,Result));}
+        
   #endif
  
                
@@ -609,10 +611,11 @@ void ROC_MOBILE() { //group 2
           bitWrite(DIRF, 5, ROC_Data[2]);   // set direction and lights
           bitWrite(DIRF, 4, ROC_Data[3]);
           // Modifying output Moved all speed tables stuff to here 
-          DebugSprintfMsgSend( sprintf ( DebugMsg, " Set Speed<%d> Dir<%d> Lights<%d>",ROC_Data[1], bitRead(DIRF,5),bitRead(DIRF,4)));  
+          //DebugSprintfMsgSend( sprintf ( DebugMsg, " Set Speed<%d> Dir<%d> Lights<%d>",ROC_Data[1], bitRead(DIRF,5),bitRead(DIRF,4)));  
           AdjustedSpeedDemand=UseSpeedTablesorCV6(ROC_Data[1]);
-          //DebugSprintfMsgSend( sprintf ( DebugMsg, "Roc Set Speed<%d> Table_adjusted_speed<%d> ", ROC_Data[1],AdjustedSpeedDemand)); 
-         
+       #ifdef _SpeedTableDEBUG
+              DebugSprintfMsgSend( sprintf ( DebugMsg, "Roc Set Speed<%d> Adjusted_speed<%d> Config<%d>",ROC_Data[1],AdjustedSpeedDemand,bitRead(CV[29],4) )); 
+       #endif
           SetMotorSpeed(AdjustedSpeedDemand,DIRF);
           //SetMotorSpeed(ROC_Data[1],DIRF);old                          
           }
@@ -662,7 +665,7 @@ void ROC_CLOCK() {
 }
 
 
-
+int NumberOfOLEDS;
 void ROC_NODE() { //stationary decoders GROUP 3
   uint8_t TEMP;
 
@@ -705,7 +708,7 @@ void ROC_NODE() { //stationary decoders GROUP 3
           //delay(subIPL*2); //prevent simultaneous responses to identify query
           MQTTSend("rocnet/dc", sendMessage);
           delay(100); //leave plenty of time before sending next mqtt 
-          DebugSprintfMsgSend( sprintf ( DebugMsg, "Responding to Identify "));
+          DebugSprintfMsgSend( sprintf ( DebugMsg, "Ver <%d>  OLEDS<%d> Identifying ",SW_REV,NumberOfOLEDS));
           //ROCSerialPrint(sendMessage);
         }
         Message_Decoded = true;
@@ -1225,8 +1228,9 @@ void ROC_Outputs() { //group 9
                                               }
                   Pi03_Setting_LastUpdated[ROC_Data[4]] = millis();  
                   
-                  if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
-                                   }   
+                // DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
+                 if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]]));}
+                   
                }//   End of servo                                         
           else {   //not servo Could be PWM or digital 
                if (IsPWM(ROC_Data[4])) {//is PWM outputs as settings for on and off channel positions
@@ -1250,7 +1254,7 @@ void ROC_Outputs() { //group 9
                           if((Pi02_Port_Settings_D[ROC_Data[4]] & 129) == 128){
                                     DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output FLASHING D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
                                     else{    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
-                          digitalWrite (NodeMCUPinD[ROC_Data[4]], STATE); 
+                          digitalWrite(NodeMCUPinD[ROC_Data[4]], STATE); 
                           PortTimingDelay[ROC_Data[4]] = millis() + (DelaySetting_for_PortD[ROC_Data[4]] * 10);
                           SDemand[ROC_Data[4]] = servoLR(STATE, ROC_Data[4]);  //use sdemand to save state so we can flash
                        }

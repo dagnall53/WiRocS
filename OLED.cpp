@@ -559,7 +559,8 @@ void OLED_initiate(uint8_t address,int I2CBus){
    
 }
 extern uint8_t OLED_EEPROM_Setting(int OLed_x);
-    
+extern int NumberOfOLEDS;   
+ 
 void LookForOLEDs(void){
 //TEST OF _32
 //bitSet(OLED_Settings[0],_32);
@@ -613,9 +614,10 @@ Serial.println ();
  
       } // end of good response
   } // end of for loop
+  NumberOfOLEDS=count;
   Serial.println ("Done.");
   Serial.print ("Found ");
-  Serial.print (count, DEC);
+  Serial.print (NumberOfOLEDS, DEC);
   Serial.println (" OLED (s).");
   
   }
