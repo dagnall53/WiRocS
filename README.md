@@ -1,5 +1,7 @@
 # WiRocS
 
+V71f Added more checks in Audio setup. Code now disables audio if it cannot find the F6 and F3 wav files that must be played as part of setup.
+V17e Added 6616 PWM driver and got the Loco option working again. 
 V17b 
 --NOTE for self.(  Servo numbers are hard fixed and have range of only 1-8 so on ESP32, SERVO option will not work on I/O 9-16.
   any Possible clashes with the way the LOCO PWM/SERVO settings has not been tested.(Possible issues if SERVO and PWM both set? - NEEDS to be checked out, and the 6616 driver option needs to be written properly and tested))---- 
