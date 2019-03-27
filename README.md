@@ -14,8 +14,9 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 
 V17 Added more checks in Audio setup. Code now disables audio if it cannot find the F6 and F3 wav files that must be played as part of setup.Added 6616 PWM driver and got the PWM Loco option working again. Revised addressing of PI02 and Pi03 parameters  Faster BigClock on OLED displays. Changed Button debounce test to >=10ms.
 
-*Remaining issue: Servo numbers are hard fixed and have range of only 1-8 so on ESP32, the Pi03 SERVO option will not work on I/O 9-16. 
+*Remaining issue at V17: Servo numbers are hard fixed and have range of only 1-8 so on ESP32, the Pi03 SERVO option will not work on I/O 9-16.
 
+V16(b) moved the OledDisplayfonts into the arduino sketch. - Removes the need to modify the version in the SSD1306 library. (I may separate out the various font ".h" files later to make them easier to edit, but for now I use Notepad++ and Glypheditor)
 
 V15 Internally the Code now references each of the four possible OLEDS as OLED1-4. This saves some confusion with the RocDisplay "display" numbers. 
 I2C bus: the defaults are now:  
