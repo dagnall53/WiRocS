@@ -290,18 +290,21 @@ switch (Font) {
 int ClockRad;
 bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   bool found;  bool in_format;
-  int j,DisplayLine,RowPixel[15],NewLineOffset,MsgLength,TabOne,TabZero;
+  int j,DisplayLine,RowPixel[15],NewLineOffset,MsgLength,TabOne,TabZero,cx;
   int ClockSpaceOffset,ClockPos,FontSelected;
   //bool ClockAnalog,ClockLeft;
-  String FormattedMsg,BitMsg; char BitChar;
+  String FormattedMsg,BitMsg,ClockTime; char BitChar;
   bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2;
   uint8_t ClockSettingBefore;
+  char MSGTextC[20];
   FontSelected=TerminalDisplayFont;
   FlashON=secs%2;
   ignoreJ1=false;inJ1=false;
   ignoreJ2=false;inJ2=false;
   
-  
+  cx=sprintf(MSGTextC,"%02d:%02d",hrs,mins);
+    ClockTime=MSGTextC; // easy way to convert to string
+    
   ClockSettingBefore=OLED_Settings[OLed_x];
   // get clock analog/left from eeprom??
   ClockRad =9;
@@ -343,7 +346,7 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
 
                                 //
                                // code uses .getStringWidth(FormattedMsg)to move each line's cursor (RowPixel) across in case we have more text to print on the same line before next (T) Tab
-                               in_format=true;                                
+                               in_format=true;FormattedMsg="";                                
                                }
      
    
@@ -354,7 +357,11 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                              if (Message[i+1]=='1'){bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockAna);}
                              if (Message[i+1]=='3'){bitSet(OLED_Settings[0],_32);}
                              if (Message[i+1]=='6'){bitClear(OLED_Settings[0],_32);}
-
+                             if (Message[i+1]=='C'){FormattedMsg+=ClockTime;
+                                                   //Serial.print("Clock display new msg<");Serial.print(FormattedMsg);Serial.println(">");
+                                                   }
+                              //for (int i=0;i<=4;i++){//add clock time
+                                //                        FormattedMsg+=MSGTextC[i];Serial.print(MSGTextC[i])}}
                              if (Message[i+1]=='E'){if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))||(OLED_Settings[0]!=OLED_EEPROM_Setting(0))){  
                                                         Data_Updated = true;
                                                         WriteEEPROM();
@@ -424,12 +431,12 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
           
         if (!(in_format)&&(j<=(TextObjectLength-1))){ // add text to formatted_message to display
                               // if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
-                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)))   {    
+                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)))   {   //J1 J2 are the flash function indicators  
                                      FormattedMsg+=Message[i];j=j+1;} 
                               } 
                               
                                             
-        if (Message[i]=='}'){ in_format=false;j=0;FormattedMsg="";}
+        if (Message[i]=='}'){ in_format=false;j=0;}
      }
      }
     // IF set, draw small real time clock in the top line only 
@@ -499,46 +506,46 @@ void SetupTextArrays(uint8_t Address,int Display,String Message){
 
 extern uint16_t SW_REV;
 extern String wifiSSID;
-void OLED_initiate(uint8_t address,int I2CBus){
+void OLED_initiate(uint8_t address,int I2CBus,bool disp){
   String MSGText1;String MSGText2;
   
   if (address==1){ 
-   Serial.println(F("Initiating Display 1")); 
+   if (disp){Serial.println(F("Initiating Display 1"));} 
    OLED1.init();  
    OLED1.setI2cAutoInit(true);
    OLED1.flipScreenVertically();
    OLED1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
   if (address==2){  
-   Serial.println(F("Initiating Display 2")); 
+   if (disp){Serial.println(F("Initiating Display 2")); }
   OLED2.init();Disp2ReInit=millis()+6000;
   OLED2.setI2cAutoInit(true);  
   OLED2.flipScreenVertically();
   OLED2.setTextAlignment(TEXT_ALIGN_CENTER); offset=64;
     }
   if (address==3){ 
-    Serial.println(F("Initiating Display 3")); 
+   if (disp){ Serial.println(F("Initiating Display 3"));} 
    OLED3.init(); 
    OLED3.setI2cAutoInit(true); 
    OLED3.flipScreenVertically();
    OLED3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
    if (address==4){ 
-    Serial.println(F("Initiating Display 4")); 
+    if (disp){Serial.println(F("Initiating Display 4")); }
    OLED4.init(); 
    OLED4.setI2cAutoInit(true); 
    OLED4.flipScreenVertically();
    OLED4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
     if (address==5){ 
-    Serial.println(F("Initiating Display 5")); 
+   if (disp){ Serial.println(F("Initiating Display 5")); }
    OLED5.init(); 
    OLED5.setI2cAutoInit(true); 
    OLED5.flipScreenVertically();
    OLED5.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
     if (address==6){ 
-    Serial.println(F("Initiating Display 6")); 
+   if (disp){ Serial.println(F("Initiating Display 6")); }
    OLED6.init(); 
    OLED6.setI2cAutoInit(true); 
    OLED6.flipScreenVertically();
@@ -548,7 +555,7 @@ void OLED_initiate(uint8_t address,int I2CBus){
   OLEDclear(address);
   SetFont(address,4);
   MSGText2="INIT:";MSGText2+=address;
-  Serial.println(F("show Init: on display"));
+ if (disp){ Serial.println(F("show Init: on display"));}
   OLEDdrawString(address,64, 0, MSGText2);
   OLEDDisplay(address);
   delay(100);
@@ -561,16 +568,17 @@ void OLED_initiate(uint8_t address,int I2CBus){
 extern uint8_t OLED_EEPROM_Setting(int OLed_x);
 extern int NumberOfOLEDS;   
  
-void LookForOLEDs(void){
+void LookForOLEDs(bool Display){
 //TEST OF _32
 //bitSet(OLED_Settings[0],_32);
 //bitClear(OLED_Settings[0],_32);
 //
 OLED_Settings[0]=OLED_EEPROM_Setting(0);
 
-  
+if (Display){  
 Serial.println ();
   Serial.print ("I2C scanner. using secondary SDA2:");Serial.print(OLED_SDA2);Serial.print("  SCL2:");Serial.print(OLED_SCL2);Serial.println("  Scanning");
+            }
   byte count = 0;
   Wire.begin(OLED_SDA2, OLED_SCL2);  // this is bus2
   for (byte i = 8; i < 120; i++)
@@ -578,28 +586,36 @@ Serial.println ();
     Wire.beginTransmission (i);
     if (Wire.endTransmission () == 0)
       {
+        if (Display){
       Serial.print ("Found address: ");
       Serial.print (i, DEC);
       Serial.print (" (0x");
       Serial.print (i, HEX);
       Serial.print (")");
- 
-      if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 6 ");OLED6Present=true;OLED_initiate(6,2);count++;} // if _32 set, we have _32 displays
-                                               else{Serial.println (" OLED 2 ");OLED2Present=true;OLED_initiate(2,2);count++;}
-                }
-      if (i==61){Serial.println (" OLED 4 ");OLED4Present=true;OLED_initiate(4,2);count++;}
+       if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 6 ");} // if _32 set, we have _32 displays
+                                               else{Serial.println (" OLED 2 ");}}
+       if (i==61){Serial.println (" OLED 4 ");}
+      
+                    }    
+      if (i==60){ if (bitRead(OLED_Settings[0],_32)){OLED6Present=true;OLED_initiate(6,2,Display);count++;} // if _32 set, we have _32 displays
+                                               else{OLED2Present=true;OLED_initiate(2,2,Display);count++;}}
+                
+      if (i==61){OLED4Present=true;OLED_initiate(4,2,Display);count++;}
  
       
       } // end of good response
   } // end of for loop
+  if (Display){
   Serial.println ();
   Serial.print ("I2C scanner. using SDA:");Serial.print(OLED_SDA);Serial.print("  SCL:");Serial.print(OLED_SCL);Serial.println("  Scanning");
+              }
   Wire.begin(OLED_SDA, OLED_SCL);  // 
   for (byte i = 8; i < 120; i++)
   {
     Wire.beginTransmission (i);
     if (Wire.endTransmission () == 0)
       {
+        if (Display){
       Serial.print ("Found address: ");
       Serial.print (i, DEC);
       Serial.print (" (0x");
@@ -607,21 +623,32 @@ Serial.println ();
       Serial.print (")");
       
 
-      if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 5 ");OLED5Present=true;OLED_initiate(5,1);count++;} // if _32 set, we have _32 displays
-                                               else{Serial.println (" OLED 1 ");OLED1Present=true;OLED_initiate(1,1);count++;}
+      if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 5 ");} // if _32 set, we have _32 displays
+                                               else{Serial.println (" OLED 1 ");}
                 }
-      if (i==61){Serial.println (" OLED 3 ");OLED3Present=true;OLED_initiate(3,1);count++;}
+      if (i==61){Serial.println (" OLED 3 ");}
+                    }
+                    
+      if (i==60){ if (bitRead(OLED_Settings[0],_32)){OLED5Present=true;OLED_initiate(5,1,Display);count++;} // if _32 set, we have _32 displays
+                                               else{OLED1Present=true;OLED_initiate(1,1,Display);count++;}
+                }
+      if (i==61){OLED3Present=true;OLED_initiate(3,1,Display);count++;}
+                    
  
       } // end of good response
   } // end of for loop
   NumberOfOLEDS=count;
-  Serial.println ("Done.");
+  
+  if (Display){                  
+  Serial.println ("SCAN Done.");
   Serial.print ("Found ");
   Serial.print (NumberOfOLEDS, DEC);
-  Serial.println (" OLED (s).");
-  
-  }
-
+  Serial.println (" OLED (s).");}
+    else{if (DEC>=1){Serial.println ("");
+  Serial.print ("Scan completed, found :");
+  Serial.print (NumberOfOLEDS, DEC);
+  Serial.println (" OLED(s)");}}
+}
 
 
 void RRPowerOnIndicator(int OLED_x) {
@@ -767,7 +794,7 @@ void OLEDS_Display(String L1,String L2,String L3,String L4){};
 void SetupTextArrays(uint8_t Address,int Display,String Message){};
 
     
-void LookForOLEDs(void){};
+void LookForOLEDs(bool Display){};
 void LookForOLED_secondary(void){};
 void RRPowerOnIndicator(int Disp) ;
 void drawRect(void){} ;

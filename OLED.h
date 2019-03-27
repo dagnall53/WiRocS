@@ -15,9 +15,9 @@ void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 bool RocDisplayFormatted(int OLed_x, int line, String Message);
 void OLEDS_Display(String L1,String L2,String L3,String L4);
 void SetupTextArrays(uint8_t Address,int Display,String Message);
-void OLED_initiate(uint8_t address,int I2CBus);
+void OLED_initiate(uint8_t address,int I2CBus,bool Display);
     
-void LookForOLEDs(void);
+void LookForOLEDs(bool Display);
 void LookForOLED_secondary(void);
 void RRPowerOnIndicator(int Disp);
 void drawRect(void) ;

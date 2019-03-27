@@ -55,6 +55,7 @@ extern void DebugSprintfMsgSend(int CX);
 extern char DebugMsg[127];
 extern uint8_t NodeMCUPinD[18]; // hard fixed  // NumberOfPorts+2
 extern uint8_t CV[200];
+extern bool Audio_Setup_Problem;
 int DCC_Speed_Demand;
 int Last_DCC_Speed_Demand;
 
@@ -131,7 +132,7 @@ void SetSoundEffect(uint8_t Data1,uint8_t Data2,uint8_t Data3){
            DebugSprintfMsgSend( sprintf ( DebugMsg, " SFX %x %x %x  sounds<%x> ",SoundEffect_Request[1],SoundEffect_Request[2],SoundEffect_Request[3],ChuffsOn()));
   #endif
 }
-void SetUpAudio(uint32_t TimeNow){ 
+void SetUpAudio(uint32_t TimeNow){
 #ifdef _Audio
   Serial.printf("-- Sound System Initiating -- \n");
  #ifdef _AudioDAC
@@ -179,14 +180,18 @@ CV[111]=127; //volume for Brake Squeal
  long timer;
  bitWrite(SoundEffect_Request[2],0,0); //set F9 is chuffs off initially
  // need these because Beginplay tries to close file on new play and audio loop has issues if stuff is not defined??
+ Audio_Setup_Problem=false;
  BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, setting up channel 0 but does not do the file, stub,wav deletes, because nothing should be open yet.
  BeginPlayND(1,"/F3.wav",64);//   this wav file will play next before anything else, setting up channel 1.
  timer=millis();
+ if (!Audio_Setup_Problem){
   while (wav[0]->isRunning() ||wav[1]->isRunning()) {
          if (millis()>=timer){Serial.print("~");timer=millis()+100;}
          AudioLoop(millis());}
- Serial.printf("Sound System Setup Completed ~~\n");
- 
+         Serial.printf("Sound System Setup Completed ~~\n");
+                    }else{
+                      Serial.printf("\n\n---PROBLEM WITH Sound Setup---\n---- PLEASE Check SPIFFS -----\n------- AUDIO DISABLED--------\n\n");
+                    }
     
 #endif //_Audio 
 }
@@ -202,6 +207,9 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
 #ifdef _Audio
 
   if (!FileExists(wavfilename)){
+     #ifdef _SERIAL_Audio_DEBUG
+               Serial.print(" WAv file missing");
+          #endif
                                return;
                                }
 
@@ -243,6 +251,8 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
 void BeginPlayND(int Channel,const char *wavfilename, uint8_t CVVolume){ //no deletes version used at start of playing in startup
 #ifdef _Audio
  if (!FileExists(wavfilename)){
+  Audio_Setup_Problem=true;
+  Serial.println("WAV File Missing- Switching off Audio");
   return;
      }
   uint32_t NOW;

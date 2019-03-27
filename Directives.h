@@ -17,17 +17,18 @@
 // -----------------------------------------------------------------------------------------------------------
 // NB -- Loco use is incompatble with OLED - so the OLED define is later, and switched off if PWM is set. ----
 //------------------------------------------------------------------------------------------------------------
-#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
-#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
+//#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
+//#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
                                      //DO Notuse other ports unless you change the settings in detachservos
  
 
 //IF PWM, which sort of PWM driver??
+
 //#define _NodeMCUMotorShield      //NodeMCU Motor Shield has inverters to the main H drives and so pin D1 is the PWM  and D3 is the PWM direction
                                    //HOWEVER MY boards all exhibit strange behaviour after eeprom programming, when motor will only move one way.
 
 
-#define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
+//#define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
   
  //assume if a loco then you need front and back lights...
  #ifdef _LOCO_SERVO_Driven_Port
@@ -99,8 +100,8 @@
 #define _showRocMSGS
 //#define _SERIAL_MQTT_DEBUG
 //#define _SERVO_DEBUG //(enables debug messages in set motor speed rc and pwm
-#define _PWM_DEBUG  // to assist pwm debug 
-#define _SpeedTableDEBUG 
+//#define _PWM_DEBUG  // to assist pwm debug 
+//#define _SpeedTableDEBUG 
 //#define _ESP32_PWM_DEBUG  // to assist pwm debug 
 //#define _ESP32_HallTest
 // #define FTP_DEBUG in \libraries\esp8266FTPserver\ESP8266FtpServer.h to see ftp verbose on serial
