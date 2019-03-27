@@ -8,24 +8,27 @@
                                  //5 on d32 board (screws up I2C display!) = 
                                  // LED_BUILTIN = 2??; 
  #define SignalLed 2 // Revised definition in V5 this is now the PIN /GPIO number not D[0]. Is used (0nly) in SignOfLifeFlash 
-// #define SignalLed 16 // for red led on esp8266  
+// #define SignalLed 16 // for red led on esp8266  ???
  #define SignalON LOW  //defined so I can change the "phase of the SignalLED" easily.
  #define SignalOFF HIGH
 
  #define _Scan_for_Mosquitto  // New define to switch on scanning for mosquitto. Useful if your router does not have the IP address of the mosquitto server reserved!.
  
-
-//#define _LOCO_SERVO_Driven_Port 1  //if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
-// #define _LocoPWMDirPort  3         //add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
+// -----------------------------------------------------------------------------------------------------------
+// NB -- Loco use is incompatble with OLED - so the OLED define is later, and switched off if PWM is set. ----
+//------------------------------------------------------------------------------------------------------------
+//#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
+//#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
                                      //DO Notuse other ports unless you change the settings in detachservos
  
 
 //IF PWM, which sort of PWM driver??
+
 //#define _NodeMCUMotorShield      //NodeMCU Motor Shield has inverters to the main H drives and so pin D1 is the PWM  and D3 is the PWM direction
                                    //HOWEVER MY boards all exhibit strange behaviour after eeprom programming, when motor will only move one way.
 
 
-// #define _6616Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
+//#define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
   
  //assume if a loco then you need front and back lights...
  #ifdef _LOCO_SERVO_Driven_Port
@@ -38,9 +41,11 @@
 
 //---------------AUDIO--------------------
 
-//#define _AudioDAC  //to use Earle F Philhowers's audio libraries and I2C dac for audio 
+
 #define _AudioNoDAC  //to use Earle F Philhowers's audio libraries and his clever single transistor 1 bit oversampling dac for audio (connect D9 (rx)to base of NPN via a 1K, Emitter to ground and Collector is drive to speaker connected to V+) 
 
+// -- only used with the Audio DAc version.. --
+//#define _AudioDAC  //to use Earle F Philhowers's audio libraries and I2C dac for audio 
 //--- audio dac interface control ports---These are set depending on the two defines above..
 
  #if defined (_AudioDAC) || defined(_AudioNoDAC)
@@ -60,18 +65,7 @@
  #endif 
 //-- end of audio defines
 
-//---------------OLED types
-//Default is: Display 1-4 write to OLED 1 (Address 60)on primary I2C bus which is 64 high
-//            Display 5-8 write to OLED 2 (Address 61)on primary I2C bus
-// IF address 60 seen on SECONDARY BUS Then:
-//    Display 1-2  write to OLED 3 (Address 60)on secondary I2C bus which is 32 high
-//    Display 3-4  write to OLED 4 (Address 60)on primary I2C bus
 
-
-
-
-#define _all64High       // OLED 3 and 4 are 60 and 61 on secondary bus, display messages 9-16 
-//#define _oneTextPerRow
 
 // Setup Defines for completely blank hardware
 //from ver 15 equivalents to these defines should be automatically set if the eeprom is empty.. So they may not be needed, but if you have to reset anything, they may be useful.
@@ -92,11 +86,10 @@
 //------------------------------------------------------------------
 
  //#define _Use_Wifi_Manager //uncomment this to use a "standard" fixed SSID and Password
+ 
+ 
  //----------------DEBUG Defines 
  ////Debug settings
- //
-#define _OLED             // define oleds, not properly tested for stability if off , normally left defined..// Saves 42kB program on ESP8266 if NOT defined (for OTA)
-
  // uncomment these to add extra debug messages. - useful after modifyng the code and something unexpected happens.. 
  // a minimum number of Mqtt debug message will always be set to allow monitoring of node status 
  //(typically the time synch is very useful to tell a node is prenet and working.) 
@@ -108,6 +101,7 @@
 //#define _SERIAL_MQTT_DEBUG
 //#define _SERVO_DEBUG //(enables debug messages in set motor speed rc and pwm
 //#define _PWM_DEBUG  // to assist pwm debug 
+//#define _SpeedTableDEBUG 
 //#define _ESP32_PWM_DEBUG  // to assist pwm debug 
 //#define _ESP32_HallTest
 // #define FTP_DEBUG in \libraries\esp8266FTPserver\ESP8266FtpServer.h to see ftp verbose on serial
@@ -148,6 +142,17 @@
 
   #endif
 
+#ifndef _LocoPWMDirPort
+//---------------OLED types-- not compatible with pwm lococ- uses the same pins
+//
+#define _OLED             // define oleds, not properly tested for stability if off , normally left defined..// Saves 42kB program on ESP8266 if NOT defined (for OTA)
+
+//Default is: Display 1-4 write to OLED 1 (Address 60)on primary I2C bus which is 64 high
+//            Display 5-8 write to OLED 2 (Address 61)on primary I2C bus
+// IF address 60 seen on SECONDARY BUS Then:
+//    Display 1-2  write to OLED 3 (Address 60)on secondary I2C bus which is 32 high
+//    Display 3-4  write to OLED 4 (Address 60)on primary I2C bus
+
 
 
  //--------------------------------OLED I2C------------------- 
@@ -164,7 +169,7 @@
  static const uint8_t OLED_SCL = 2;  // known as D4 on esp 8266 
  #endif
  
-
+#endif //not pwm loco 
 
 
 

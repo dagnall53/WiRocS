@@ -36,6 +36,7 @@ extern void OLED_Status(void);
 extern void DoFTP();
 extern void Status();
 extern void SetupFTP();
+extern void ImmediateStop();
 void CheckForSerialInput(){
   String MSGText;
   String MSGText1;
@@ -47,12 +48,13 @@ void CheckForSerialInput(){
     long Timestarted;
     long FlashTime;
     int countdown;
-    bool UpdateInProgress; 
+    bool UpdateInProgress; bool LAMP;
     char CtrlE;
     CtrlE=5;
     //Gives options to change wifiSSID,wifiPassword
     UpdateInProgress=false;
-    if (wifiSSID=="Router Name"){UpdateInProgress=true;Serial.println(" Forcing request for new entries as Default Router name has not been set in Secrets.h");
+    if (wifiSSID=="Router Name"){   UpdateInProgress=true;
+                                    Serial.println(" Forcing request for new entries as Default Router name has not been set in Secrets.h");
                                     Serial.println("--Serial port update Started--");
                                     Serial.print("  SSID currently is <");Serial.print(wifiSSID);Serial.print("> Password is <");Serial.print(wifiPassword); Serial.println(">");
                                     Serial.println("Type in New SSID");newData = false;SerioLevel=1;
@@ -62,23 +64,29 @@ void CheckForSerialInput(){
                                     Serial.println("");
                                     Serial.println(F("       --- To enter new wifi SSID / Password type 'xxx' BEFORE wifi connects--- "));
                                     Serial.println(F("                   -- Use 'Newline' OR 'CR' to end input line  --"));
-                                    Serial.println(F("Starting~~~~~~~~~~~~~~~~~~~~~~~~waiting~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Timeout "));
+                                    Serial.println(F("~~~waiting~~~"));
                                     delay(10);Serial.print(CtrlE);delay(100);
                                     countdown=10;OLEDS_Display("Node Start-Up","","","");delay(1000);
                                     
                                        }
     Timestarted=millis();
     FlashTime=millis();
-    bool LAMP;
+    
     OLED_Status();// set up fonts etc?
     while ((countdown>= 0) || UpdateInProgress) {
-      if (SerioLevel==6){
-                            newData = false;
-                            OLEDS_Display("Stage 6"," ","","");
-                             
-                            DoFTP();
-                            Serial.println("Connected and waiting ftp HARD reset to escape");
-      }
+      if (SerioLevel==10){
+                  newData = false;
+                  OLEDS_Display("FTP ONLY","Switch off to reset","","");
+                  DoFTP();
+                  if ((millis()>= FlashTime)){FlashTime=millis()+1000; Serial.println("Connected and waiting for ftp HARD reset to escape");}
+                       #ifdef _LOCO_SERVO_Driven_Port        // need this to stop loco from running at full speed when just trying to do FTP               
+                           pinMode(NodeMCUPinD[_LOCO_SERVO_Driven_Port], OUTPUT);
+                              #ifdef _LocoPWMDirPort
+                              pinMode(NodeMCUPinD[_LocoPWMDirPort], OUTPUT);
+                              #endif
+                           ImmediateStop(); //stop motors as soon as setup set up
+                       #endif
+                  }
       
       if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" Countdown:";Count+=countdown;
                                                         FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash(LAMP) ;
@@ -87,13 +95,13 @@ void CheckForSerialInput(){
                                                           
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
       recvWithEndMarker();
-      if ( (!(digitalRead(0))&& (SerioLevel==0) )||(newData == true) ) 
+      if ( ( (SerioLevel==0) )||(newData == true) ) 
                 {
                   if (newData == true) {TestData=receivedChars;}
                           //Serial.print("<");Serial.print(TestData);Serial.print("> Looking for {");Serial.print(LookFor);Serial.println("}");
                           switch (SerioLevel){ 
                           case 0:
-                                 if ((TestData=="xxx\0")|| !(digitalRead(0))){
+                                 if ((TestData=="xxx\0")){
                                     UpdateInProgress=true;
                                     //display.clear(); display.drawString(64, 32, "Type in New SSID"); display.display();
                                     OLEDS_Display("Type in New SSID",""," ","");
@@ -137,26 +145,31 @@ void CheckForSerialInput(){
                           break;
                           case 4:
                                 Serial.print("Settings are: Broker Addr:");Serial.print(BrokerAddr);Serial.print(" WiFi SSID<");Serial.print(wifiSSID);Serial.print("> Password<");Serial.print(wifiPassword); Serial.println(">");
+                                Serial.print("input was:");Serial.println(TestData);
                                  if (TestData=="sss\0"){
                                     OLEDS_Display(MSGText1,MSGText2,MSGText3," Saving to EEPROM");
                                     Serial.println("I will now save this data and continue");
                                     WriteWiFiSettings();
                                     UpdateInProgress=false;
                                     newData = false;SerioLevel=5;
-                                    }
-                                else {
-                                     if (TestData=="rrr\0"){ 
+                                                       }
+                                 if ((TestData=="rrr\0")||(TestData=="xxx\0")){ 
                                       OLEDS_Display("Resuming Serial Input","Type in xxx to restart","the input sequence"," ");
-                                         Serial.println("-----------------");Serial.println("---Starting again---");Serial.println(" Type xxx again to re-start sequence");
+                                         Serial.println("-----------------");Serial.println("---Starting again---");Serial.println(" Type xxx again to re-start WiFi Setup sequence");
                                         newData = false;SerioLevel=0;
-                                 }if (TestData=="ftp\0"){ 
-                                      OLEDS_Display("Attempting WiFi connect for FTP"," ","","");
-                                        Status();SetupFTP();
-                                        newData = false;SerioLevel=6;
-                                 }else{Serial.println("Please type 'sss' to save, or 'rrr' to return to start");newData = false;}
-                                  }
-                         
-                          break;
+                                                        }
+                                 if ((TestData=="lll\0")||(TestData=="LLL\0")){ 
+                                      OLEDS_Display("Leaving Serial Input","","","");
+                                         Serial.println("Leaving Serial input function");
+                                         UpdateInProgress=false;
+                                          newData = false;SerioLevel=6;
+                                                        }
+                                 if (TestData=="ftp\0"){ 
+                                          OLEDS_Display("Attempting WiFi connect for FTP"," ","","");
+                                          Status();SetupFTP();
+                                          newData = false;SerioLevel=10;
+                                 }
+                           break;
 
                           case 5:
                             newData = false;
@@ -164,8 +177,12 @@ void CheckForSerialInput(){
 
                           break;
                           case 6:
-                            //special case that just waits for  FTP.. to see if this improves capability to send large files without MQTT getting in the way
+                            //null
 
+                          break;
+                          case 10:
+                            //special case that just waits for  FTP.. to see if this improves capability to send large files without MQTT getting in the way
+                                 newData = false;SerioLevel=10;
                           break;
                           default:
                             newData = false;
@@ -194,7 +211,7 @@ void recvWithEndMarker() {
                  }
                  else { 
                       newData = true;
-                      receivedChars[ndx] = '\0'; //replace NL/CR with /0 terminator. Mark that new data is available, but do not increment ndx
+                      receivedChars[ndx] = '\0'; //replace NL/CR with '\0' terminator. Mark that new data is available, but do not increment ndx
                       }
            }
            ndx = 0; //once all serial data has been processed, reset ndx

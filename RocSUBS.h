@@ -32,13 +32,14 @@ extern int FlashHL(int state, int port);
 extern bool IsServo(uint8_t i);
 extern bool IsPWM(uint8_t i);
 extern bool IsInput(uint8_t i);
+extern bool IsSetElsewhere(uint8_t i);
 extern bool PortInvert(uint8_t i);
 extern int DCC_Speed_Demand;
 extern int Last_DCC_Speed_Demand;
 uint8_t DIRF = 0 ;
 extern IPAddress mosquitto;
-extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
-extern uint8_t OLed_Clock_Settings[5];
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
+extern uint8_t OLED_Settings[7];
 
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
@@ -91,7 +92,7 @@ uint8_t Interpolate(uint8_t Input,uint8_t lowerout,uint8_t upperout,uint8_t lowe
   ResultInt=abs(Result);            
  
    #ifdef _PWM_DEBUG
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "Interpolate<%d> INRange(<%d>to<%d>) OUTrange(<%d> to<%d>) Result<%d>",Input,lowerin,upperin,lowerout,upperout,Result));
+   //    DebugSprintfMsgSend( sprintf ( DebugMsg, "Interpolate<%d> INRange(<%d>to<%d>) OUTrange(<%d> to<%d>) Result<%d>",Input,lowerin,upperin,lowerout,upperout,Result));
      #endif
  
   
@@ -109,32 +110,34 @@ uint8_t UseSpeedTablesorCV6(uint8_t Input){
           LightsOn= bitRead(DIRF,4);
           DirInvert=bitRead(CV[29],0);
           UseSpeedTable=bitRead(CV[29],4);
-      ReverseTrim=CV[95];
-      ForwardTrim=CV[66];
+          ReverseTrim=CV[95];
+          ForwardTrim=CV[66];
            if (CV[95]>=127){ReverseTrim=128-CV[95];}// can use negatives
            if (CV[66]>=127){ForwardTrim=128-CV[66];}// use msb ss -ve sign
            if (CV[95]<=1){ReverseTrim=0;}
            if (CV[65]<=1){ForwardTrim=0;}
-           
-   
  // assume simple CV5/6 table to start 
   MaxThrottle=128;// assume 0- 128 range
   MidThrottle=MaxThrottle/2;  
   if (!UseSpeedTable){
-  if (Input>=MidThrottle){Result= Interpolate(Input,CV[6],CV[5],MidThrottle,MaxThrottle);}
+          if (Input>=MidThrottle){Result= Interpolate(Input,CV[6],CV[5],MidThrottle,MaxThrottle);}
                              else{Result=Interpolate(Input,0,CV[6],0,MidThrottle);}
-  }else{ // speed table from cvs
-    Bin=abs(NumBins*Input/MaxThrottle);
-    Result=Interpolate(Input,CV[Bin+67],CV[Bin+68],(Bin*MaxThrottle/NumBins),((Bin+1)*MaxThrottle/NumBins));
+          }else
+      { // speed table from cvs
+      Bin=abs(NumBins*Input/MaxThrottle);
+      Result=Interpolate(Input,CV[Bin+67],CV[Bin+68],(Bin*MaxThrottle/NumBins),((Bin+1)*MaxThrottle/NumBins));
        }
   
   if (DirInvert^Dir) {Result = Result + ForwardTrim; }  //trims.. 
                else {Result =  Result + ReverseTrim; }
    if (abs(Input)>=1){
-   Result=Result+CV[2];}            
+                      Result=Result+CV[2];}  //add Vstart          
   if (Result>=255) {Result=255;} 
-  #ifdef _PWM_DEBUG
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "Speed TableInput<%d>  Result<%d>",Input,Result));
+  #ifdef _SpeedTableDEBUG
+    if(UseSpeedTable){
+           DebugSprintfMsgSend( sprintf ( DebugMsg, "Speed Table Input<%d>  Result<%d>",Input,Result));}
+            else{ DebugSprintfMsgSend( sprintf ( DebugMsg, "CV5 CV6 Interpolated Input<%d>  Result<%d>",Input,Result));}
+        
   #endif
  
                
@@ -304,8 +307,8 @@ for (int i = 1; i <= 35 ; i++) {
     EEPROM.write(BrokerEEPROMLocation,BrokerAddr);
     EEPROM.write(RocNodeIDLocation,RN[1]);
     EEPROM.write(RocNodeIDLocation+1,RN[2]);
-    for (byte i = 1; i <= 4; i++) {
-      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLed_Clock_Settings[i]);
+    for (byte i = 0; i <=6; i++) {
+      EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLED_Settings[i]);
             }
     Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
     delay(100); // 
@@ -375,8 +378,8 @@ void ReadEEPROM() {
   EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
-  for (byte i = 1; i <= 4; i++) {
-     OLed_Clock_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
+  for (byte i = 0; i <=6; i++) {
+     OLED_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
             }
   
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
@@ -384,7 +387,11 @@ void ReadEEPROM() {
    //Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
    
 }
-
+uint8_t OLED_EEPROM_Setting(int OLed_x){
+  uint8_t Setting;
+  Setting=EEPROM.read(DisplayClockBoolEEPROMLocation+OLed_x);  
+  return Setting;
+ }
 
 void ROCSerialPrint(uint8_t *msg)   {
   Serial.print("NetId  RidH  RidL   SidH  SidL  Grp   Code  Len");
@@ -604,10 +611,11 @@ void ROC_MOBILE() { //group 2
           bitWrite(DIRF, 5, ROC_Data[2]);   // set direction and lights
           bitWrite(DIRF, 4, ROC_Data[3]);
           // Modifying output Moved all speed tables stuff to here 
-          DebugSprintfMsgSend( sprintf ( DebugMsg, " Set Speed<%d> Dir<%d> Lights<%d>",ROC_Data[1], bitRead(DIRF,5),bitRead(DIRF,4)));  
+          //DebugSprintfMsgSend( sprintf ( DebugMsg, " Set Speed<%d> Dir<%d> Lights<%d>",ROC_Data[1], bitRead(DIRF,5),bitRead(DIRF,4)));  
           AdjustedSpeedDemand=UseSpeedTablesorCV6(ROC_Data[1]);
-          //DebugSprintfMsgSend( sprintf ( DebugMsg, "Roc Set Speed<%d> Table_adjusted_speed<%d> ", ROC_Data[1],AdjustedSpeedDemand)); 
-         
+       #ifdef _SpeedTableDEBUG
+              DebugSprintfMsgSend( sprintf ( DebugMsg, "Roc Set Speed<%d> Adjusted_speed<%d> Config<%d>",ROC_Data[1],AdjustedSpeedDemand,bitRead(CV[29],4) )); 
+       #endif
           SetMotorSpeed(AdjustedSpeedDemand,DIRF);
           //SetMotorSpeed(ROC_Data[1],DIRF);old                          
           }
@@ -657,7 +665,7 @@ void ROC_CLOCK() {
 }
 
 
-
+int NumberOfOLEDS;
 void ROC_NODE() { //stationary decoders GROUP 3
   uint8_t TEMP;
 
@@ -700,7 +708,7 @@ void ROC_NODE() { //stationary decoders GROUP 3
           //delay(subIPL*2); //prevent simultaneous responses to identify query
           MQTTSend("rocnet/dc", sendMessage);
           delay(100); //leave plenty of time before sending next mqtt 
-          DebugSprintfMsgSend( sprintf ( DebugMsg, "Responding to Identify "));
+          DebugSprintfMsgSend( sprintf ( DebugMsg, "Ver <%d>  OLEDS<%d> Identifying ",SW_REV,NumberOfOLEDS));
           //ROCSerialPrint(sendMessage);
         }
         Message_Decoded = true;
@@ -1220,8 +1228,9 @@ void ROC_Outputs() { //group 9
                                               }
                   Pi03_Setting_LastUpdated[ROC_Data[4]] = millis();  
                   
-                  if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
-                                   }   
+                // DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
+                 if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]]));}
+                   
                }//   End of servo                                         
           else {   //not servo Could be PWM or digital 
                if (IsPWM(ROC_Data[4])) {//is PWM outputs as settings for on and off channel positions
@@ -1245,7 +1254,7 @@ void ROC_Outputs() { //group 9
                           if((Pi02_Port_Settings_D[ROC_Data[4]] & 129) == 128){
                                     DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output FLASHING D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
                                     else{    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
-                          digitalWrite (NodeMCUPinD[ROC_Data[4]], STATE); 
+                          digitalWrite(NodeMCUPinD[ROC_Data[4]], STATE); 
                           PortTimingDelay[ROC_Data[4]] = millis() + (DelaySetting_for_PortD[ROC_Data[4]] * 10);
                           SDemand[ROC_Data[4]] = servoLR(STATE, ROC_Data[4]);  //use sdemand to save state so we can flash
                        }
@@ -1287,7 +1296,7 @@ void ROC_Outputs() { //group 9
 
 
 void SendPortChange(int RNID, boolean ST, uint8_t i) {
-  Serial.print(" I/O change, Node :"); Serial.print(RNID);  Serial.print(" Sends io:");  Serial.print (i);  Serial.print(" is now:"); Serial.print(ST); Serial.println(" ");
+ 
   //new format send
   sendMessage[0] = ROC_netid;
   sendMessage[1] = 0x00;
@@ -1301,7 +1310,7 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
   sendMessage[10] = ST;             sendMessage[11] = i; //port
   MQTTSend("rocnet/sr", sendMessage);
   DebugSprintfMsgSend(sprintf ( DebugMsg, "Sensor change Seen Address:%d State:%d", i, ST));
-  
+  Serial.print(" I/O change, Node :"); Serial.print(RNID);  Serial.print(" Sends io:");  Serial.print (i);  Serial.print(" is now:"); Serial.print(ST); Serial.println(" ");
 
 }
 
@@ -1321,9 +1330,9 @@ void ROC_DISPLAY() { //display Group 12 rocdisplay
       Address= ROC_Data[1];
       Display= ROC_Data[2];
   //Serial.print("Display  message for this node (or global)");
-  Serial.print(" Display Addr:");Serial.print(Address);
-  Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
-  Serial.print("> len:");Serial.println(ROC_len);
+  //Serial.print(" Display Addr:");Serial.print(Address);
+  //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
+  //Serial.print("> len:");Serial.println(ROC_len);
    //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
     if (ROC_len-3>=MaxLen){ROC_len==MaxLen+3;Truncated=true; }              //  Rocrail seems to limit to len=113 anyway
     for (uint16_t i = 0; i <= (ROC_len-3); i++) { 

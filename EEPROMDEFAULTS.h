@@ -1779,27 +1779,38 @@ void SetDefaultSVs(){
 
 #endif // esp32 station
 
+
+//-------------- put any hand crafted special settings here..-------------------
+//Set Clock ON, Analog and Right and NOT 32 display
+#ifdef _OLED
+extern void SetOLEDDefaults();
+SetOLEDDefaults();
+#endif
+
 #ifdef _LOCO_SERVO_Driven_Port
 
-// Put any Hand written override of whatever is set above...Simpler just to put these here...
+// Put any Hand written override for lof whatever is set above...Simpler just to put these here...
  CV[1]=3; //DEFAULT ADDR
  CV[2]=5; //V START
  CV[3]=2; //ACC
  CV[4]=2;  //DEC RATE
  CV[5]=100;  //HIGH SPEED Multiplier for servo position
  CV[6]=50;  //MID but not used at the moment
+ CV[47]=200; // default chuff time multiplier
+ CV[48]=18; // default PWM multiplier 
+ CV[65]=10; // kick time
+ CV[29]=0; // config
 //Sound CV volumes
-  CV[100]=127;
-   CV[101]=127;
-    CV[102]=127;
-     CV[103]=127;
-      CV[104]=127;
-       CV[105]=127;
-        CV[106]=127;
-         CV[107]=127;
-          CV[108]=127;
-           CV[109]=127;
-            CV[110]=127;
+   CV[100]=127;
+   CV[101]=127;  
+   CV[103]=127;
+   CV[104]=127;
+   CV[105]=127;
+   CV[106]=127;
+   CV[107]=127;
+   CV[108]=127;
+   CV[109]=127;
+   CV[110]=127;
 
 #endif
  

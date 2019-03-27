@@ -55,6 +55,7 @@ extern void DebugSprintfMsgSend(int CX);
 extern char DebugMsg[127];
 extern uint8_t NodeMCUPinD[18]; // hard fixed  // NumberOfPorts+2
 extern uint8_t CV[200];
+extern bool Audio_Setup_Problem;
 int DCC_Speed_Demand;
 int Last_DCC_Speed_Demand;
 
@@ -111,7 +112,7 @@ void SetChuffPeriod(uint8_t Speed, int WavsPerRevolution ){
       Chuff_wav_period=(CV[47]*inv_Speed)/(WavsPerRevolution*48);  // setting is period of one revolution in ms calcs assume a 4 cycle sound effect. New code allows other cyclles
                                             //  CV[47]/48 is   adjusters into it later
              #if defined (_SERIAL_Audio_DEBUG) ||  defined (_PWM_DEBUG)
-               DebugSprintfMsgSend( sprintf ( DebugMsg, "Chuff_wav_period for<%d> phase sounds set %d ms",WavsPerRevolution, Chuff_wav_period));
+              // DebugSprintfMsgSend( sprintf ( DebugMsg, "Chuff_wav_period for<%d> phase sounds set %d ms",WavsPerRevolution, Chuff_wav_period));
              #endif
      if (Chuff_wav_period<=50){Chuff_wav_period=50;} //sets a minimum 50ms chuff period
 }
@@ -131,7 +132,7 @@ void SetSoundEffect(uint8_t Data1,uint8_t Data2,uint8_t Data3){
            DebugSprintfMsgSend( sprintf ( DebugMsg, " SFX %x %x %x  sounds<%x> ",SoundEffect_Request[1],SoundEffect_Request[2],SoundEffect_Request[3],ChuffsOn()));
   #endif
 }
-void SetUpAudio(uint32_t TimeNow){ 
+void SetUpAudio(uint32_t TimeNow){
 #ifdef _Audio
   Serial.printf("-- Sound System Initiating -- \n");
  #ifdef _AudioDAC
@@ -179,20 +180,26 @@ CV[111]=127; //volume for Brake Squeal
  long timer;
  bitWrite(SoundEffect_Request[2],0,0); //set F9 is chuffs off initially
  // need these because Beginplay tries to close file on new play and audio loop has issues if stuff is not defined??
- BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, but does not do the file, stub,wav deletes, because nothing should be open yet.
- BeginPlayND(1,"/F3.wav",64);// Toot  this wav file will play before anything else.
+ Audio_Setup_Problem=false;
+ BeginPlayND(0,"/F6.wav",100);//Bell   this wav file will play before anything else, setting up channel 0 but does not do the file, stub,wav deletes, because nothing should be open yet.
+ BeginPlayND(1,"/F3.wav",64);//   this wav file will play next before anything else, setting up channel 1.
  timer=millis();
+ if (!Audio_Setup_Problem){
   while (wav[0]->isRunning() ||wav[1]->isRunning()) {
          if (millis()>=timer){Serial.print("~");timer=millis()+100;}
          AudioLoop(millis());}
- Serial.printf("Sound System Setup Completed ~~\n");
- 
+         Serial.printf("Sound System Setup Completed ~~\n");
+                    }else{
+                      Serial.printf("\n\n---PROBLEM WITH Sound Setup---\n---- PLEASE Check SPIFFS -----\n------- AUDIO DISABLED--------\n\n");
+                    }
     
 #endif //_Audio 
 }
 
 bool Playing(int Channel){
+  #ifdef _Audio
   return wav[Channel]->isRunning();
+  #endif
 }
 
 
@@ -200,6 +207,9 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
 #ifdef _Audio
 
   if (!FileExists(wavfilename)){
+     #ifdef _SERIAL_Audio_DEBUG
+               Serial.print(" .wav file missing");
+          #endif
                                return;
                                }
 
@@ -241,6 +251,8 @@ void BeginPlay(int Channel,const char *wavfilename, uint8_t CVVolume){
 void BeginPlayND(int Channel,const char *wavfilename, uint8_t CVVolume){ //no deletes version used at start of playing in startup
 #ifdef _Audio
  if (!FileExists(wavfilename)){
+  Audio_Setup_Problem=true;
+  Serial.println("WAV File Missing- Switching off Audio");
   return;
      }
   uint32_t NOW;
@@ -295,7 +307,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
    
    
    #ifdef SteamOutputPin  //steamoutputpin stuff  here for one puff per wav send 
-      SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH); //steamoutputpin stuff  here for one puff per chuff 
+      SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH); //steamoutputpin stuff  here for one puff per chuff 
    #endif
 
    if (Speed <= ChuffSwitchSpeed){ 
@@ -308,7 +320,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
                   
                               case 0:Chuff=ChuffChoice+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=1;
                                   //Stuff here only for strobe use, one per rev to help set chuff rate
-                                  //SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH);
+                                  //SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH);
                                                                                                               break;
                               case 1:Chuff=ChuffChoice+"2.wav"; if (FileExists(Chuff.c_str())){BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=2;}
                                                                    else{Chuff=ChuffChoice+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=1;} break;
@@ -325,7 +337,7 @@ void Chuff(String ChuffChoice, String ChuffChoiceFast,long ChuffSwitchSpeed){
                   switch (ChuffCycle){ 
                               case 0:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0; // select which wav phase sound best when running fast, or use a completely separate fast wav file
                               //Stuff here only for strobe use, one per rev to help set chuff rate
-                                  //SteamOnStarted=millis(); digitalWrite (NodeMCUPinD[SteamOutputPin],HIGH);
+                                  //SteamOnStarted=millis(); digitalWrite(NodeMCUPinD[SteamOutputPin],HIGH);
                               break;
                               case 1:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0;break;
                               case 2:Chuff=ChuffChoiceFast+"1.wav";BeginPlay(0,Chuff.c_str(),CV[110]);ChuffCycle=0;break;
@@ -341,7 +353,7 @@ void AudioLoop(int32_t TimeNow){
 #ifdef _Audio
    
  #ifdef SteamOutputPin
-              if ((SteamOnStarted+SteamPulseDuration)<=TimeNow){digitalWrite (NodeMCUPinD[SteamOutputPin],LOW);}
+              if ((SteamOnStarted+SteamPulseDuration)<=TimeNow){digitalWrite(NodeMCUPinD[SteamOutputPin],LOW);}
  #endif 
 bool SoundPlaying;
 SoundPlaying=false;   

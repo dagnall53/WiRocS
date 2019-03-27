@@ -187,17 +187,23 @@ void MQTT_Loop(void){
 }
 extern uint16_t MyLocoAddr ;
 extern int32_t SigStrength();
+int32_t LastDebugMsgTime;
+bool DebugMsgSent,SendClearMsg;
 void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
   char DebugMsgLocal[127];
   char DebugMsgTemp[127];
   int cx;
   int32_t Signal;
+  bool retained;
+  retained=true;
   Signal=SigStrength();
+ 
+//  if (payload==""){client.publish(topic.c_str(),"",false);Serial.println("Clearing DebugMsg"); return; }
   
   #ifdef _LOCO_SERVO_Driven_Port
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%d dB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
   #endif
 
 
@@ -213,16 +219,22 @@ if ((hrs==0)&&(mins==0)){//not Synchronised yet..
 
  
     if ((cx <= 120)) {
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
+                    //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
                      }
     if ((cx >= 120) && (strlen(payload) <= 100)) {
-      cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
-                                          }//print just msg  line
+                   cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
+              //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+                     }//print just msg  line
     if (strlen(payload) >= 101) {
       cx= sprintf ( DebugMsgLocal, "Node:%d Loco:%d Time %d:%d:%ds Msg TOO Big to print", RocNodeID, MyLocoAddr, hrs, mins, secs);
-      client.publish(topic.c_str(), DebugMsgLocal, strlen(DebugMsgLocal));
-    }
+                  //     client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+                     }
+    // all ends with sending the message!
+        client.publish(topic.c_str(), DebugMsgLocal,retained); // retained or not?// added at V17bb
+     //   LastDebugMsgTime=millis()+5000;
+     //   DebugMsgSent=true;
+     //   SendClearMsg=true;
+  
 
  }
 
@@ -253,7 +265,7 @@ void reconnect() {
       SignOfLifeFlash( SignalON) ; ///turn on
       MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
       MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
-      MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> ";
+      MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> "; 
       Serial.print("MQTT trying ");Serial.println(MSGText1);
       
       if (mosquitto[3] != BrokerAddr ){ DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));}

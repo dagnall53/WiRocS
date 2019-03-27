@@ -4,6 +4,7 @@
 
 
 bool ButtonState[PortsRange];
+boolean STATE[PortsRange];
 bool LastDebounceButtonState[PortsRange]; //Number of ports +2
 bool LastSentButtonState[PortsRange]; //Number of ports +2
 uint32_t PortDebounceDelay[PortsRange]; //Number of ports +2
@@ -13,7 +14,7 @@ uint32_t PortTimingDelay[PortsRange]; //Number of ports +2
 uint32_t Motor_Setting_Update_Time;
 
 
-uint16_t ServoLastPos[10];
+uint16_t ServoLastPos[PortsRange];
 uint32_t WaitUntill;
 
 
@@ -49,8 +50,8 @@ extern int Wavs_Per_Revolution;
 //
 //Stuff to work the ports on the ESP
 void SetMotorSpeed(int SpeedDemand_local,uint8_t dirf); 
-uint8_t SetLocoMotorRC(int LocoPort, uint8_t SpeedDemand,bool dir); //RC  Speed demand range is approx mph  and outputs the speedemenad in case it limits it
-uint8_t SetLocoMotorPWM(int LocoPWMPort, int LocoDirPort, uint8_t SpeedDemand,bool dir);  //PWM Speed demand range is approx mph  and outputs the speedemenad in case it limits it
+void SetLocoMotorRC(int LocoPort, uint8_t SpeedDemand,bool dir); //RC  Speed demand range is approx mph  and outputs the speedemenad in case it limits it
+void SetLocoMotorPWM(int LocoPWMPort, int LocoDirPort, uint8_t SpeedDemand,bool dir);  //PWM Speed demand range is approx mph  and outputs the speedemenad in case it limits it
 void ImmediateStop(void);
 void DoLocoMotor(void);
 void READ_PORT( int i);
@@ -66,27 +67,39 @@ void SetServo( int i, uint16_t value);
 uint16_t servoLR(int state, int port);
 void SERVOS(void);
 
-//the actual code follows
+//the actual code follows 
+// BIT position use in PI02 and Pi03 settings 
+#define _input 0// was ==1
+#define _toggle 5// was ==32
+#define _setelsewhere 1// was ==2
+#define _invert 6// was ==64
+#define _flash 7
+//PI03 
+#define _servo 5// was ==32
+#define _pwm 7 // was ==128
 
 bool IsInput(uint8_t i){
-return ((Pi02_Port_Settings_D[i] & 0x01) == 1); //
+return bitRead(Pi02_Port_Settings_D[i],_input); //
+}
+bool SetElsewhere(uint8_t i){
+return bitRead(Pi02_Port_Settings_D[i],_setelsewhere); //
 }
 bool PortToggle(uint8_t i){
-return ((Pi02_Port_Settings_D[i] & 0x32)==32);
+return bitRead(Pi02_Port_Settings_D[i],_toggle); //
 }
 bool PortInvert( uint8_t i){
-  return ((Pi02_Port_Settings_D[i] & 64) == 64);
+  return bitRead(Pi02_Port_Settings_D[i],_invert); //
 }
 bool PortFlashing(uint8_t i){
-  return ((Pi02_Port_Settings_D[i] & 128) == 128);
+  return bitRead(Pi02_Port_Settings_D[i],_flash); //
 }
 
 
 bool IsServo(uint8_t i){
- return ((Pi03_Setting_options[i] & 32)==32);
+ return bitRead(Pi03_Setting_options[i],_servo);
 }
 bool IsPWM(uint8_t i){
-return ((Pi03_Setting_options[i] & 128) == 128);
+return bitRead(Pi03_Setting_options[i],_pwm);
 }
 
 
@@ -103,42 +116,43 @@ void WriteAnalogtoPort(uint8_t port,uint16_t demand){
     }else{
         ledcWrite(port, demand);  }
   #else
+        if(demand>=1023){demand=1023;}
         analogWrite(NodeMCUPinD[port],demand);  // 0--1024 analogwrite to Pin(NodemcupinD(port) for esp8266
   #endif
 }
 
 void SetMotorSpeed(int SpeedDemand_local,uint8_t dirfl){ //lc dirf to avoid confusion with DIRF ?
-#ifdef _LOCO_SERVO_Driven_Port 
-int servodemand;
-int Brake_trigger_speed;
-bool Dir,SoundsOn,AlternateSounds,LightsOn,Use14Stepthrottle,UseSpeedTable,FInvert,DirInvert;
-         
+  #ifdef _LOCO_SERVO_Driven_Port 
+  int servodemand;
+  int Brake_trigger_speed;
+  //bool Dir,SoundsOn,AlternateSounds,LightsOn,Use14Stepthrottle,UseSpeedTable,FInvert,DirInvert;
+  bool Dir,SoundsOn,AlternateSounds,LightsOn,FInvert,DirInvert;
           Brake_trigger_speed= (CV[2]+((CV[3]+CV[4])/2));
           Dir=bitRead(dirfl,5);
           LightsOn= bitRead(dirfl,4);
           DirInvert=bitRead(CV[29],0);
-          Use14Stepthrottle= false; !bitRead(CV[29],1);
-          UseSpeedTable=bitRead(CV[29],4);
-           
+         // Use14Stepthrottle= false; !bitRead(CV[29],1);
+          //UseSpeedTable=bitRead(CV[29],4);
+         
          // DebugSprintfMsgSend( sprintf ( DebugMsg, " Setting Speed<%d> Dir<%d> Lights<%d>",SpeedDemand_local, bitRead(dirfl,5),bitRead(dirfl,4)));  
-#ifdef _Audio
-//do brakes squeal here
+  #ifdef _Audio
+  //do brakes squeal here
         SoundsOn=bitRead(SoundEffect_Request[2],0); //F9?
         AlternateSounds=bitRead(SoundEffect_Request[2],1); //F10?
         if (((Last_DCC_Speed_Demand) >= Brake_trigger_speed ) && (SpeedDemand_local==0)&&(SoundsOn)){ //  play Break effect if speed was above Vtart + acc step and F9 is chuffs on
-                     #if defined (_SERIAL_Audio_DEBUG) ||  defined (_PWM_DEBUG)
+                     #if defined (_SERIAL_Audio_DEBUG) // ||  defined (_PWM_DEBUG)
                        DebugSprintfMsgSend( sprintf ( DebugMsg, " Brakes Last speed %d   Trigger speed %d ", Last_DCC_Speed_Demand, Brake_trigger_speed)); 
                      #endif  
-        BeginPlay(1,"/brakes.wav",CV[111]); //brakes.wav should be a brake squeal sample to be played as we stop. 
+                     BeginPlay(1,"/brakes.wav",CV[111]); //brakes.wav should be a brake squeal sample to be played as we stop. 
                        }                                
-#endif 
+  #endif 
 
 
          if ((SpeedDemand_local==0)&&(Last_DCC_Speed_Demand!=0)) {Dir=Last_Direction;}              //keep the lights in the right direction until stopped?     
               else {Last_Direction=Dir;}    // This catches rocrail issue where direction changes if 0 is pressed. keeps lights on in correct phase until stop, but changes if 0 repeatedly pressed                              
-// do lights          
-          digitalWrite (NodeMCUPinD[FRONTLight], (LightsOn & !(Dir^DirInvert)));
-          digitalWrite (NodeMCUPinD[BACKLight], (LightsOn & (Dir^DirInvert)));
+  // do lights          
+          digitalWrite(NodeMCUPinD[FRONTLight],PortInvert(FRONTLight)^(LightsOn & !(Dir^DirInvert)));
+          digitalWrite(NodeMCUPinD[BACKLight],PortInvert(BACKLight)^(LightsOn & (Dir^DirInvert)));
           DCC_Speed_Demand= (int)SpeedDemand_local;
           if ((Dir^DirInvert)){DCC_Speed_Demand=-(int)SpeedDemand_local;}
           DoLocoMotor();  // update we have saved DCC_Speed_Demand as int here ....may not be needed here specifically since loop does this.... 
@@ -149,7 +163,7 @@ bool Dir,SoundsOn,AlternateSounds,LightsOn,Use14Stepthrottle,UseSpeedTable,FInve
 
 
 
-uint8_t SetLocoMotorRC(int LocoPort, int Motor_Setting,bool dir){  //RC servo is set  0 to 180  
+void SetLocoMotorRC(int LocoPort, int Motor_Setting,bool dir){  //RC servo is set  0 to 180  
   int servodemand;
   bool STOPdemand,DirInvert;
   STOPdemand=false;
@@ -170,70 +184,77 @@ uint8_t SetLocoMotorRC(int LocoPort, int Motor_Setting,bool dir){  //RC servo is
              }else {
                   SetServo(LocoPort, 90 );}
     if (STOPdemand) {Motor_Setting=0;SetServo(LocoPort, 90 ); }
-  return Motor_Setting;    
+ // return Motor_Setting;    
 }
 
+bool MotorStopped;
 
-uint8_t SetLocoMotorPWM(int LocoPort, int LocoDirPort, uint8_t Motor_Setting,bool dir){  //PWM Speed demand range is approx mph or % either range is 0-255
-  // this code uses interpolate to use CV2, 5 6 
-  uint8_t value;
-  uint16_t PWMdemand;
-  uint16_t MinSpeed;
-  uint16_t AdditionalMotor_Setting;
+void SetLocoMotorPWM(int LocoPort, int LocoDirPort, int Motor_Setting,bool dir){  //PWM Speed demand range is approx mph or % either range is 0-255
+   uint8_t value;
+  int PWMdemand;
   bool STOPdemand;
-  uint16_t Max_Speed;
-#ifdef _LocoPWMDirPort
-  //Max_Speed= 255; 
-  //if (Motor_Setting>=Max_Speed){Motor_Setting=Max_Speed;}  
-
-  if (POWERON){ STOPdemand=false;
-    if (Motor_Setting<=1) { PWMdemand=0;STOPdemand=true; }
-  
-    PWMdemand= 4*Motor_Setting;
-    if (PWMdemand>=1023) {PWMdemand=1023;}//limit the max speed here 
+     value=abs(Motor_Setting);
      
-     
+     STOPdemand=true;
+    // if ((Motor_Setting)<=1) { STOPdemand=true; }
+     if (POWERON){STOPdemand=false;  
+                  PWMdemand = CV[48]*abs(Motor_Setting) ;if (PWMdemand>=1023) {PWMdemand=1023;}//limit the max speed here 
+                  MotorStopped=false;
      #ifdef _PWM_DEBUG
-       DebugSprintfMsgSend( sprintf ( DebugMsg, "set loco PWM: input%d  output %d ",Motor_Setting, PWMdemand));
+       DebugSprintfMsgSend( sprintf ( DebugMsg, "Set loco PWM: Setting<%d>  dir<%d> PWMD<%d%>",Motor_Setting, dir,PWMdemand));
      #endif
-  
-  
-  if (PWMdemand!=0) {
-   #ifdef _NodeMCUMotorShield
-      digitalWrite (NodeMCUPinD[LocoDirPort], (dir )) ;WriteAnalogtoPort(LocoPort,PWMdemand);
-  #endif
+           #ifdef _NodeMCUMotorShield  // super simple to use NodeMCU Motor shield because of the inbuilt inverters
+              digitalWrite(NodeMCUPinD[LocoDirPort], (dir )) ;
+              WriteAnalogtoPort(LocoPort,PWMdemand);  // write analog covers some esp32 issues 
+           #endif
   // addother hardware options here...
-    #ifdef _separate_PWMS
-    if (dir)
-      digitalWrite (NodeMCUPinD[LocoDirPort], (dir )) ;WriteAnalogtoPort(LocoPort,PWMdemand);
-      analogWrite (NodeMCUPinD[LocoDirPort], PWMdemand ; digitalWrite (NodeMCUPinD[LocoPort], (dir )) ;
-  #endif
-  // other hardware options
  
-    
+          #ifdef _6612Driver
+            if (dir){
+                #ifdef _PWM_DEBUG
+                   // DebugSprintfMsgSend( sprintf ( DebugMsg, "APWM motor Pin<D%d>= pwm:<%d> Pin<D%d>set<LOW>  ",LocoDirPort,PWMdemand,LocoPort ));
+                #endif
+                    WriteAnalogtoPort(LocoDirPort,PWMdemand);
+                    digitalWrite(NodeMCUPinD[LocoPort],LOW);
                    }
-  }           
-       
+                   else{
+                    #ifdef _PWM_DEBUG
+                      //  DebugSprintfMsgSend( sprintf ( DebugMsg, "BPWM motor Pin<D%d>= pwm:<%d> Pin<D%d>set<LOW>  ",LocoPort,PWMdemand,LocoDirPort ));
+                    #endif
+                      WriteAnalogtoPort(LocoPort,PWMdemand);
+                      digitalWrite(NodeMCUPinD[LocoDirPort],LOW) ;
+                    }
+                   
+         #endif   //_6612Driver
+     
+                 } //poweron
+    if (Motor_Setting<=1 ) {
+                      Motor_Setting=0; 
+                      MotorStopped=true;   
+                      #ifdef _PWM_DEBUG
+                            DebugSprintfMsgSend( sprintf ( DebugMsg, "SET ZERO  PWM motor speed:%d dir<%d>  PWM setting:%d  ",Motor_Setting,dir, PWMdemand));
+                      #endif
+                     digitalWrite(NodeMCUPinD[LocoPort],false);   
+                     digitalWrite(NodeMCUPinD[LocoDirPort],false);
+                    }
 
-    if (STOPdemand) {Motor_Setting=0;    
-                     SetChuffPeriod(0,Wavs_Per_Revolution);  
-                     digitalWrite( NodeMCUPinD[LocoPort], false);   
-                     digitalWrite (NodeMCUPinD[LocoDirPort] , false) ;
-                    }  
- #endif
-  return Motor_Setting;
+
+     
+
 }
 
 
 void ImmediateStop(void){
   uint16_t Speed;
     #ifdef _LOCO_SERVO_Driven_Port 
-   #ifndef _LocoPWMDirPort
-               Speed= SetLocoMotorRC(_LOCO_SERVO_Driven_Port,0,0);
-   #endif
-   #ifdef _LocoPWMDirPort
-               Speed=SetLocoMotorPWM(_LOCO_SERVO_Driven_Port,_LocoPWMDirPort,0,0);//
-   #endif
+           #ifdef _LocoPWMDirPort
+           #ifdef _PWM_DEBUG
+                            DebugSprintfMsgSend( sprintf ( DebugMsg, "Immediate Stop" ) );
+           #endif
+               SetLocoMotorPWM(_LOCO_SERVO_Driven_Port,_LocoPWMDirPort,0,0);
+           #else
+               SetLocoMotorRC(_LOCO_SERVO_Driven_Port,0,0);         
+           #endif
    #endif
   }
 
@@ -259,7 +280,7 @@ void DoLocoMotor(void){  //uses Last_DCC_Speed_Demand and DCC_Speed_Demand globa
                 offset = DCC_Speed_Demand-Last_DCC_Speed_Demand;  //how far from the demand are we
           
        #ifdef _PWM_DEBUG
-                     DebugSprintfMsgSend( sprintf ( DebugMsg, "DLM lastsp%d CurSpeed%d  offset%d speedset%d",Last_DCC_Speed_Demand,DCC_Speed_Demand,offset,SPEEDSET));
+                   //  DebugSprintfMsgSend( sprintf ( DebugMsg, "DoLocomotor Lastsp%d CurSpeed%d  offset%d speedset%d",Last_DCC_Speed_Demand,DCC_Speed_Demand,offset,SPEEDSET));
           #endif      
           
           
@@ -328,31 +349,39 @@ void DoLocoMotor(void){  //uses Last_DCC_Speed_Demand and DCC_Speed_Demand globa
 }
 
 void READ_PORT( int i) {
-  boolean STATE;
+  //boolean STATE;
   uint8_t TEMP;
   uint16_t senderADDR;
-  if (IsInput(i) && (!IsServo(i)||!IsPWM(i)))  { //only do this if this port is an "INPUT" and not a "SERVO"  // ??  this was probably left over from early code and now is input would suffice?
-    if (Debounce(i)) {              //debounce is true if switch has changed  could add timing based on   millis()>= PortTimingDelay[i] here if needed
-      if ((PortToggle(i))  && (PortInvert(i)^digitalRead(NodeMCUPinD[i]) == 1)) {
-           ButtonState[i] = !ButtonState[i]; //TOGGLE change only change on one state..
+  if ( IsInput(i) && (!IsServo(i)||!IsPWM(i)))  { //only do this if this port is an "INPUT" and not a "SERVO"  // ??  hard set also sets inputstate to OUTPUT
+    if ((Debounce(i))&&(millis()>=PortTimingDelay[i])){              //debounce is true if switch has changed for longer than the debounce time (~10ms) 
+                                                                      //&& has the message been sent for long enough (port timing delay)?
+      if ((PortToggle(i))&&(PortInvert(i)^digitalRead(NodeMCUPinD[i]) == 1)) {
+           ButtonState[i] = !ButtonState[i]; //TOGGLE change only changes on one state!..
            }
       if (PortToggle(i))   {
-        STATE = ButtonState[i]; // record toggle state
+        STATE[i] = ButtonState[i]; // record toggle state
            }
       else {  // not toggle, just use it  
-        STATE = PortInvert(i)^digitalRead(NodeMCUPinD[i]);
+        STATE[i] = PortInvert(i)^digitalRead(NodeMCUPinD[i]);
            }
       
 #if defined (_SERIAL_DEBUG) || defined (_Input_DEBUG)
       Serial.print ("Change on IO port : ");
       Serial.print(i);
       Serial.print(" State");
-      Serial.println(STATE);
+      Serial.println(STATE[i]);
 #endif
-      SendPortChange(RocNodeID, STATE, i);
+      SendPortChange(RocNodeID, STATE[i], i);
       PortTimingDelay[i] = millis() + (DelaySetting_for_PortD[i] * 10);
-      LastSentButtonState[i]=STATE;
+      LastSentButtonState[i]=STATE[i];
     }//if debounce
+    // if not sent because of delays ?
+    if ((millis()>=PortTimingDelay[i])&& (LastSentButtonState[i]!=STATE[i])){
+      SendPortChange(RocNodeID, STATE[i], i);
+      PortTimingDelay[i] = millis() + (DelaySetting_for_PortD[i] * 10);
+      LastSentButtonState[i]=STATE[i];
+   }
+    
   }// input and not servo
 }//end read port
 
@@ -365,7 +394,7 @@ void ReadInputPorts() {
  
   
 }
-extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present;
+extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
 
 void Port_Mode_Set(int i) {
   boolean hardset,setElsewhere, output,pullup;
@@ -389,14 +418,19 @@ void Port_Mode_Set(int i) {
   #ifdef _LOCO_SERVO_Driven_Port
       case _LOCO_SERVO_Driven_Port:
                       description =" LOCO Motor_Servo ";
-                      Pi02_Port_Settings_D[i] = 0;
-                      Pi03_Setting_options[i] = 32 + 10; //KEEP this i/o as a "SERVO" output regardless, 10= delay to use for servo changes = 100ms rate ;
+                      Pi02_Port_Settings_D[i]= 0;
+                      Pi03_Setting_options[i] = 10; //KEEP this i/o as a "SERVO" output regardless, 
+                      bitSet(Pi03_Setting_options[i],_servo);
                       hardset =true;output=true;
       #ifdef _LocoPWMDirPort
                       description =" LOCO PWM ";
-                      Pi02_Port_Settings_D[i] = 0; // set  as output for direction
-                      Pi03_Setting_options[i] = 128 +10; //
-
+                      Pi02_Port_Settings_D[i]= 0; // set  as output for direction was Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE; 
+                      Pi03_Setting_options[i] = 10; //10= delay to use for servo changes = 100ms rate ;
+                      #ifdef _NodeMCUMotorShield
+                        Pi03_Setting_options[i] = 0;
+                      #else
+                        bitSet(Pi03_Setting_options[i],_pwm);  // sets loco_servo  as PWM ?? was  Pi03_Setting_options[i] = 128 +10; //
+                      #endif
       #endif
             break;
   #endif
@@ -404,15 +438,15 @@ void Port_Mode_Set(int i) {
   #ifdef _LocoPWMDirPort
       case _LocoPWMDirPort:
                       description =" LOCO PWM direction ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE; 
-                      Pi03_Setting_options[i] = 0; // set  as output for direction nodemcumotor shield thIS is only for NodeMCU moto shield!
+                      bitClear(Pi02_Port_Settings_D[i],_input); 
+                      bitSet(Pi03_Setting_options[i],_pwm); // set  as output for direction / other PWM channel   //#ifndef 6612 and nodemcu to output? 
                       hardset =true;output=true;
       break;
   #endif
 
     // case SignalLed:  
     //                  description =" Node SignalLED ";
-    //                  Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
+    //                  bitClear(Pi02_Port_Settings_D[i],_input);
     //                  Pi03_Setting_options[i] = 0;  
     //                  hardset =true;setElsewhere = false;output=true;
     //  break;
@@ -420,13 +454,13 @@ void Port_Mode_Set(int i) {
   #ifdef _LOCO_SERVO_Driven_Port  
       case FRONTLight:
                       description =" Loco FRONTLight ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
+                      bitClear(Pi02_Port_Settings_D[i],_input);
                       Pi03_Setting_options[i] = 0; 
                       hardset =true;setElsewhere = false;output=true;
        break;
        case BACKLight:
                       description =" Loco BACKLight ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE; 
+                      bitClear(Pi02_Port_Settings_D[i],_input); 
                       Pi03_Setting_options[i] = 0;
                       hardset =true;setElsewhere = false;output=true;
         break;
@@ -435,7 +469,7 @@ void Port_Mode_Set(int i) {
         case SteamOutputPin:
                      description =" Loco SteamPulse ";
                      Pi03_Setting_options[i] = 0;
-                     Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE; 
+                     bitClear(Pi02_Port_Settings_D[i],_input); 
                      hardset =true;setElsewhere = false;output=true;
          break;
 
@@ -447,31 +481,32 @@ void Port_Mode_Set(int i) {
      #ifdef _AudioDAC   
         case I2SDAC_LRC:
                    description =" LRC (shared with Audio) ";
-                   //Pi02_Port_Settings_D[i] = 0; Pi03_Setting_options[i] = 0;
+                   //Pi02_Port_Settings_D[i]= 0; Pi03_Setting_options[i] = 0;
                   hardset =false; setElsewhere = true ;output=false;
         break;            
         case I2SDAC_CLK:
                    description =" CLK (used by Audio DAC)";
-                   Pi02_Port_Settings_D[i] = 0; Pi03_Setting_options[i] = 0;
+                   Pi02_Port_Settings_D[i]= 0; Pi03_Setting_options[i] = 0;
                    hardset =true;setElsewhere = true;output=true;
         break;
       
                     
         case I2SDAC_DIN:
                    description =" (RX)and DIN (used by Audio DAC)";
-                   Pi02_Port_Settings_D[i] = 0; Pi03_Setting_options[i] = 0;
+                   Pi02_Port_Settings_D[i]= 0; Pi03_Setting_options[i] = 0;
                    hardset =true;setElsewhere = true;output=true;
         break;
      #else  // Audio, but not using DAC
         case I2SDAC_LRC:
                    description =" LRC (used by Audio) - can be used as "; 
-                   Pi02_Port_Settings_D[i] = bitSet (Pi02_Port_Settings_D[i], 0 ); output=false; // force setting to input here
+                   //Pi02_Port_Settings_D[i]= 
+                   bitSet (Pi02_Port_Settings_D[i],_input ); output=false; // force setting to input here
                    Pi03_Setting_options[i] = 0;                                                  // force not pwm and not servo to input here
                    hardset =false;setElsewhere = false;
         break;
         case I2SDAC_DIN:
                    description =" (RX) and Audio Speaker Drive ";
-                   Pi02_Port_Settings_D[i] = 0; Pi03_Setting_options[i] = 0;
+                   Pi02_Port_Settings_D[i]= 0; Pi03_Setting_options[i] = 0;
                    hardset =true;setElsewhere = true;output=true;
         break;
      #endif
@@ -483,39 +518,44 @@ void Port_Mode_Set(int i) {
    
          break;
     }//end of switch
-    // do "Special cases" based on pin numbers
+    // do "Special cases" based on Nodepin numbers
      if (NodeMCUPinD[i]==SignalLed ) {
                       description =" SignalLED ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE;
+                      bitClear(Pi02_Port_Settings_D[i],_input);
                       Pi03_Setting_options[i] = 0;  
                       hardset =true;setElsewhere = false;output=true;
                       }
-    
-    if((OLED1Present||OLED2Present||OLED4Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
-      description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
+#ifdef _OLED    
+    if((OLED1Present||OLED3Present||OLED5Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
+      description ="OLED I2C bus";bitSet(Pi02_Port_Settings_D[i],_input ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;
       }
-       if((OLED3Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
-      description ="I2C bus";bitSet(Pi02_Port_Settings_D[i], 0 ); 
+       if((OLED2Present||OLED4Present||OLED6Present)&&((NodeMCUPinD[i]==OLED_SCL2)||(NodeMCUPinD[i]==OLED_SDA2))){
+      description ="OLED I2C bus";bitSet(Pi02_Port_Settings_D[i],_input ); 
                       Pi03_Setting_options[i] = 0; 
       hardset =true;output=false;pullup=false;setElsewhere = true;
       }
-
+#endif
     
     if((NodeMCUPinD[i]>=34)&& (NodeMCUPinD[i]<=39)){
                       description ="Input NO PULLUP ";
-                      bitSet(Pi02_Port_Settings_D[i], 0 ); 
+                      bitSet(Pi02_Port_Settings_D[i],_input ); 
                       Pi03_Setting_options[i] = 0; // set  as output for direction nodemcumotor shield thIS is only for NodeMCU moto shield!
                       
         }
     if((NodeMCUPinD[i]>=25)&& (NodeMCUPinD[i]<=26)){
                       description =" ESP32 Native DAC ";
-                      Pi02_Port_Settings_D[i] = Pi02_Port_Settings_D[i] & 0xFE; 
+                      bitClear(Pi02_Port_Settings_D[i],_input); 
                       Pi03_Setting_options[i] = 128;  
                       hardset =true;output=true;setElsewhere = false;
         }
-      
+
+        //setting hardset message
+      if (hardset||setElsewhere){
+        //Pi02_Port_Settings_D[i]= Pi02_Port_Settings_D[i] & 0x2;
+        bitSet (Pi02_Port_Settings_D[i],_setelsewhere);
+      }
     
     // now do the setting proper and send some useful messages out on the serial interface 
     #ifdef ESP32
@@ -530,7 +570,7 @@ void Port_Mode_Set(int i) {
     Serial.print(description);
     if (!setElsewhere){
         if (IsServo(i)||IsPWM(i)){  // do first to force pi-02 to output 
-                                 Pi02_Port_Settings_D[i] = bitClear (Pi02_Port_Settings_D[i], 0 ); 
+                                 bitClear (Pi02_Port_Settings_D[i],_input ); 
                                  output=true;
                                  }
     
@@ -569,10 +609,7 @@ void Port_Mode_Set(int i) {
                    sprintf ( DebugMsg, " Off<%d> On<%d> ", (Pi03_Setting_offposH[i] * 256) + Pi03_Setting_offposL[i],(Pi03_Setting_onposH[i] * 256) + Pi03_Setting_onposL[i]);
                    Serial.print(DebugMsg);
                                          }
-                
-          
-          
-          //Serial.print (F(" Pi02 PortType:"));
+       //Serial.print (F(" Pi02 PortType:"));
           //Serial.print (Pi02_Port_Settings_D[i]);
          // Serial.print (F(" Pi03_Setting_options:"));
          // Serial.print (Pi03_Setting_options[i]);
@@ -612,24 +649,22 @@ void ResetDebounce(){
   }
 }
 
-boolean Debounce(int i) {  //Tests for inputs having changed, ues PortDebounceDelay[i] 
+boolean Debounce(int i) {  //Tests for inputs having changed, 
  //new
- unsigned long debounceDelay = 50;
+ unsigned long debounceDelay = 10;  //ms
  bool Reading;
  boolean SwitchSensed;
       SwitchSensed = false ;
       Reading= (PortInvert(i)^digitalRead(NodeMCUPinD[i]));
      //filter out any noise by setting a time buffer
      if ( (millis() - lastDebounceTime[i]) > debounceDelay) {
-          if (Reading != LastSentButtonState[i]){  // changed state ?
+          if (Reading != LastSentButtonState[i]){  // changed state ? Check against SENT state
               SwitchSensed = true;
               LastDebounceButtonState[i]=Reading;
-              LastSentButtonState[i]= Reading;
-              //PortTimingDelay[i] = millis() + ((DelaySetting_for_PortD[i] * 10) + 1);
-              }
+               }
      }
      if (Reading != LastDebounceButtonState[i]) {
-        LastDebounceButtonState[i] = Reading; // update until it stays the same!.. 
+        LastDebounceButtonState[i] = Reading; // update until it stays the same
         lastDebounceTime[i]=millis();  
          }
     
@@ -664,7 +699,7 @@ void FLASHING() {
                                            }else {SDemand[port] = FlashHL(1, port); }
                             WriteAnalogtoPort(port,SDemand[port]);
                            } else {                                        //its a digital output so just invert current state
-          digitalWrite (NodeMCUPinD[port], !digitalRead(NodeMCUPinD[port]));
+          digitalWrite(NodeMCUPinD[port], !digitalRead(NodeMCUPinD[port]));
         }
         PortTimingDelay[port] = millis() + (DelaySetting_for_PortD[port] * 10);
       }
@@ -839,14 +874,14 @@ void SERVOS() {              //attaches and detaches servos, accelerates to dema
   LocalTimer=millis();
   for (int i = 1 ; i <= 8; i++) { //up to 8 servos.. originally,  _LOCO_SERVO_Driven_Port was just another srvo used here but with different settings  
 #ifdef _LOCO_SERVO_Driven_Port    
-    if (i!=_LOCO_SERVO_Driven_Port){ //not for loco 
+    if (i!=_LOCO_SERVO_Driven_Port){ //not for loco speed control "servo"
 #endif
     if (IsServo(i)) { //only if this port is a "servo"... To address a channel instead of a port the port type servo must be set on the interface tab of switches and outputs
         if (millis() >= (Pi03_Setting_LastUpdated[i] + (Pi03_Setting_options[i] & 15) * 10)) { //do update only at the required delay update rate
                  offset = SDemand[i] - ServoLastPos[i];  //how far from the S_demand are we
                  ServoPositionNow=ServoLastPos[i]; 
-    
-    if ((abs(offset) <= 3) && ((Pi02_Port_Settings_D[i] & 129) == 128)  && (ButtonState[i] == 1) ) { //REVERSING :changes demand if within 3 of demand and reversing...needs inv to operate on buttonstate, ???as it will not switch off if inv..
+      if ((abs(offset) <= 3) && (PortFlashing(i))  && (ButtonState[i] == 1) ) { //REVERSING (Flashing):demand if within 3 of demand and reversing...needs inv to operate on buttonstate, ???as it will not switch off if inv..
+  
 //#ifdef _SERVO_DEBUG
 //     DebugSprintfMsgSend( sprintf ( DebugMsg, " ( 506) Using Reversing code"));
 //#endif
