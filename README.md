@@ -1,11 +1,21 @@
 # WiRocS
-From V12 I am not going to keep changing the Ino to WiRocs.ino, but keep it as WiRocS-vxx.ino, as this is how I keep it on my home system. 
-You will need to rename the most recent .ino to "WiRocS.ino" after you have downloaded the sketch. (sorry, but this simplifies checking that I have uploaded the latest code.)
-I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be uploadable via an ESP Flash Programmer and set up a  stationary nodes without having to compile the whole code in Arduino. You will need to use FileZilla or Arduino_Sketch_Data_Uploader to upload the sounds from the Data directory to the Node's SPIFFS, but generally this only needs doing once (unless you want to make changes to the sound effects!)  
 
 WiFi Rocnet node for ESP 32 and 8266
 For documentation please read https://wiki.rocrail.net/doku.php?id=users:dagnall53:description
 Use of this software is at your own risk!
+
+=== General note ===
+
+From V12 I am not going to keep changing the Ino to WiRocs.ino, but keep it as WiRocS-vxx.ino, as this is how I keep it on my home system. 
+You will need to rename the most recent .ino to "WiRocS.ino" after you have downloaded the sketch. (sorry, but this simplifies checking that I have uploaded the latest code.)
+I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be uploadable via an ESP Flash Programmer and set up a  stationary nodes without having to compile the whole code in Arduino. You will need to use FileZilla or Arduino_Sketch_Data_Uploader to upload the sounds from the Data directory to the Node's SPIFFS, but generally this only needs doing once (unless you want to make changes to the sound effects!) 
+
+===Version History===
+
+V17 Added more checks in Audio setup. Code now disables audio if it cannot find the F6 and F3 wav files that must be played as part of setup.Added 6616 PWM driver and got the PWM Loco option working again. Revised addressing of PI02 and Pi03 parameters  Faster BigClock on OLED displays. Changed Button debounce test to >=10ms.
+
+*Remaining issue: Servo numbers are hard fixed and have range of only 1-8 so on ESP32, the Pi03 SERVO option will not work on I/O 9-16. 
+
 
 V15 Internally the Code now references each of the four possible OLEDS as OLED1-4. This saves some confusion with the RocDisplay "display" numbers. 
 I2C bus: the defaults are now:  
