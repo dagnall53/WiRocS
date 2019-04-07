@@ -187,9 +187,12 @@ void MQTT_Loop(void){
 }
 extern uint16_t MyLocoAddr ;
 extern int32_t SigStrength();
-int32_t LastDebugMsgTime;
-bool DebugMsgSent,SendClearMsg;
-void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
+extern bool DebugMsgCleared;
+extern uint32_t TimeToClearDebugMessage;
+
+
+
+void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
   char DebugMsgLocal[127];
   char DebugMsgTemp[127];
   int cx;
@@ -203,46 +206,55 @@ void DebugMsgSend (String topic, char* payload) { //use with mosquitto_sub -h 12
   #ifdef _LOCO_SERVO_Driven_Port
   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) Msg:%s",RocNodeID,Signal,  Nickname, payload);
+  
   #endif
-
+  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);
 
    //add timestamp to outgoing message
-if ((hrs==0)&&(mins==0)){//not Synchronised yet..
-  cx=sprintf(DebugMsgLocal," Time not synchronised yet %s",DebugMsgTemp);
-   }
-   else {cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %s",hrs,mins,secs,DebugMsgTemp);
-         }
-//
+  if ((hrs==0)&&(mins==0)){//not Synchronised yet..
+                          cx=sprintf(DebugMsgLocal," Time not synchronised yet %s",DebugMsgTemp);
+                          }
+                          else {cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %s",hrs,mins,secs,DebugMsgTemp);
+                          }
+        
     //Serial.printf("\n *Debug Message:%s Msg Length:%d \n",DebugMsgLocal,cx);
-    Serial.printf("\n*Debug Msg %s  \n",DebugMsgTemp);
+   if (Print){        Serial.printf("\n*Debug Msg %s  \n",DebugMsgTemp);}
+             else{cx= sprintf ( DebugMsgLocal, "RN:%d %s",RocNodeID,payload);  }  // shortened intro for debug msg on no print version                                                                     }
 
  
-    if ((cx <= 120)) {
-                    //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
-                     }
+    //if ((cx <= 120)) {
+    //                //  can do     client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
+    //                 }
     if ((cx >= 120) && (strlen(payload) <= 100)) {
                    cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
-              //      client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
-                     }//print just msg  line
+                       }//print just msg  line
     if (strlen(payload) >= 101) {
-      cx= sprintf ( DebugMsgLocal, "Node:%d Loco:%d Time %d:%d:%ds Msg TOO Big to print", RocNodeID, MyLocoAddr, hrs, mins, secs);
-                  //     client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
-                     }
-    // all ends with sending the message!
+                   cx= sprintf ( DebugMsgLocal, "Node:%d Loco:%d Time %d:%d:%ds Msg TOO Big to print", RocNodeID, MyLocoAddr, hrs, mins, secs);
+                       }
+    // all ends with actually sending the message!
         client.publish(topic.c_str(), DebugMsgLocal,retained); // retained or not?// added at V17bb
-     //   LastDebugMsgTime=millis()+5000;
-     //   DebugMsgSent=true;
-     //   SendClearMsg=true;
-  
+        if (!Print){delay(1000);}// slow down the Setup (the only place Print=false is used) to allow time for message propagation 
+        TimeToClearDebugMessage=millis()+5000; // not used at present, but can be switched on in main loop
+        DebugMsgCleared=false;
+  }
 
- }
+void DebugMsgClear(void){  // attempt to prevent repeated transmissions of last sent message by Broker
+  String topic;
+  topic="debug";
+  client.publish(topic.c_str(),"",false);
+  delay(5);
+  DebugMsgCleared=true;  
+}
 
-
-  void DebugSprintfMsgSend(int CX){ //allows use of Sprintf function in the "cx" location
-  DebugMsgSend ("debug", DebugMsg);
+void DebugSprintfMsgSend(int CX){ //allows use of Sprintf function in the "cx" location
+  DebugMsgSend ("debug", DebugMsg, true);
   delay(5);
 }
+
+void DebugSprintfMsgNoprint(int CX){ //allows use of Sprintf function in the "cx" location
+  DebugMsgSend ("debug", DebugMsg, false);
+  }
+
 extern bool ScanForBroker;
 extern int BrokerAddr;
 extern void WriteWiFiSettings();
@@ -254,7 +266,6 @@ extern void StringToChar(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 extern void OLEDS_Display(String L1,String L2,String L3,String L4);
 uint32_t TimeLimit;
-
 void reconnect() {
   bool ConnectedNow; int cx;
   char ClientName[80];

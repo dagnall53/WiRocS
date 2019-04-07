@@ -3,7 +3,6 @@
 
 //----DO NOT FORGET TO UPLOAD THE SKETCH DATA ---
 //  To check the code is working, in command prompt, set up a MQTT "debug" monitor: (e.g. For MQTT broker at 192.18.0.18) "CD C:\mosquitto  mosquitto_sub -h 192.168.0.18 -i "CMD_Prompt" -t debug -q 0" 
-//  YOU MUST compile ESP8266 with FLASH SIZE 4M(3M SPIFFS)
 //  From V15, the main ESP8266 program is too big to OTA, so change to 4M(2M SPIFFS), but remember to re-upload the sketch data !!
 
 //-----ESP32 compatibility--------
@@ -14,7 +13,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 17;
+uint8_t SW_REV = 18;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -35,7 +34,7 @@ String SW_Type= " Master";
 IPAddress ipBroad;
 IPAddress mosquitto;
 
-//adding FTP support! shoud support esp32//https://github.com/nailbuster/esp8266FTPServer
+//adding FTP support! should support esp32//https://github.com/nailbuster/esp8266FTPServer
 #include <ESP8266FtpServer.h> 
 
 FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
@@ -48,6 +47,8 @@ uint8_t subIPL;
 
 
 #ifdef ESP32  // https://github.com/madhephaestus/ESP32Servo/tree/master/src
+              // which is forked from https://github.com/jkb-git/ESP32Servo
+  // quote "All pin numbers are allowed, but only pins 2,4,12-19,21-23,25-27,32-33 are recommended.
   #include <ESP32Servo.h>
 #else
   #include <Servo.h>
@@ -76,7 +77,8 @@ uint8_t subIPL;
 int SDelay[PortsRange]; //Number of ports +2
 uint32_t LoopTimer;
 uint32_t LocoCycle;
-
+uint32_t TimeToClearDebugMessage;
+bool DebugMsgCleared;
 uint32_t StartedAt;
 
 
@@ -97,8 +99,8 @@ extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L
 extern void SetFont(uint8_t Disp,uint8_t Font);
 
 extern uint8_t OLED_Settings[7];
-extern uint32_t LastDebugMsgTime;
-extern bool DebugMsgSent,SendClearMsg;;
+
+
 
 
 // functions start 
@@ -587,8 +589,8 @@ int LoopCount;
 //========================MAIN LOOP==============================
 void loop() {
 //  LoopCount++;
- //  if ((LastDebugMsgTime<= LoopTimer) && (DebugMsgSent)&&(SendClearMsg)){SendClearMsg=false;DebugMsgSent=false;DebugMsgSend ("debug","");}
-
+ //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
+// if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
 
   //Sign of life flash and clock display
   if (LoopTimer >= lastsec ) {//sign of life flash 

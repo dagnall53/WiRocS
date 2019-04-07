@@ -1191,6 +1191,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
 
 extern uint32_t PortTimingDelay[PortsRange]; //Number of ports +2
 extern bool Playing(int Channel);
+extern bool PortFlashing(uint8_t i);
 #ifdef _Audio
 extern bool PlayingSoundEffect;
 #endif
@@ -1228,8 +1229,8 @@ void ROC_Outputs() { //group 9
                                               }
                   Pi03_Setting_LastUpdated[ROC_Data[4]] = millis();  
                   
-                // DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
-                 if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (SERVO) to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]]));}
+                // DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting SERVO %d () to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]])); 
+                 if (OKtoWrite)   {    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting SERVO Output D%d to State(%d) = Position:%d ",ROC_Data[4],STATE,SDemand[ROC_Data[4]]));}
                    
                }//   End of servo                                         
           else {   //not servo Could be PWM or digital 
@@ -1237,23 +1238,27 @@ void ROC_Outputs() { //group 9
                           PortTimingDelay[ROC_Data[4]] = millis() + (DelaySetting_for_PortD[ROC_Data[4]] * 10);                                  
                           WriteAnalogtoPort(ROC_Data[4], FlashHL(STATE, ROC_Data[4]));   //set pwm, arduino range is 0-1023, rocrail has 0-4095 range
                           SDemand[ROC_Data[4]] = FlashHL(STATE, ROC_Data[4]); //save  what we have set for flashing 
-                          if((Pi02_Port_Settings_D[ROC_Data[4]] & 129) == 128){  //flashing
-                              DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output FLASHING %d  to %d", 
-                                                      ROC_Data[4], SDemand[ROC_Data[4]]));}
+                          if(PortFlashing(ROC_Data[4])){  //flashing // add rate?
+                              DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting PWM Output D%d FLASHING @%dms  (GPIO)%d to %d%%", 
+                                                      ROC_Data[4],DelaySetting_for_PortD[ROC_Data[4]]*10,NodeMCUPinD[ROC_Data[4]], 100*SDemand[ROC_Data[4]]/1024));}
                           else { // not flashing
+                            #ifdef ESP32
                                 if ((ROC_Data[4]==DAC25is)||(ROC_Data[4]==DAC26is)){
-                                     DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (Analog) to %.1f V", ROC_Data[4], 
-                                      ((3.3*SDemand[ROC_Data[4]])/1024)));}                          //volts 1023==3.3
-                                  else{
-                                      DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output %d (PWM) to %d%%", ROC_Data[4], 
+                                     DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Analog Output D%d (GPIO)%d  to %.1f V", ROC_Data[4],NodeMCUPinD[ROC_Data[4]], 
+                                      ((3.3*SDemand[ROC_Data[4]])/1024)));  //volts 1023==3.3
+                                      
+                                  }else   
+                             #endif     
+                                  {
+                                      DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting PWM Output D%d (GPIO)%d  to %d%%", ROC_Data[4], NodeMCUPinD[ROC_Data[4]],
                                       100*SDemand[ROC_Data[4]]/1024));}                          //set pwm, arduino range is 0-1023, rocrail has 0-4095 range
                                 } // sent PWM demands
                   }   //end PWM, must be digtal      
                        //this not servo not pwm, so is a pure digital output
                        if (!(IsPWM(ROC_Data[4]))){
-                          if((Pi02_Port_Settings_D[ROC_Data[4]] & 129) == 128){
-                                    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output FLASHING D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
-                                    else{    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Output D%d (GPIO)%d (Digital) to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
+                          if(PortFlashing(ROC_Data[4])){  //flashing
+                                    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Digital Output D%d FLASHING @%dms (GPIO)%d to %d",ROC_Data[4],DelaySetting_for_PortD[ROC_Data[4]]*10,NodeMCUPinD[ROC_Data[4]], STATE));}
+                                    else{    DebugSprintfMsgSend( sprintf ( DebugMsg, "Setting Digital Output D%d (GPIO)%d to %d",ROC_Data[4],NodeMCUPinD[ROC_Data[4]], STATE));}
                           digitalWrite(NodeMCUPinD[ROC_Data[4]], STATE); 
                           PortTimingDelay[ROC_Data[4]] = millis() + (DelaySetting_for_PortD[ROC_Data[4]] * 10);
                           SDemand[ROC_Data[4]] = servoLR(STATE, ROC_Data[4]);  //use sdemand to save state so we can flash

@@ -17,8 +17,10 @@ void MQTTSend (String topic, uint8_t * payload) ;
 void MQTT_Setup(void);
 boolean MQTT_Connected(void);
 void MQTT_Loop(void);
-void DebugMsgSend (String topic, char* payload) ;
+void DebugMsgSend (String topic, char* payload, bool Print) ;// modified to allow printing just to De
+void DebugMsgClear(void);
 void DebugSprintfMsgSend(int CX);
+void DebugSprintfMsgNoprint(int CX);
 void reconnect(void); 
 
   #endif

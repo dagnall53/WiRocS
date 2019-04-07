@@ -97,7 +97,7 @@
 //#define _Input_DEBUG
 //#define _SERIAL_Audio_DEBUG 
 //#define _SERIAL_SUBS_DEBUG 
-#define _showRocMSGS
+#define _showRocMSGS  // time synch?
 //#define _SERIAL_MQTT_DEBUG
 //#define _SERVO_DEBUG //(enables debug messages in set motor speed rc and pwm
 //#define _PWM_DEBUG  // to assist pwm debug 
@@ -107,8 +107,7 @@
 // #define FTP_DEBUG in \libraries\esp8266FTPserver\ESP8266FtpServer.h to see ftp verbose on serial
 
   //ESP32 Stuff
-#define DAC25is  10
-#define DAC26is  11 //to keep port setting in rocsubs happy should not affect anything as ports 10 and 11
+
   #ifdef ESP32
     //used in subroutines.h see  https://desire.giesecke.tk/index.php/2018/07/06/reserved-gpios/ 
     // note for GPIO pin 12 Make sure it is not pulled high by a peripheral device during boot or the module might not be able to start!
@@ -120,22 +119,26 @@
     // following work fine  12 13 14 15 16 17    19   (21!) 23       27     32 33 
     // not exposed on my board / untested           20        24       28 29     36 37 38 39
 
+    // also note from ESP32 servo library // quote "All pin numbers are allowed (for PWM), but only pins 2,4,12-19,21-23,25-27,32-33 are recommended.
+
   static const  uint8_t D0   = 2;  // V5 'D0' is not used now, used to be special pin identifier for signal led. 
   static const  uint8_t D1   = 19;//
-  static const  uint8_t D2   = 12;
+  static const  uint8_t D2   = 12; // boot will fail if pulled high
   static const  uint8_t D3   = 13; //
   static const  uint8_t D4   = 14;  
   static const  uint8_t D5   = 15;
   static const  uint8_t D6   = 16;
-  
   static const  uint8_t D7   = 17;
   static const  uint8_t D8   = 21; 
   static const  uint8_t D9   = 23; 
   static const  uint8_t D10   = 25;  
   static const  uint8_t  D11  = 26; 
+  #define DAC25is  10
+  #define DAC26is  11 //to keep port setting in rocsubs happy should not affect anything else ports D10 and D11
   static const  uint8_t  D12 = 27; 
   static const  uint8_t  D13  = 32; 
   static const  uint8_t  D14  = 33; 
+  // these are input only
   static const  uint8_t  D15  = 34; 
   static const  uint8_t  D16  = 35; 
    // on oled board, 4 is oled scl 5 is oled sda for oled 
@@ -158,10 +161,10 @@
  //--------------------------------OLED I2C------------------- 
  // These OLED SCL/SDA pin definitions use GPIO numbers 
   #ifdef ESP32
- static const uint8_t OLED_SDA = 4;  //D4 ESP32 Devkit  !! NB gpio 0 is not exposed on my Esp32 Devkit V1 (but is on some other boards..)
- static const uint8_t OLED_SCL = 5;  //D5
- static const uint8_t OLED_SDA2 = 19;  //D19
- static const uint8_t OLED_SCL2 = 21;  //D21
+ static const uint8_t OLED_SDA = 4;  //gpio 4 on ESP32 Devkit  !! NB gpio 0 is not exposed on my Esp32 Devkit V1 (but is on some other boards..)
+ static const uint8_t OLED_SCL = 5;  //gpio 5
+ static const uint8_t OLED_SDA2 = 32;  //my rocrail port 13
+ static const uint8_t OLED_SCL2 = 33;  //my rocrail port 14 
  #else
  static const uint8_t OLED_SDA2 = 5;  //D1 is 5 //used only for display 3
  static const uint8_t OLED_SCL2 = 4;//d2 is 4

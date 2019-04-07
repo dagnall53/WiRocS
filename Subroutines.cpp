@@ -175,7 +175,7 @@ void SetPortPinIndex() {
   //set my indexed port range for indexed use later  other code translates D0 to the pin number ESP uses..
 #ifdef ESP32
    // on oled board, 4 is oled scl 5 isoled sda are oled 
-   //See stuff in Directives.h 
+   //See stuff in Directives.h that sets "Dn" to GPIO numbers
   NodeMCUPinD[0] = D0;
   NodeMCUPinD[1] = D1;
   NodeMCUPinD[2] = D2;

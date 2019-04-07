@@ -37,7 +37,7 @@ Servo myservo4;  //create servo object to control a servo
 Servo myservo5;  //create servo object to control a servo
 Servo myservo6;  //create servo object to control a servo
 Servo myservo7;  //create servo object to control a servo
-Servo myservo8;  //create servo object to control ... used for loco motors in ver 106 back
+Servo myservo8;  //create servo object to control ...
 
 //conditional externs 
 #ifdef _Audio 
@@ -104,21 +104,29 @@ return bitRead(Pi03_Setting_options[i],_pwm);
 
 
 void WriteAnalogtoPort(uint8_t port,uint16_t demand){
+  if(demand>=1023){demand=1023;}
   #ifdef ESP32
-  //port is channel!
-      #ifdef _ESP32_PWM_DEBUG
-        DebugSprintfMsgSend( sprintf ( DebugMsg, " Setting PWM on Pin%d (Channel<%d>) to duty cycle %d", NodeMCUPinD[port],port,demand)); 
-      #endif
-    // placed in else below ledcWrite(port, demand); // write to Channel (port) also needed this in line 557 ledcSetup(ledChannel,1000, 10);ledcSetup(ledChannel, freq, resolution);to be setup for 1khz, 10 bit res(10240 like esp8266
-  // plus  stuff to work DAC25 and DAC26 0-255///
-  if ((port == DAC25is) || (port = DAC26is)){
-        dacWrite(NodeMCUPinD[port], demand/4);
-    }else{
-        ledcWrite(port, demand);  }
+      //port is D number! NodeMCUPinD[port] decodes to GPIO pin
+         #ifdef _ESP32_PWM_DEBUG
+                DebugSprintfMsgSend( sprintf ( DebugMsg, " Write Analog D%d (pin<%d>) to demand<%d>", port,NodeMCUPinD[port],demand)); 
+         #endif
+           
+      if ((port == DAC25is) || (port == DAC26is)){ // stuff to work special DAC25 and DAC26 which are 0-255///
+                              dacWrite(NodeMCUPinD[port], demand/4);
+         #ifdef _ESP32_PWM_DEBUG
+                DebugSprintfMsgSend( sprintf ( DebugMsg, " dac Writing D%d (pin<%d>) to duty cycle %d", port,NodeMCUPinD[port],demand/4)); 
+         #endif
+                          }
+                        else{ //ledcWrite// write to PWM channel (channel, not pin). Range is 0-15 . resolution set at 10 bit ~line 592 (ledcSetup(ledChannel,1000, 10);ledcSetup(ledChannel, freq, resolution);for 1khz, 10 bit res(10240 like esp8266
+                             ledcWrite(port-1, demand);
+         #ifdef _ESP32_PWM_DEBUG
+                DebugSprintfMsgSend( sprintf ( DebugMsg, " ledc Writing D%d (pin<%d>) to duty cycle %d", port,NodeMCUPinD[port],demand)); 
+         #endif
+                               }
   #else
-        if(demand>=1023){demand=1023;}
-        analogWrite(NodeMCUPinD[port],demand);  // 0--1024 analogwrite to Pin(NodemcupinD(port) for esp8266
-  #endif
+  //#ifndef ESP32
+         analogWrite(NodeMCUPinD[port],demand);  // 0--1024 analogwrite to Pin(NodemcupinD(port) for esp8266
+  #endif        
 }
 
 void SetMotorSpeed(int SpeedDemand_local,uint8_t dirfl){ //lc dirf to avoid confusion with DIRF ?
@@ -397,10 +405,13 @@ void ReadInputPorts() {
 extern bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
 
 void Port_Mode_Set(int i) {
-  boolean hardset,setElsewhere, output,pullup;
+  boolean hardset,setElsewhere, output,pullup,DebugMsgSend;
+  String SetupMsg; 
   hardset = false;
   setElsewhere = false;
   pullup=true;
+  DebugMsgSend=false;  // sending debug message on MQTT really slows things down and seems to add no value, since all can be read via Rocview or serial monitor
+  
   String description;
   description =" ";
  
@@ -498,14 +509,14 @@ void Port_Mode_Set(int i) {
         break;
      #else  // Audio, but not using DAC
         case I2SDAC_LRC:
-                   description =" LRC (used by Audio) - can be used as "; 
+                   description =" (Audio) LRC  "; 
                    //Pi02_Port_Settings_D[i]= 
                    bitSet (Pi02_Port_Settings_D[i],_input ); output=false; // force setting to input here
                    Pi03_Setting_options[i] = 0;                                                  // force not pwm and not servo to input here
                    hardset =false;setElsewhere = false;
         break;
         case I2SDAC_DIN:
-                   description =" (RX) and Audio Speaker Drive ";
+                   description ="Audio Speaker Drive ";
                    Pi02_Port_Settings_D[i]= 0; Pi03_Setting_options[i] = 0;
                    hardset =true;setElsewhere = true;output=true;
         break;
@@ -525,6 +536,10 @@ void Port_Mode_Set(int i) {
                       Pi03_Setting_options[i] = 0;  
                       hardset =true;setElsewhere = false;output=true;
                       }
+
+
+
+                      
 #ifdef _OLED    
     if((OLED1Present||OLED3Present||OLED5Present)&&((NodeMCUPinD[i]==OLED_SCL)||(NodeMCUPinD[i]==OLED_SDA))){
       description ="OLED I2C bus";bitSet(Pi02_Port_Settings_D[i],_input ); 
@@ -539,7 +554,7 @@ void Port_Mode_Set(int i) {
 #endif
     
     if((NodeMCUPinD[i]>=34)&& (NodeMCUPinD[i]<=39)){
-                      description ="Input NO PULLUP ";
+                      description ="Input NO PULLUP ";pullup=false;
                       bitSet(Pi02_Port_Settings_D[i],_input ); 
                       Pi03_Setting_options[i] = 0; // set  as output for direction nodemcumotor shield thIS is only for NodeMCU moto shield!
                       
@@ -550,21 +565,32 @@ void Port_Mode_Set(int i) {
                       Pi03_Setting_options[i] = 128;  
                       hardset =true;output=true;setElsewhere = false;
         }
-
+       if((IsServo(i))&&(i>=8)){
+                      //Servos are only available on addresses 1-8 on the esp32 at the moment
+                      bitClear(Pi03_Setting_options[i],_servo);// clear Servo bit       
+                      //Serial.println(F("Servos only available on addr 1-8"));   
+                      DebugSprintfMsgSend( sprintf ( DebugMsg, "Servo allowed only on ports 1-8. ServoSet on %d has been reset ",i));   
+                      }
+    
         //setting hardset message
       if (hardset||setElsewhere){
         //Pi02_Port_Settings_D[i]= Pi02_Port_Settings_D[i] & 0x2;
         bitSet (Pi02_Port_Settings_D[i],_setelsewhere);
       }
-    
+    SetupMsg="";
     // now do the setting proper and send some useful messages out on the serial interface 
     #ifdef ESP32
         Serial.print(F("RR Addr:"));Serial.print (i);Serial.print (F(" <GPIO:"));Serial.print (NodeMCUPinD[i]);Serial.print(F(">" ));
-        
+     if(DebugMsgSend){   SetupMsg+="RR Addr:";SetupMsg+=i;SetupMsg+=" GPIO:";SetupMsg+=NodeMCUPinD[i];SetupMsg+=" ";SetupMsg+=description;}
     #else
         Serial.print (F("Pin D"));
         Serial.print (i); Serial.print(F(" is Rocrail Address:"));Serial.print (i);
+     if(DebugMsgSend){   SetupMsg+="RR Addr:";SetupMsg+=i;SetupMsg+=" GPIO:";SetupMsg+=NodeMCUPinD[i];SetupMsg+=" ";SetupMsg+=description;}
     #endif
+    
+       
+
+
     
        if (hardset){Serial.print(" (Hard_Set)");}
     Serial.print(description);
@@ -576,22 +602,22 @@ void Port_Mode_Set(int i) {
     
         if (output){ 
                     pinMode(NodeMCUPinD[i], OUTPUT); // works for servo for esp32 and esp8266, but pwm needs additional stuff for esp32
-                    Serial.print (F(" Output"));
-                    if (IsServo(i)) { Serial.print (F(" Servo"));}
+                    Serial.print (F(" Output"));SetupMsg+=" Output:";
+                    if (IsServo(i)) { Serial.print (F(" Servo"));SetupMsg+=" Servo";}
                     if (IsPWM(i)) 
                                   {
                                     #ifdef ESP32
-                                      ledcSetup(i,1000, 10);// i is the channel (0-16??) 1khz and 10 bit resolution
-                                      ledcAttachPin(NodeMCUPinD[i], i); // attach pin (nodemcuetc) to this channel  
+                                      ledcSetup(i-1,1000,10);// I is my Dx reference,   i-1 is the ESP32 "channel (0-15)" 1000,10 =1khz and 10 bit resolution
+                                      ledcAttachPin(NodeMCUPinD[i], i-1); // attach pin (nodemcuD[i] etc) to this channel  
                                     #endif 
-                                   WriteAnalogtoPort(i, 0);  
-                                   Serial.print (F(" PWM"));  }
+                                   WriteAnalogtoPort(i, FlashHL(0,i));  // start at the 0 (left) value
+                                   Serial.print (F(" PWM")); SetupMsg+=" PWM"; }
                    }
              else   { // is an input          
                     pinMode(NodeMCUPinD[i], INPUT_PULLUP);
                     if (!pullup && PortInvert(i)) {Serial.print (F(" {invert} "));}
-                    if (pullup){Serial.print(F( " Input with pullup"));}
-                    
+                    if (pullup){Serial.print(F( " Input with pullup"));SetupMsg+=" Input (pullup)";}
+                    if(description =="Input NO PULLUP "){}else{SetupMsg+=" Input no pullup";}
                      }
                      
              
@@ -609,19 +635,18 @@ void Port_Mode_Set(int i) {
                    sprintf ( DebugMsg, " Off<%d> On<%d> ", (Pi03_Setting_offposH[i] * 256) + Pi03_Setting_offposL[i],(Pi03_Setting_onposH[i] * 256) + Pi03_Setting_onposL[i]);
                    Serial.print(DebugMsg);
                                          }
-       //Serial.print (F(" Pi02 PortType:"));
+          //Serial.print (F(" Pi02 PortType:"));
           //Serial.print (Pi02_Port_Settings_D[i]);
-         // Serial.print (F(" Pi03_Setting_options:"));
-         // Serial.print (Pi03_Setting_options[i]);
+          // Serial.print (F(" Pi03_Setting_options:"));
+          // Serial.print (Pi03_Setting_options[i]);
                       }      
                      
                      }else{ // SET node directions elsewhere so do not printout port settings 
                     Serial.print (" Set elsewhere");
                            }
-         
-    
-       
+   
        Serial.println("");
+       if(DebugMsgSend){ if (hardset){SetupMsg+=" Hard Set";} DebugSprintfMsgNoprint( sprintf ( DebugMsg, "Setup %s ",SetupMsg.c_str()));}
   }
 
 
@@ -632,9 +657,12 @@ void Port_Setup_and_Report() {
        Serial.println (RocNodeID); 
       Serial.println(F("--------------------------------------------------------------"));
       pinMode(NodeMCUPinD[0], OUTPUT);
+      DebugSprintfMsgSend( sprintf ( DebugMsg, "Port Setup in progress "));
     for (int i = 1 ; i <= NumberOfPorts; i++) {   
-                     Port_Mode_Set(i);  // shows all port definitions.. Improved reporting code in V23
-                                      }
+                     Port_Mode_Set(i);  // shows all port definitions.. Improved reporting code 
+                   //  delay(800);      // slow down to allow Debug message time to send           
+                     }
+         DebugMsgClear();
           
 }
 
@@ -695,8 +723,10 @@ void FLASHING() {
    if((PortFlashing(port))&& (!IsInput(port))&&(!IsServo(port))) { //make sure its an output '0' and has port blink '128' set! and is NOT a Servo
       if ((set) && (millis() >= PortTimingDelay[port]) && (DelaySetting_for_PortD[port] >= 1)) {
           if (IsPWM(port)) {//has 'channel' blink set  if so, use PWM outputs
-                            if (SDemand[port] == FlashHL(1, port)) {SDemand[port] = FlashHL(0, port);
-                                           }else {SDemand[port] = FlashHL(1, port); }
+                            if (SDemand[port] == FlashHL(1, port)) 
+                                               {SDemand[port] = FlashHL(0, port);
+                                         }else {SDemand[port] = FlashHL(1, port); }
+                                         
                             WriteAnalogtoPort(port,SDemand[port]);
                            } else {                                        //its a digital output so just invert current state
           digitalWrite(NodeMCUPinD[port], !digitalRead(NodeMCUPinD[port]));
@@ -782,7 +812,8 @@ void DETACH() {
 void SetServo( int i, uint16_t value) { //uses 0-180
   long MotorSpeed;
   uint16_t SavedValue;
-  
+  //NOTE The servo library decides which channel to use dynamically, using detached channels again, so minimising timer usage? so presumably only active servos are using timers.
+  // this is presumably a better approach than using the PWM channels directly, which would use up all the timers?
   if (IsServo(i)) { //double check, as this is called from two places
     ServoLastPos[i]=value;
     switch (i) {
