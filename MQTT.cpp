@@ -241,7 +241,7 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
 void DebugMsgClear(void){  // attempt to prevent repeated transmissions of last sent message by Broker
   String topic;
   topic="debug";
-  client.publish(topic.c_str(),"",false);
+  client.publish(topic.c_str(),"",true);
   delay(5);
   DebugMsgCleared=true;  
 }
@@ -265,6 +265,7 @@ extern void SetFont(uint8_t Disp,uint8_t Font);
 extern void StringToChar(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 extern void OLEDS_Display(String L1,String L2,String L3,String L4);
+extern bool CheckWiFiConnected(void);
 uint32_t TimeLimit;
 void reconnect() {
   bool ConnectedNow; int cx;
@@ -286,7 +287,7 @@ void reconnect() {
       ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per unsucessful check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
       if (ConnectedNow) {// I want this Connected message before the flash message
             Serial.print("WiRocS ");Serial.print(MSGText2);Serial.print("MQTT Connected");Serial.println(MSGText1);}
-            else{FlashMessage(DebugMsg, 2, 100, 100);} // flash "trying" mmessage in OLED (also sends to Serial port)
+            else{FlashMessage(DebugMsg, 2, 100, 100);} // flash "trying" mmessage in OLED (also sends to Serial port and mqtt debug)
       
       if (ConnectedNow) {
            // Serial.print("WiRocS ");Serial.print(MSGText2);Serial.print("MQTT Connected");Serial.println(MSGText1);
@@ -316,7 +317,7 @@ void reconnect() {
            delay(10); // time to stabilise everything?
        } else { // not connected? try another address
              connects=connects+1;
-             if ((connects>=5) && ScanForBroker){  
+             if ((connects>=5) && ScanForBroker && (CheckWiFiConnected()) &&(SigStrength()>=-85)){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
                        mosquitto[3]=mosquitto[3]+1; 
                        Serial.println(" Incrementing MQTT addresses ");
                        #ifdef myBrokerSubip 

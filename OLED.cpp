@@ -5,6 +5,8 @@
   // these outside #define to save putting more #defines in other places..
   bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
   uint8_t OLED_Settings[7]; ///bit settings for oleds 1-6
+  int8_t SCP[5][7];  //Scroll position counter for 4 lines on each, oled displays (LIMIT  ONE SCROLLING per display)
+  int8_t ScrollMsgLength[5][7];
   #define _ClockON 0
   #define _ClockLeft 1
   #define _ClockAna 2
@@ -297,11 +299,20 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2;
   uint8_t ClockSettingBefore;
   char MSGTextC[20];
+  int ScrolledCharCount;
+  bool InScrolling,_ignore_Scrolling, _ignore_Width;
+  InScrolling=false;_ignore_Scrolling=false;_ignore_Width=false;
+  ScrolledCharCount=0;
   FontSelected=TerminalDisplayFont;
   FlashON=secs%2;
   ignoreJ1=false;inJ1=false;
   ignoreJ2=false;inJ2=false;
-  
+  int SCPhere;
+  int line;
+  if (PixelsDown==0){SCPhere=SCP[0][OLed_x];line=0;}
+  if (PixelsDown==16){SCPhere=SCP[1][OLed_x];line=1;}  
+  if (PixelsDown==32){SCPhere=SCP[2][OLed_x];line=2;}
+  if (PixelsDown==48){SCPhere=SCP[3][OLed_x];line=3;}
   cx=sprintf(MSGTextC,"%02d:%02d",hrs,mins);
     ClockTime=MSGTextC; // easy way to convert to string
     
@@ -397,6 +408,8 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                              if (Message[i+1]=='0'){inJ1=false;inJ2=false;ignoreJ1=false;ignoreJ2=false;  } // reset at J0
                              if (Message[i+1]=='1'){inJ1=true;ignoreJ1=true^FlashON;} // 
                              if (Message[i+1]=='2'){inJ2=true;inJ1=false;ignoreJ1=false;ignoreJ2=false^FlashON; } //NB false in ignorej2 here inverts when flashon acts !!
+                             if (Message[i+1]=='S'){InScrolling=true;ScrolledCharCount=0;}
+                             if (Message[i+1]=='C'){InScrolling=false;}
                              i=i+1;
                                              } 
        
@@ -428,10 +441,19 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                                //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
                                i=i+1;
                               } 
-          
+         if (InScrolling){ScrolledCharCount=ScrolledCharCount+1; 
+                          if (ScrolledCharCount>=ScrollMsgLength[line][OLed_x]){ScrollMsgLength[line][OLed_x]= ScrolledCharCount;} 
+                          }  
+         _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCPhere));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
+
+        // _ignore_Width senses if the scrolling text is beyond the T1 position 
+         if (FontSelected==4){_ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels
+           else{              _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-8)); }
+        
+        
         if (!(in_format)&&(j<=(TextObjectLength-1))){ // add text to formatted_message to display
                               // if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
-                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)))   {   //J1 J2 are the flash function indicators  
+                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)||(_ignore_Scrolling)|| (_ignore_Width)   ))   {   //J1 J2  are the flash function indicators  
                                      FormattedMsg+=Message[i];j=j+1;} 
                               } 
                               

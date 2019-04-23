@@ -135,6 +135,8 @@ extern void OLEDS_Display(String L1,String L2,String L3,String L4);
 extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 
 extern void SetFont(uint8_t Disp,uint8_t Font);
+extern bool CheckWiFiConnected(void);
+extern boolean MQTT_Connected(void);
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
   String IAM,IAM2,IAM3,IAM4,IAM5,IAM6;
   IAM="(";IAM+=RocNodeID;
@@ -145,7 +147,7 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
    IAM6=IAM+",60,Display 3-4)";
    IAM+=",60, Display 1-4)";
   Serial.println(msg);
-  DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG <%s>",msg.c_str()));
+  if (CheckWiFiConnected()&& MQTT_Connected()){DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG <%s>",msg.c_str()));}
 
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");

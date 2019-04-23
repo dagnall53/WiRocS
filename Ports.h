@@ -38,7 +38,19 @@ Servo myservo5;  //create servo object to control a servo
 Servo myservo6;  //create servo object to control a servo
 Servo myservo7;  //create servo object to control a servo
 Servo myservo8;  //create servo object to control ...
+#ifdef ESP32   // not implemented elsewhere yet
+Servo myservo9;
+Servo myservo10;
+Servo myservo11;
+Servo myservo12;
+Servo myservo13;
+Servo myservo14;
+Servo myservo15;
+Servo myservo16;
 
+
+
+#endif
 //conditional externs 
 #ifdef _Audio 
 extern uint8_t SoundEffect_Request[3];
@@ -565,7 +577,7 @@ void Port_Mode_Set(int i) {
                       Pi03_Setting_options[i] = 128;  
                       hardset =true;output=true;setElsewhere = false;
         }
-       if((IsServo(i))&&(i>=8)){
+       if((IsServo(i))&&(i>=9)){
                       //Servos are only available on addresses 1-8 on the esp32 at the moment
                       bitClear(Pi03_Setting_options[i],_servo);// clear Servo bit       
                       //Serial.println(F("Servos only available on addr 1-8"));   

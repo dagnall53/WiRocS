@@ -13,7 +13,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 18;
+uint8_t SW_REV = 20;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -44,7 +44,8 @@ uint8_t ip0;
 uint8_t ip1;
 uint8_t subIPH;
 uint8_t subIPL;
-
+extern int8_t SCP[5][7];  //Scroll position counter for displays (LIMIT  ONE SCROLLING per display)
+extern int8_t ScrollMsgLength[5][7];
 
 #ifdef ESP32  // https://github.com/madhephaestus/ESP32Servo/tree/master/src
               // which is forked from https://github.com/jkb-git/ESP32Servo
@@ -127,7 +128,7 @@ void ConnectionPrint() {
   Serial.println(WiFi.localIP());
   Serial.print(F(" WiFi strength:"));
   Serial.println(SigStrength());
-  //Serial.println("-----------------------------------------------------------");      
+  Serial.println(F("-----------------------------------------------------------"));      
  
 }
 extern void Port_Setup_and_Report();
@@ -533,6 +534,8 @@ ImmediateStop(); //stop motors as soon as setup set up
   
   SetFont(1,99); SetFont(2,99); SetFont(3,99); SetFont(4,99);SetFont(5,99); SetFont(6,99);// set to default 
   OLEDS_Display("In Main Loop","","","");
+  for (int line=0;line<=4;line++){
+  for (int x=0; x<=7;x++) {SCP[line][x]=-5; ScrollMsgLength[line][x]= 10; }}; // initial set up of scrolling
  #endif 
   //Serial.println("------------------------ Starting main loop ---------------");
    FlashMessage("---Entering Main Loop---", 5, 150, 150);
@@ -584,7 +587,7 @@ void DoFTP(){
 uint32_t Timer[8];
 int LoopCount;
 
-
+extern bool OLEDPresent(int OLED);
 
 //========================MAIN LOOP==============================
 void loop() {
@@ -598,11 +601,18 @@ void loop() {
     lastsec = lastsec +1000;secs = secs + divider;  
    #ifdef _OLED 
     //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
-    TimeGears(); 
-    OLED_Status();if(Audio_Setup_Problem){Serial.print("A");}else{Serial.print(".");}
-   #endif
+    TimeGears();
+    for (int x=0; x<=7;x++){  
+      if((OLEDPresent(x))){
+        for (int line=0;line<=4;line++){
+           SCP[line][x]=(SCP[line][x])+1; if (SCP[line][x]>=ScrollMsgLength[line][x]){SCP[line][x]= -5;}
+           }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
+    OLED_Status();   
+    #endif
+    if(Audio_Setup_Problem){Serial.print("A");}else{Serial.print(".");}
+    
    //  Serial.print("M<");Serial.print(hallRead());Serial.print("> ");
-    }
+   }
            //make sure you call handleFTP() in loop  !! regardless of MQTT connection..
     DoFTP();
     ArduinoOTA.handle();
