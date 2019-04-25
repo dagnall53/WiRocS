@@ -13,7 +13,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 21;
+uint8_t SW_REV = 22;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -77,6 +77,7 @@ extern int8_t ScrollMsgLength[5][7];
 
 int SDelay[PortsRange]; //Number of ports +2
 uint32_t LoopTimer;
+uint32_t ScrollSpeedCounter;
 uint32_t LocoCycle;
 uint32_t TimeToClearDebugMessage;
 bool DebugMsgCleared;
@@ -476,6 +477,7 @@ ImmediateStop(); //stop motors as soon as setup set up
   RFIDCycle = millis();
   LoopTimer = millis();
   LocoCycle = millis();
+  ScrollSpeedCounter=millis();
   EPROM_Write_Delay = millis();
   SignOfLifeFlash( SignalON) ;  ///turn On
  
@@ -586,7 +588,6 @@ void DoFTP(){
 // timing test parameters
 uint32_t Timer[8];
 int LoopCount;
-
 extern bool OLEDPresent(int OLED);
 
 //========================MAIN LOOP==============================
@@ -594,12 +595,10 @@ void loop() {
 //  LoopCount++;
  //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
 // if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
-
-  //Sign of life flash and clock display
-  if (LoopTimer >= lastsec ) {//sign of life flash 
-    SignOfLifeFlash(SignalON) ; ///turn On
-    lastsec = lastsec +1000;secs = secs + divider;  
-   #ifdef _OLED 
+// separated out oleds to allow faster than 1 sec updates..
+if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here 
+    ScrollSpeedCounter=LoopTimer+500;
+    #ifdef _OLED 
     //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
     TimeGears();
     for (int x=0; x<=7;x++){  
@@ -609,6 +608,13 @@ void loop() {
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
     #endif
+   }
+
+  //Sign of life flash 
+  if (LoopTimer >= lastsec ) {//sign of life flash 
+    SignOfLifeFlash(SignalON) ; ///turn On
+    lastsec = lastsec +1000;secs = secs + divider;  
+   
 #ifdef _LoopTiming
     Serial.print("Loops achieved");Serial.println(LoopCount);
     LoopCount=0;
