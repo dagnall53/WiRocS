@@ -93,12 +93,15 @@
  // uncomment these to add extra debug messages. - useful after modifyng the code and something unexpected happens.. 
  // a minimum number of Mqtt debug message will always be set to allow monitoring of node status 
  //(typically the time synch is very useful to tell a node is prenet and working.) 
+
+//#define _LoopTiming
 //#define _SERIAL_DEBUG 
 //#define _Input_DEBUG
 //#define _SERIAL_Audio_DEBUG 
 //#define _SERIAL_SUBS_DEBUG 
+#define _ROCDISP_SUBS_DEBUG
 #define _showRocMSGS  // time synch?
-//#define _SERIAL_MQTT_DEBUG
+#define _SERIAL_MQTT_DEBUG
 //#define _SERVO_DEBUG //(enables debug messages in set motor speed rc and pwm
 //#define _PWM_DEBUG  // to assist pwm debug 
 //#define _SpeedTableDEBUG 

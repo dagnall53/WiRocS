@@ -69,7 +69,7 @@ int oldconnects;
 
 
 
-uint8_t Message_Length;
+uint16_t Message_Length;
 boolean Message_Decoded;
 
 boolean  SensorOutput_Inactive ;

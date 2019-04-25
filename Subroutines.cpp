@@ -5,7 +5,7 @@ extern uint8_t hrs;
 extern uint8_t mins;
 extern uint8_t secs;  
 extern uint8_t divider;
-extern uint8_t Message_Length;
+extern uint16_t Message_Length;
 extern uint8_t recMessage[128];
 extern uint8_t NodeMCUPinD[18]; // hard fixed //Number of ports +2
 extern void SignOfLifeFlash(bool state);
@@ -54,8 +54,8 @@ int IntFromPacket_at_Addr(uint8_t* msg, uint8_t highbyte) { //example IntFromPac
   return msg[highbyte + 1] + msg[highbyte] * 256;
 }
 
-void dump_byte_array(byte* buffer, byte bufferSize) {
-  for (byte i = 0; i < bufferSize; i++) {
+void dump_byte_array(byte* buffer, int bufferSize) {
+  for (int i = 0; i < bufferSize; i++) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], HEX);
   }

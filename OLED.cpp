@@ -31,7 +31,7 @@
  
    //
   
-#define TextObjectLength 150  //>100 to allow passing of {} formatting but Rocnet protocol limits the length sent to about 110    
+#define TextObjectLength 260  //>100 to allow passing of {} formatting but Rocnet protocol limits the length sent to about 110    
 #define TerminalDisplayFont 0
 #define NumberofTextStores 17
 
@@ -45,7 +45,7 @@ uint8_t offset;
 bool RocFormatUsed[7];
 
 //https://github.com/ThingPulse/esp8266-oled-ssd1306
-// you will also need to add RodDisplay fonts (see https://github.com/dagnall53/Fonts-for-WiRocs)  to C:\Arduino\libraries\esp8266-oled-ssd1306-master\src\OLEDDisplayFonts.h
+// RocDisplay fonts are now in the oleddislayfonts.h arduino file, but see also (see https://github.com/dagnall53/Fonts-for-WiRocs) 
 
 uint32_t Disp2ReInit;
 extern char DebugMsg[127];
@@ -511,7 +511,7 @@ void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
 
 
 void SetupTextArrays(uint8_t Address,int Display,String Message){
-     // move the roc messsages to the TS stores where we will look at  them every second!
+     // move the roc messsages to the TS stores where we will look at them every second!
 
       if (Address==60){for (uint16_t i = 0; i <= (TextObjectLength-1); i++) {TS[Display][i]=(Message[i]);}
              // Serial.print("setting up TS");Serial.println(Display);

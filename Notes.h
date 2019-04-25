@@ -1,4 +1,8 @@
 /*  REFERENCE data.. Do not INCLUDE in the main file....
+Message arrays 
+Rocsubs line 57 and 1331/1332
+Oled.cpp line 34 
+MQTT.cpp line 68
 
 
   This program is designed to work with Rocrail, as a Rocnode.

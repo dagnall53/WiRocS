@@ -11,7 +11,7 @@ int rnReceipientAddrFromPacket(unsigned char* rn, int seven) ;
 int getTwoBytesFromMessageHL( uint8_t* msg, uint8_t highloc) ;
 void SetWordIn_msg_loc_value(uint8_t* msg, uint8_t firstbyte, int value) ;
 int IntFromPacket_at_Addr(uint8_t* msg, uint8_t highbyte);
-void dump_byte_array(byte* buffer, byte bufferSize) ;
+void dump_byte_array(byte* buffer, int bufferSize) ;
 void dump_byte(uint8_t buffer);
 uint8_t lnCalcCheckSumm(uint8_t *cMessage, uint8_t cMesLen) ;
 uint16_t AddrFull (uint8_t HI, uint8_t LO) ;

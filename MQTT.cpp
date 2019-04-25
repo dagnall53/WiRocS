@@ -3,7 +3,7 @@
 //#include "Directives.h"
 
 
-extern uint8_t Message_Length;
+extern uint16_t Message_Length;
 extern boolean Message_Decoded;
 extern uint8_t CV[200];
 extern uint8_t RN[36];
@@ -52,7 +52,7 @@ extern uint8_t subIPL;
 
 extern void copyUid (byte *buffOut, byte *buffIn, byte bufferSize) ;
 extern bool compareUid(byte *buffer1, byte *buffer2, byte bufferSize) ;
-extern void dump_byte_array(byte* buffer, byte bufferSize) ;
+extern void dump_byte_array(byte* buffer, int bufferSize) ;
 
 extern uint32_t PingSendTime;
 extern boolean  PingReflected;
@@ -65,7 +65,7 @@ extern uint16_t ROC_sender;
 extern uint8_t ROC_group;
 extern uint8_t ROC_code;
 extern uint8_t ROC_len;
-extern uint8_t ROC_Data[200];
+extern uint8_t ROC_Data[260];
 #define Recipient_Addr  1   //use with SetWordIn_msg_loc_value(sendMessage,Recipient_Addr,data  , or get sender or recipient addr  
 #define Sender_Addr 3       //use with SetWordIn_msg_loc_value(sendMessage,Sender_Addr,data   
 extern int IntFromPacket_at_Addr(uint8_t* msg, uint8_t highbyte);
@@ -101,13 +101,16 @@ void MQTTFetch (char* topic, byte* payload, unsigned int Length) {
     ROC_group = payload[5];
     ROC_code = payload[6];
     ROC_len = payload[7];
-    for (byte i = 1; i <= ROC_len; i++) {
+    for (int i = 1; i <= ROC_len; i++) {
       ROC_Data[i] = payload[7 + i];
     }
     Message_Decoded = false;
     #ifdef _SERIAL_MQTT_DEBUG
+    Serial.println();
       Serial.print("*MQTT Received [");
       Serial.print(topic);
+      Serial.print("] Payload Length[");
+      Serial.print(ROC_len);
       Serial.print("] ");
       dump_byte_array(payload, Message_Length);
     #endif

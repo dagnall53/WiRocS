@@ -54,7 +54,7 @@ uint16_t ROC_sender;
 uint8_t ROC_group;
 uint8_t ROC_code;
 uint8_t ROC_len;
-uint8_t ROC_Data[200];
+uint8_t ROC_Data[260];
 uint8_t ROC_OUT_DATA[200];
 uint16_t RocNodeID;
 uint16_t EEPROMRocNodeID;
@@ -1326,31 +1326,37 @@ extern void SetupTextArrays(uint8_t ADDR,int Display,String Message);
 void ROC_DISPLAY() { //display Group 12 rocdisplay
   Message_Decoded = false;
   uint8_t Address;
-  uint8_t Display,MaxLen;
+  uint8_t Display;
+  int MaxLen;
   bool RocDFormat,Truncated;
-  char Message[150]; // big to accept long msg from rocrail
-  MaxLen=110;
+  char Message[252]; // big to accept long msg from rocrail
+  MaxLen=250;  //my original limit (was 110).. NEEDS Rocrail after 15322
   RocDFormat=false;Truncated=false;
   if  ((ROC_recipient ==   RocNodeID)||(ROC_recipient ==  0)){ // node 0 is global message
       Address= ROC_Data[1];
       Display= ROC_Data[2];
-  //Serial.print("Display  message for this node (or global)");
-  //Serial.print(" Display Addr:");Serial.print(Address);
-  //Serial.print("> Display No {1-8}:");Serial.print(ROC_Data[2]);
-  //Serial.print("> len:");Serial.println(ROC_len);
-   //Serial.print(" Text<"); // we have a display at 0x3c (60d )as standard
+ #ifdef _ROCDISP_SUBS_DEBUG
+  Serial.println("");
+  Serial.print("RocMessage. Reported Total Text len=");Serial.print(ROC_len-3);Serial.print("  Text is:<"); 
+ #endif
     if (ROC_len-3>=MaxLen){ROC_len==MaxLen+3;Truncated=true; }              //  Rocrail seems to limit to len=113 anyway
-    for (uint16_t i = 0; i <= (ROC_len-3); i++) { 
+    for (uint16_t i = 0; i <= (ROC_len-3); i++) {     // start at i==0 first text character to display is ROC_Data[3] = Message[0] .. 
                      Message[i]=char (ROC_Data[i+3]);
                      if (ROC_Data[i+3]==123){RocDFormat=true;}               // testing for RocDisplay format and Adding a '{' so the last bits print if we have to truncate
-  //                   Serial.print(char(ROC_Data[i+3]));
+  #ifdef _ROCDISP_SUBS_DEBUG
+                     Serial.print(char(ROC_Data[i+3]));
+  #endif
                      }
+    #ifdef _ROCDISP_SUBS_DEBUG 
+  Serial.println(">");
+  Serial.print("for node Addr<");Serial.print(Address);
+  Serial.print("> Display No {1-8}<");Serial.print(ROC_Data[2]);
+  Serial.print("> truncated? (for my add '{') <");Serial.print(Truncated);Serial.println(">");
+  #endif                 
     if (Truncated&&RocDFormat){Message[ROC_len-3]=123;}                                // give it a { to initiate printing last bits of message                 
 
     SetupTextArrays(Address,Display,Message);
-
-    
-   // Serial.println(">");
+   
    } // is display message
    Message_Decoded = true;
  }

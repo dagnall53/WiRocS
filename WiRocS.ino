@@ -13,7 +13,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 20;
+uint8_t SW_REV = 21;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -609,8 +609,12 @@ void loop() {
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
     #endif
+#ifdef _LoopTiming
+    Serial.print("Loops achieved");Serial.println(LoopCount);
+    LoopCount=0;
+#else     
     if(Audio_Setup_Problem){Serial.print("A");}else{Serial.print(".");}
-    
+#endif    
    //  Serial.print("M<");Serial.print(hallRead());Serial.print("> ");
    }
            //make sure you call handleFTP() in loop  !! regardless of MQTT connection..
@@ -626,6 +630,10 @@ void loop() {
         }else
      { 
     MQTT_Loop(); //gets wifi messages etc..
+#ifdef _LoopTiming
+    //SingleLoop=millis()-LoopTimer;
+    LoopCount=LoopCount+1;
+#endif    
     LoopTimer = millis();      //idea is to use LoopTimer in functions instead of millis to ensure synchronous behaviour in loop
 
     #ifdef _Audio
