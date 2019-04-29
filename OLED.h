@@ -8,6 +8,7 @@
 
 // Moved to to directives.. #define TextObjectLength 33  // to give 32 chars
 
+void OLEDScreen(int OLED,bool flip, bool invert);
 void SetFont(uint8_t Disp,uint8_t Font);
 void StringToChar(char *line, String input);
 int GetNumber(String Message, int i);

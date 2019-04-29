@@ -63,6 +63,61 @@ int FontSelected;
 int MaxWidth;
 
 // new set of OLED stuff to allow indexing
+void OLEDScreen(int OLED,bool flip, bool invert){
+
+//  Serial.print("Switching ");Serial.print (OLED); Serial.print ("to flip<");Serial.print(flip);Serial.print(">  invert<");Serial.print(invert);Serial.println(">");
+if (invert){
+ switch (OLED) { 
+  case 1:   OLED1.invertDisplay();     break;
+  case 2:   OLED2.invertDisplay();     break;
+  case 3:   OLED3.invertDisplay();     break;
+  case 4:   OLED4.invertDisplay();     break;
+  case 5:   OLED5.invertDisplay();     break;
+  case 6:   OLED6.invertDisplay();     break;
+  default:     break;  
+          }} 
+          else{
+    switch (OLED) { // Inversion or set normal first
+      case 1:   OLED1.normalDisplay();     break;
+      case 2:   OLED2.normalDisplay();     break;
+      case 3:   OLED3.normalDisplay();     break;
+      case 4:   OLED4.normalDisplay();     break;
+      case 5:   OLED5.normalDisplay();     break;
+      case 6:   OLED6.normalDisplay();     break;
+      default:     break;  
+        }}
+
+  
+if (flip)  {
+
+switch (OLED) { // reset orient or mirroring first
+  case 1:   OLED1.resetOrientation();     break;
+  case 2:   OLED2.resetOrientation();     break;
+  case 3:   OLED3.resetOrientation();     break;
+  case 4:   OLED4.resetOrientation();     break;
+  case 5:   OLED5.resetOrientation();     break;
+  case 6:   OLED6.resetOrientation();     break;
+  default:     break;  
+       }}
+       else {
+ switch (OLED) { 
+  case 1:   OLED1.flipScreenVertically();     break;
+  case 2:   OLED2.flipScreenVertically();     break;
+  case 3:   OLED3.flipScreenVertically();     break;
+  case 4:   OLED4.flipScreenVertically();     break;
+  case 5:   OLED5.flipScreenVertically();     break;
+  case 6:   OLED6.flipScreenVertically();     break;
+  default:     break;  
+              }}        
+ 
+}
+
+
+
+
+
+
+
 void SetOLEDDefaults(){//Set Clock ON, Analog and Right and NOT 32 display
   for (int OLed_x=0; OLed_x<=6; OLed_x++)
       {
@@ -379,6 +434,14 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                                                         EPROM_Write_Delay = millis() + 50;
                                                         }
                                                    }
+                             if (Message[i+1]=='F'){OLEDScreen(OLed_x,true, false);}
+                             if (Message[i+1]=='I'){OLEDScreen(OLed_x,false, true);}
+                             if (Message[i+1]=='f'){OLEDScreen(OLed_x,true, true);}
+                             if (Message[i+1]=='N'){OLEDScreen(OLed_x,false, false);}
+
+
+
+                                                   
                         //   if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))||(OLED_Settings[0]!=OLED_EEPROM_Setting(0))){  // should print if changed
                         //       Serial.print("OLED Settings<");Serial.print(OLed_x);Serial.print(">");Serial.print(OLED_Settings[OLed_x]);Serial.print("> "); 
                         //       Serial.print("Settings[0] <");Serial.print(OLED_Settings[0]);Serial.println(">_ ");    
@@ -416,6 +479,10 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
          if ((in_format && Message[i]=='W')){  // this code looks at the Departure column width (W) coding. 
                                // ?? W .. "Departure column width" IF set sets the second tab position in pixels..Is volatile, and lost for next message!
                              TabOne=GetNumber(Message,i+1); //S               
+                                            } 
+         if ((in_format && Message[i]=='w')){  // this code looks at the Platform column width (w) coding. 
+                               // ?? w .. "Platform column width" IF set sets the first tab position in pixels..Is volatile, and lost for next message!
+                             TabZero=GetNumber(Message,i+1); //S               
                                             } 
                                              
      
@@ -528,8 +595,8 @@ void SetupTextArrays(uint8_t Address,int Display,String Message){
 
 extern uint16_t SW_REV;
 extern String wifiSSID;
-void OLED_initiate(uint8_t address,int I2CBus,bool disp){
-  String MSGText1;String MSGText2;
+void OLED_initiate(uint8_t address,int I2CBus,bool disp){ // see commands in //https://github.com/ThingPulse/esp8266-oled-ssd1306
+  String MSGText1;String MSGText2;  
   
   if (address==1){ 
    if (disp){Serial.println(F("Initiating Display 1"));} 

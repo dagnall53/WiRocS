@@ -13,7 +13,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 22;
+uint8_t SW_REV = 23;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
