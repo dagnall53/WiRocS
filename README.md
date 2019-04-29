@@ -3,7 +3,8 @@
 WiFi Rocnet node for ESP 32 and 8266
 For documentation please read https://wiki.rocrail.net/doku.php?id=users:dagnall53:description
 Use of this software is at your own risk!
-for syntax see. https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign
+
+ For syntax see. https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign
 
 
 === General note ===
