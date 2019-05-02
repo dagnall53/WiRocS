@@ -1,3 +1,4 @@
+
 //The main Compiler Directives and code options are in Directives.h
 #include "Directives.h"
 
@@ -13,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 23;
+uint8_t SW_REV = 24;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager

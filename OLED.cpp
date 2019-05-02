@@ -351,7 +351,7 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   int ClockSpaceOffset,ClockPos,FontSelected;
   //bool ClockAnalog,ClockLeft;
   String FormattedMsg,BitMsg,ClockTime; char BitChar;
-  bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2;
+  bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2,ignoreNF;
   uint8_t ClockSettingBefore;
   char MSGTextC[20];
   int ScrolledCharCount;
@@ -508,19 +508,21 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                                //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
                                i=i+1;
                               } 
+                              // stuff for scroll control
          if (InScrolling){ScrolledCharCount=ScrolledCharCount+1; 
                           if (ScrolledCharCount>=ScrollMsgLength[line][OLed_x]){ScrollMsgLength[line][OLed_x]= ScrolledCharCount;} 
                           }  
+                          
          _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCPhere));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
 
-        // _ignore_Width senses if the scrolling text is beyond the T1 position 
-         if (FontSelected==4){_ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels
-           else{              _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-8)); }
+        // _ignore_Width senses if the scrolling text is approx one character width beyond the T1 position 
+         if (FontSelected==4){    _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels
+                             else{_ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-8)); }
         
         
-        if (!(in_format)&&(j<=(TextObjectLength-1))){ // add text to formatted_message to display
-                              // if (!( ((Message[i-1]=='}')&&(Message[i]==' ')) ) )  {  // do not copy first space after '}' helps with alignment + saves display space,
-                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)||(_ignore_Scrolling)|| (_ignore_Width)   ))   {   //J1 J2  are the flash function indicators  
+        if (!(in_format)&&(j<=(TextObjectLength-1))){ // Not In format, This is text add text to formatted_message to display
+                              ignoreNF=( ((Message[i-1]=='}')&&(Message[i]==' '))||((Message[i+1]=='{')&&(Message[i]==' ')) ) ;// Ignore spaces near formatting ..do not copy first space after '}' or before {helps with alignment + saves display space,
+                              if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)||(_ignore_Scrolling)|| (_ignore_Width)||(ignoreNF)   ))   {   //J1 J2  are the flash function indicators  
                                      FormattedMsg+=Message[i];j=j+1;} 
                               } 
                               
