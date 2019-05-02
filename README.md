@@ -13,16 +13,11 @@ Use of this software is at your own risk!
 I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be uploadable via an ESP Flash Programmer and set up a  stationary nodes without having to compile the whole code in Arduino. You will need to use FileZilla or Arduino_Sketch_Data_Uploader to upload the sounds from the Data directory to the Node's SPIFFS, but generally this only needs doing once (unless you want to make changes to the sound effects!) 
 
 ===Version History===
-<<<<<<< HEAD
-V24 Improved text parsing to help formatting of messages in Rocview.: 
-    Code now ignores the first space before a { and the first space after a }. 
 
-V23 Added {wnnn} command to modify First tab {T0} (Platform number) position
-    {Wnn}modifies Second Tab {T1} (Train Time) position
-    Added Screen orientation and inversion commands: {SF} flips display {SI} inverts display (Black on white) {SN} reverts     to standard orientation and colour, {Sf} Black on white and flipped.
-    These commands need only be sent once and the orientation etc will be saved until the display is reset.
-=======
->>>>>>> 1bed7d342c598a6554998d44559a68e886034833
+V24 
+
+Improved text parsing to help formatting of messages in Rocview.: 
+Code now ignores the first space before a { and the first space after a }. 
 
 V23
 
@@ -38,7 +33,7 @@ Added scrolling for text. text placed between {JS} and {JC} will scroll.
 
 V18 
 
-hanged Default second I2C ports on ESP32  to 33 ("D13") and 34("D14") 
+Changed Default second I2C ports on ESP32  to 33 ("D13") and 34("D14") 
 Modified ESP32 PWM code. 
 Added switchable ability to send Setup information out on Debug MQTT. But have left this switched off as it severely slows down Setup sequence.
 Added serial println notice if servos above addr 8 are requested.  
