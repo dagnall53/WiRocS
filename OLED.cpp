@@ -5,8 +5,8 @@
   // these outside #define to save putting more #defines in other places..
   bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
   uint8_t OLED_Settings[7]; ///bit settings for oleds 1-6
-  int8_t SCP[5][7];  //Scroll position counter for 4 lines on each, oled displays (LIMIT  ONE SCROLLING per display)
-  int8_t ScrollMsgLength[5][7];
+  int SCP[5][7];  //Scroll position counter for 4 lines on each, oled displays (LIMIT  ONE SCROLLING per display)
+  int ScrollMsgLength[5][7];
   #define _ClockON 0
   #define _ClockLeft 1
   #define _ClockAna 2
@@ -906,20 +906,3 @@ void TimeGears(){};
 
 
 #endif //_OLED
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

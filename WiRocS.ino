@@ -14,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 24;
+uint8_t SW_REV = 25;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -45,8 +45,8 @@ uint8_t ip0;
 uint8_t ip1;
 uint8_t subIPH;
 uint8_t subIPL;
-extern int8_t SCP[5][7];  //Scroll position counter for displays (LIMIT  ONE SCROLLING per display)
-extern int8_t ScrollMsgLength[5][7];
+extern int SCP[5][7];  //Scroll position counter for displays (LIMIT  ONE SCROLLING per display)
+extern int ScrollMsgLength[5][7];
 
 #ifdef ESP32  // https://github.com/madhephaestus/ESP32Servo/tree/master/src
               // which is forked from https://github.com/jkb-git/ESP32Servo
@@ -694,6 +694,3 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
   SignOfLifeFlash( SignalOFF) ; ///turn OFF signal lamp
  }// do if connected loop 
 } //void loop
-
-
-

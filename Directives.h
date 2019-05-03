@@ -99,9 +99,9 @@
 //#define _Input_DEBUG
 //#define _SERIAL_Audio_DEBUG 
 //#define _SERIAL_SUBS_DEBUG 
-#define _ROCDISP_SUBS_DEBUG
+//#define _ROCDISP_SUBS_DEBUG
 #define _showRocMSGS  // time synch?
-#define _SERIAL_MQTT_DEBUG
+//#define _SERIAL_MQTT_DEBUG
 //#define _SERVO_DEBUG //(enables debug messages in set motor speed rc and pwm
 //#define _PWM_DEBUG  // to assist pwm debug 
 //#define _SpeedTableDEBUG 
