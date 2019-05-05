@@ -15,6 +15,7 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 ===Version History===
 
 V25
+
 Corrected fault that changed OLED settings.
 OLED_Settings (Flipped,inverted _32 etc) are now automatically saved to EEPROM if changed. 
 
