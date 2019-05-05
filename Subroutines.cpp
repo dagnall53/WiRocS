@@ -137,6 +137,8 @@ extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L
 extern void SetFont(uint8_t Disp,uint8_t Font);
 extern bool CheckWiFiConnected(void);
 extern boolean MQTT_Connected(void);
+extern void ViewAllOLEDSettings(int OLed_x);
+extern uint32_t StartedAt; 
 void FlashMessage (String msg, int Repeats, int ON, int Off) {
   String IAM,IAM2,IAM3,IAM4,IAM5,IAM6;
   IAM="(";IAM+=RocNodeID;
@@ -148,7 +150,6 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
    IAM+=",60, Display 1-4)";
   Serial.println(msg);
   if (CheckWiFiConnected()&& MQTT_Connected()){DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG <%s>",msg.c_str()));}
-
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
    //OLEDS_Display(msg,IAM,"",""); 
@@ -214,5 +215,3 @@ void SetPortPinIndex() {
 
 #endif
 }
-
-

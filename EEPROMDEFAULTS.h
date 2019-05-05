@@ -6,6 +6,9 @@ void SetDefaultSVs(){
 //rocnode 
 //rough settings
   //port and channel defaults
+Serial.println();
+Serial.println("Setting default EEPROM Settings etc");
+  
   for (int i=1; i<=NumberOfPorts; i++) {
     Value_for_PortD[i]=1;
     Pi02_Port_Settings_D[i]=0; //0= out 1= in

@@ -591,6 +591,7 @@ void Port_Mode_Set(int i) {
       }
     SetupMsg="";
     // now do the setting proper and send some useful messages out on the serial interface 
+    
     #ifdef ESP32
         Serial.print(F("RR Addr:"));Serial.print (i);Serial.print (F(" <GPIO:"));Serial.print (NodeMCUPinD[i]);Serial.print(F(">" ));
      if(DebugMsgSend){   SetupMsg+="RR Addr:";SetupMsg+=i;SetupMsg+=" GPIO:";SetupMsg+=NodeMCUPinD[i];SetupMsg+=" ";SetupMsg+=description;}

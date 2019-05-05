@@ -71,7 +71,9 @@ void CheckForSerialInput(){
                                        }
     Timestarted=millis();
     FlashTime=millis();
-    
+    #ifdef  _ROCDISP_EEPROM_DEBUG 
+    countdown=1; 
+    #endif
     OLED_Status();// set up fonts etc?
     while ((countdown>= 0) || UpdateInProgress) {
       if (SerioLevel==10){
@@ -302,6 +304,3 @@ String read_String(int add)
   #endif
     return String(data);
 }
-
-
-

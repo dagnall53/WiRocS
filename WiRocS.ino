@@ -45,7 +45,7 @@ uint8_t ip0;
 uint8_t ip1;
 uint8_t subIPH;
 uint8_t subIPL;
-extern int SCP[5][7];  //Scroll position counter for displays (LIMIT  ONE SCROLLING per display)
+extern int SCP[5][7];  // Scroll position counter for [Rocdisplay] [Oleds] on each, oled displays (LIMIT  ONE SCROLLING per display)
 extern int ScrollMsgLength[5][7];
 
 #ifdef ESP32  // https://github.com/madhephaestus/ESP32Servo/tree/master/src
@@ -136,6 +136,9 @@ void ConnectionPrint() {
 extern void Port_Setup_and_Report();
 
 void Report_address_and_do_any_forced_settings(){
+  #ifdef _ROCDISP_EEPROM_DEBUG
+  Serial.println("Report_address_and_do_any_forced_settings");
+  #endif
    #ifdef _LOCO_SERVO_Driven_Port
       //MyLocoAddr=CV[1];
       //MyLocoAddr = CV[18] + ((192-(CV[17]) * 256));
@@ -325,8 +328,9 @@ void Commit_EEprom(String reason){
     delay(100);
     EEPROM.commit();
     ReadEEPROM();     //get the RN and CV registers
-    Port_Setup_and_Report();  //make any port direction changes.
-    ImmediateStop(); //stop motors as soon as ports set up
+    LookForOLEDs(false); // false means no serial stuff
+    //Port_Setup_and_Report();  //make any port direction changes.
+    //ImmediateStop(); //stop motors as soon as ports set up
      #ifdef _LocoPWMDirPort  //is a restart of pwm needed ?? 
       //    WriteAnalogtoPort(_LOCO_SERVO_Driven_Port, 0);
      //     WriteAnalogtoPort(_LocoPWMDirPort, 0);
@@ -339,7 +343,7 @@ void Commit_EEprom(String reason){
   
     Loco_motor_servo_demand=90;
 //+++++++++  Set up other things that may have been changed...+++++++++
-    Report_address_and_do_any_forced_settings();
+    Report_address_and_do_any_forced_settings(); // includes Port_Setup_and_Report();
    
 } //+++++++++++END commit to EPROM
 void SetDefaultEEPROM(){
@@ -372,16 +376,17 @@ void SetupFTP(){
                          } 
 }
 
-
+extern bool Observed_Change;  // used trying to find why oledsetup is changing
+extern void ViewAllOLEDSettings(int OLed_x);
 void setup() {  
    bool UsedDefaults;
+    Observed_Change=false; 
+ 
    Serial.begin(115200);
    NumberOfOLEDS=0;
    // oled if fitted
  EEPROM.begin(Serial_EEPROM_Starts+EEPROM_Serial_store_Size);
-#ifdef _OLED   
-   LookForOLEDs(true);   // needs eeprom begin before in order to workcvincludes OLED_initiate() see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu
-#endif
+
 #ifdef _LOCO_SERVO_Driven_Port
 pinMode(NodeMCUPinD[_LOCO_SERVO_Driven_Port], OUTPUT);
 #ifdef _LocoPWMDirPort
@@ -415,7 +420,10 @@ ImmediateStop(); //stop motors as soon as setup set up
   ReadEEPROM();     //get the RN and CV registers and now the wifi settings etc. 
   CV[8] = 0x0D; //DIY MFR code  set regardless!
   CV[7] = SW_REV; //ver    set regardless
-
+  delay(100); // time to get settings before OLED check
+#ifdef _OLED   
+   LookForOLEDs(true);   // needs eeprom begin and eeprom settings read  see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu
+#endif
   UsedDefaults=false;
   
   #ifdef myBrokerSubip
@@ -435,7 +443,8 @@ ImmediateStop(); //stop motors as soon as setup set up
 
   
   CheckForSerialInput(); // allow a few seconds to check for  serial traffic to change wifi settings etc
-
+  StartedAt=millis(); // this is a timer that is used to stop any messages recieved on start up from writing to eeprom.
+                      // this prevents issues caused by the mosquitto broker resending stuff as the node connects.
   SetPortPinIndex();  //sets up nodemcucross references 
 
 //------------------
@@ -522,8 +531,6 @@ ImmediateStop(); //stop motors as soon as setup set up
 
   ResetDebounce();
   
-  StartedAt=millis(); // this is a timer that is used to stop any messages recieved on start up from writing to eeprom.
-                      // this prevents issues caused by the mosquitto broker resending stuff as the node connects.
   delay(10);
  #ifdef _OLED  
   Serial.println("Re-Scanning OLEDS after Audio Set-up");
@@ -536,12 +543,19 @@ ImmediateStop(); //stop motors as soon as setup set up
   
   
   SetFont(1,99); SetFont(2,99); SetFont(3,99); SetFont(4,99);SetFont(5,99); SetFont(6,99);// set to default 
+ 
   OLEDS_Display("In Main Loop","","","");
-  for (int line=0;line<=4;line++){
-  for (int x=0; x<=7;x++) {SCP[line][x]=-5; ScrollMsgLength[line][x]= 10; }}; // initial set up of scrolling
+  for (int RocDisplay_n=0;RocDisplay_n<=4;RocDisplay_n++){
+      for (int OLED=0; OLED<=6;OLED++) {SCP[RocDisplay_n][OLED]=-5; ScrollMsgLength[RocDisplay_n][OLED]= 10; 
+       }}; // initial set up of scrolling
+  #ifdef  _ROCDISP_EEPROM_DEBUG    
+                                 Serial.printf("\n  --- after SCP stuff message At@%d ---\n\n",(millis()-StartedAt));                        
+                                 ViewAllOLEDSettings(1); 
+  #endif 
  #endif 
   //Serial.println("------------------------ Starting main loop ---------------");
    FlashMessage("---Entering Main Loop---", 5, 150, 150);
+   StartedAt=millis(); // this is a timer that is used to stop any messages received on start up 
  }  ///end of setup ///////
 
 
@@ -597,15 +611,22 @@ void loop() {
  //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
 // if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
 // separated out oleds to allow faster than 1 sec updates..
+  #ifdef  _ROCDISP_EEPROM_DEBUG    
+              if (!Observed_Change){ Serial.printf("\n  --- IN LOOP First time around \n  -- At@%d ---\n\n",(millis()-StartedAt));                        
+                                 ViewAllOLEDSettings(1);
+                                 Observed_Change=true;} 
+  #endif 
+
+
 if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here 
     ScrollSpeedCounter=LoopTimer+500;
     #ifdef _OLED 
     //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
     TimeGears();
-    for (int x=0; x<=7;x++){  
-      if((OLEDPresent(x))){
-        for (int line=0;line<=4;line++){
-           SCP[line][x]=(SCP[line][x])+1; if (SCP[line][x]>=ScrollMsgLength[line][x]){SCP[line][x]= -5;}
+    for (int oled=0; oled<=7;oled++){  
+      if((OLEDPresent(oled))){
+        for (int RocDMsg=0;RocDMsg<=4;RocDMsg++){//roc display msg
+           SCP[RocDMsg][oled]=(SCP[RocDMsg][oled])+1; if (SCP[RocDMsg][oled]>=ScrollMsgLength[RocDMsg][oled]){SCP[RocDMsg][oled]= -5;}
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
     #endif

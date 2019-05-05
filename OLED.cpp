@@ -5,16 +5,18 @@
   // these outside #define to save putting more #defines in other places..
   bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
   uint8_t OLED_Settings[7]; ///bit settings for oleds 1-6
-  int SCP[5][7];  //Scroll position counter for 4 lines on each, oled displays (LIMIT  ONE SCROLLING per display)
+  int SCP[5][7];  // Scroll position counter for [Rocdisplay 1-4] [Oleds 1-6] on each, oled displays (LIMIT  ONE SCROLLING per display)
   int ScrollMsgLength[5][7];
   #define _ClockON 0
   #define _ClockLeft 1
   #define _ClockAna 2
-  #define _32 7
+  #define _ClockFlip 3
+  #define _ClockInvert 4
+  #define _32 5
   #ifdef _OLED
   //#include "Globals.h"
   #include "OLEDDisplayFonts.h"
-  //#include "OLED_Font_High.h"
+  //#include "OLED_Font_High.h"  // perhapsseparate out fonts to make easier to modify?
    #include <SSD1306.h> // alias for `#include "SSD1306Wire.h"` //https://github.com/ThingPulse/esp8266-oled-ssd1306
    // options are 0x3c 0x3d on bus 1 (OLED1 and OLED2)  or - IF 0x3c is seen on bus 2 it assumes this is 32 high so any 0x3c on bus 1 must also be 32 hi (becoming OLED3 and OLED4)  
   
@@ -40,14 +42,14 @@ char TS[NumberofTextStores][TextObjectLength];
 uint8_t offset;
 
 
-
+bool Observed_Change;
 
 bool RocFormatUsed[7];
 
 //https://github.com/ThingPulse/esp8266-oled-ssd1306
 // RocDisplay fonts are now in the oleddislayfonts.h arduino file, but see also (see https://github.com/dagnall53/Fonts-for-WiRocs) 
 
-uint32_t Disp2ReInit;
+//uint32_t Disp2ReInit;
 extern char DebugMsg[127];
 extern uint8_t hrs;
 extern uint8_t mins;
@@ -61,6 +63,8 @@ extern uint32_t EPROM_Write_Delay;
 extern void WriteEEPROM(void);
 int FontSelected;
 int MaxWidth;
+extern uint32_t StartedAt;
+int CharCountinGetnumber;
 
 // new set of OLED stuff to allow indexing
 void OLEDScreen(int OLED,bool flip, bool invert){
@@ -118,12 +122,18 @@ switch (OLED) { // reset orient or mirroring first
 
 
 
-void SetOLEDDefaults(){//Set Clock ON, Analog and Right and NOT 32 display
+void SetOLEDDefaults(){//Set Clock off, normal(flipped), not inverted and NOT 32 display
+
+  #ifdef  _ROCDISP_EEPROM_DEBUG
+  Serial.print("SETTING ALL OLED DEFAULTS");
+  #endif
   for (int OLed_x=0; OLed_x<=6; OLed_x++)
       {
-    bitSet(OLED_Settings[OLed_x],_ClockON); 
+    bitClear(OLED_Settings[OLed_x],_ClockON); 
     bitClear(OLED_Settings[OLed_x],_ClockLeft);
-    bitSet(OLED_Settings[OLed_x],_ClockAna);
+    bitClear(OLED_Settings[OLed_x],_ClockAna);
+    bitSet(OLED_Settings[OLed_x],_ClockFlip);
+    bitClear(OLED_Settings[OLed_x],_ClockInvert);
     bitClear(OLED_Settings[OLed_x],_32);
   } }
 
@@ -329,6 +339,9 @@ int GetNumber(String Message, int i){
         }else
         {FoundEnd=true;}
     }
+    CharCountinGetnumber=j-1;
+    if (CharCountinGetnumber<=0){CharCountinGetnumber=0;}
+   // Serial.printf(" MSG @%d <%c><%d> Char count %d \n",i,Message[i-1],Number,j);
   return Number;
 }
 void SetFont(uint8_t OLed_x,uint8_t Font){
@@ -344,18 +357,76 @@ switch (Font) {
          }
 }
 
+void OLEDsettingView(int OLed_x){
+  Serial.printf("Current <OLed:%d> Present:%d Flipped:%d Invert:%d ClockL:%d ClockAna:%d ClockOn:%d _32:%d \n",OLed_x,OLEDPresent(OLed_x),
+                                                                            bitRead(OLED_Settings[OLed_x],_ClockFlip),
+                                                                            bitRead(OLED_Settings[OLed_x],_ClockInvert),
+                                                                            bitRead(OLED_Settings[OLed_x],_ClockLeft),
+                                                                            bitRead(OLED_Settings[OLed_x],_ClockAna),
+                                                                            bitRead(OLED_Settings[OLed_x],_ClockON),
+                                                                            bitRead(OLED_Settings[OLed_x],_32)
+                                                                             );
+}
+
+void OLEDEEPROMsettingView(int OLed_x){
+Serial.printf("EEProm <OLed:%d> Present:%d Flipped:%d Invert:%d ClockL:%d ClockAna:%d ClockOn:%d _32:%d \n",OLed_x,OLEDPresent(OLed_x),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_ClockFlip),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_ClockInvert),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_ClockLeft),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_ClockAna),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_ClockON),
+                                                                            bitRead(OLED_EEPROM_Setting(OLed_x),_32)
+                                                                             );
+
+}
+
+void ViewAllOLEDSettings(int OLed_x){
+  OLEDsettingView(OLed_x);
+  OLEDEEPROMsettingView(OLed_x);
+}
+
+void SaveOledSettings(int OLed_x){
+// should print and save if changed
+                                 
+                                  if (OLed_x==2){OLED_Settings[6]=OLED_Settings[OLed_x];} // keep the "paired" OLED set at the same settings..
+                                  if (OLed_x==6){OLED_Settings[2]=OLED_Settings[OLed_x];}
+                                  if (OLed_x==1){OLED_Settings[5]=OLED_Settings[OLed_x];}
+                                  if (OLed_x==5){OLED_Settings[1]=OLED_Settings[OLed_x];}                     
+ //#ifdef  _ROCDISP_EEPROM_DEBUG    
+                                 Serial.printf("---SAVING Changed OLED Setting ---/n");                        
+                                 OLEDsettingView(OLed_x);
+                                 OLEDEEPROMsettingView(OLed_x);
+ //#endif                        
+                                Data_Updated = true;
+                                WriteEEPROM();
+                                EPROM_Write_Delay = millis() + 10; 
+                                //delay(100);        
+                                if (bitRead(OLED_Settings[OLed_x],_32)!= bitRead(OLED_EEPROM_Setting(OLed_x),_32)){
+                                                          // #ifdef  _ROCDISP_EEPROM_DEBUG  
+                                                                Serial.println("Re-Scanning OLEDS after display mode change");
+                                                          // #endif 
+                                                                LookForOLEDs(false);// FAlse means less serial printing
+                                                                } // Re-Set up displays
+                                                      
+
+
+  
+}
+
+
 int ClockRad;
 bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
-  bool found;  bool in_format;
+  bool found,Changed_32;  bool in_format;
   int j,DisplayLine,RowPixel[15],NewLineOffset,MsgLength,TabOne,TabZero,cx;
   int ClockSpaceOffset,ClockPos,FontSelected;
   //bool ClockAnalog,ClockLeft;
   String FormattedMsg,BitMsg,ClockTime; char BitChar;
-  bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2,ignoreNF;
-  uint8_t ClockSettingBefore;
+  bool FlashON,ignoreJ1,ignoreJ2,inJ1,inJ2,ignoreNF,CA; //CA is command accepted
+  //uint8_t ClockSettingBefore;
   char MSGTextC[20];
   int ScrolledCharCount;
   bool InScrolling,_ignore_Scrolling, _ignore_Width;
+  Changed_32=false;
   InScrolling=false;_ignore_Scrolling=false;_ignore_Width=false;
   ScrolledCharCount=0;
   FontSelected=TerminalDisplayFont;
@@ -371,7 +442,7 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   cx=sprintf(MSGTextC,"%02d:%02d",hrs,mins);
     ClockTime=MSGTextC; // easy way to convert to string
     
-  ClockSettingBefore=OLED_Settings[OLed_x];
+  //ClockSettingBefore=OLED_Settings[OLed_x];
   // get clock analog/left from eeprom??
   ClockRad =9;
   NewLineOffset=8;
@@ -382,159 +453,226 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
       RowPixel[i]=0;
       }
   found=false;
+  CA=false;
+  //Observed_Change=false; 
+  j=0;in_format=false;
+  
    for (int i=0;i<=TextObjectLength-1; i++){
     if (i <= Message.length()){
       if (Message[i]=='{'){found=true; RocFormatUsed[OLed_x]=true;}
     }}
-  if (found){//do RocDisplay formatting and send to display
-    // do formatting stuff to format for display if we have formatting { and } 
-    //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d PixelsDown%d full <%s>",OLed_x,PixelsDown,Message.c_str()));
- 
-   // set default font to RocDisplay Font F0
-  SetFont(OLed_x,FontSelected);
-                                   
-  if ( (bitRead(OLED_Settings[OLed_x],_ClockLeft))&&(bitRead(OLED_Settings[OLed_x],_ClockAna))&&(bitRead(OLED_Settings[OLed_x],_ClockON)  ) )
+  // #ifdef  _ROCDISP_EEPROM_DEBUG 
+  //          if ( (!Observed_Change) && ( (OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x) ))) { // part of debug to find where the change I see happens
+  //              Observed_Change=true;   
+  //              Serial.printf("--- Time %dms --Before PARSING --\n -- Pixels down %d -- \n ",((millis()-StartedAt)),PixelsDown);
+  //              Serial.printf("Message <%s> \n",Message.c_str());                     
+  //              OLEDsettingView(OLed_x);
+  //              OLEDEEPROMsettingView(OLed_x);
+  //              }
+ //  #endif
+    
+    if (found){//do RocDisplay formatting and send to display
+        // do formatting stuff to format for display if we have formatting { and } 
+        //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d PixelsDown%d full <%s>",OLed_x,PixelsDown,Message.c_str()));
+        // set default font to RocDisplay Font F0
+        SetFont(OLed_x,FontSelected);
+        // set up left and right tabs if clock analog used                        
+        if ( (bitRead(OLED_Settings[OLed_x],_ClockLeft))&&(bitRead(OLED_Settings[OLed_x],_ClockAna))&&(bitRead(OLED_Settings[OLed_x],_ClockON)  ) )
              {  ClockSpaceOffset=(ClockRad*2)+1; ClockPos= ClockRad;}
-           else{ClockSpaceOffset= 0;             ClockPos= 127-ClockRad;}                     
-  
-  j=0;in_format=false;
-  //clean out Formatted message.
-  FormattedMsg="";
-  MsgLength=Message.length();
-//  DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d PixelsDown%d Before format<%s>",OLed_x,PixelsDown,Message.c_str()));
-  //Serial.print("UF text<");Serial.print(Message);Serial.println(">");
-  if (Message.length()>=1){  
-    for (int i=0;i<=(Message.length()-1);i++){
-         if (Message[i]=='{'){ OLEDdrawString(OLed_x,RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);
-                                RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,FormattedMsg);
-                                //if font = high set row pixel for row below as well.
-                                if (FontSelected==4)RowPixel[DisplayLine+1]=RowPixel[DisplayLine];
-
-                                //
-                               // code uses .getStringWidth(FormattedMsg)to move each line's cursor (RowPixel) across in case we have more text to print on the same line before next (T) Tab
-                               in_format=true;FormattedMsg="";                                
-                               }
+             else{ClockSpaceOffset= 0;           ClockPos= 127-ClockRad;}                     
+        //clean out Formatted message.
+        FormattedMsg="";
+        MsgLength=Message.length();
+        if (Message.length()>=1){  
+            for (int i=0;i<=(Message.length()-1);i++){  // MAIN PARSING CODE
+            CA=false;
+                 
+            if (Message[i]=='{'){ 
+                OLEDdrawString(OLed_x,RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),FormattedMsg);
+                RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,FormattedMsg);
+                //if font = high set row pixel for row below as well.
+                if (FontSelected==4){RowPixel[DisplayLine+1]=RowPixel[DisplayLine];}
+                             // code uses .getStringWidth(FormattedMsg)to move each line's cursor (RowPixel) across in case we have more text to print on the same line before next (T) Tab
+                in_format=true;FormattedMsg=""; 
+                }
      
    
-         if ((in_format && Message[i]=='S')){  // this code looks at the Set OLed up (S) coding (sets clock etc. 
-                             if (Message[i+1]=='R'){bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockLeft);bitSet(OLED_Settings[OLed_x],_ClockAna);} // 
-                             if (Message[i+1]=='L'){bitSet(OLED_Settings[OLed_x],_ClockON); bitSet(OLED_Settings[OLed_x],_ClockLeft);bitSet(OLED_Settings[OLed_x],_ClockAna);}
-                             if (Message[i+1]=='0'){bitClear(OLED_Settings[OLed_x],_ClockON);bitClear(OLED_Settings[OLed_x],_ClockAna);} // 
-                             if (Message[i+1]=='1'){bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockAna);}
-                             if (Message[i+1]=='3'){bitSet(OLED_Settings[0],_32);}
-                             if (Message[i+1]=='6'){bitClear(OLED_Settings[0],_32);}
-                             if (Message[i+1]=='C'){FormattedMsg+=ClockTime;
-                                                   //Serial.print("Clock display new msg<");Serial.print(FormattedMsg);Serial.println(">");
-                                                   }
-                              //for (int i=0;i<=4;i++){//add clock time
-                                //                        FormattedMsg+=MSGTextC[i];Serial.print(MSGTextC[i])}}
-                             if (Message[i+1]=='E'){if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))||(OLED_Settings[0]!=OLED_EEPROM_Setting(0))){  
-                                                        Data_Updated = true;
-                                                        WriteEEPROM();
-                                                        EPROM_Write_Delay = millis() + 50;
+             if ((in_format && Message[i]=='S')){ // this code looks at the Set OLed up (S) coding (sets clock etc. 
+                        if (!CA){ CA=true;
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("%c%c",Message[i],Message[i+1]);
+                             #endif
+                        switch (Message[i+1]){
+                          case 'R':
+                              {bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockLeft);bitSet(OLED_Settings[OLed_x],_ClockAna);}
+                          break;
+                          case 'L':
+                              {bitSet(OLED_Settings[OLed_x],_ClockON); bitSet(OLED_Settings[OLed_x],_ClockLeft);bitSet(OLED_Settings[OLed_x],_ClockAna);}
+                          break;
+                          case '0':
+                              {bitClear(OLED_Settings[OLed_x],_ClockON);bitClear(OLED_Settings[OLed_x],_ClockAna);}
+                          break;
+                          case '1':
+                              {bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockAna);}
+                          break;
+                          case '3':
+                              {Changed_32=true;bitSet(OLED_Settings[OLed_x],_32);}
+                          break;
+                          case '6':
+                              {Changed_32=true;bitClear(OLED_Settings[OLed_x],_32);}
+                          break;
+                          case 'C':
+                              FormattedMsg+=ClockTime;
+                          break;
+                          case 'F':
+                              {bitSet(OLED_Settings[OLed_x],_ClockFlip);bitClear(OLED_Settings[OLed_x],_ClockInvert); OLEDScreen(OLed_x,true, false);}
+                          break;
+                          case 'I':
+                              {bitClear(OLED_Settings[OLed_x],_ClockFlip);bitSet(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,false, true);}
+                          break;
+                          case 'f':
+                              {bitSet(OLED_Settings[OLed_x],_ClockFlip);bitSet(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,true, true);}
+                          break;
+                          case 'N':
+                              {bitClear(OLED_Settings[OLed_x],_ClockFlip);bitClear(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,false, false);}
+                          break;
+                          case 'x':
+                                SetOLEDDefaults();
+                          break;
+                          case 'E':
+                              if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))){
+                                                        Serial.println("Saving Settings on demand");
+                                                        SaveOledSettings(OLed_x);
                                                         }
-                                                   }
-                             if (Message[i+1]=='F'){OLEDScreen(OLed_x,true, false);}
-                             if (Message[i+1]=='I'){OLEDScreen(OLed_x,false, true);}
-                             if (Message[i+1]=='f'){OLEDScreen(OLed_x,true, true);}
-                             if (Message[i+1]=='N'){OLEDScreen(OLed_x,false, false);}
-
-
-
-                                                   
-                        //   if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))||(OLED_Settings[0]!=OLED_EEPROM_Setting(0))){  // should print if changed
-                        //       Serial.print("OLED Settings<");Serial.print(OLed_x);Serial.print(">");Serial.print(OLED_Settings[OLed_x]);Serial.print("> "); 
-                        //       Serial.print("Settings[0] <");Serial.print(OLED_Settings[0]);Serial.println(">_ ");    
-                        //                                }
-
-                                                   
-                            // Serial.print("<");Serial.print(OLed_x);Serial.print(">");Serial.print(Message[i+1]);Serial.print("_ ");
-                                         i=i+1;  
-                                         }
+                           break;
+                           default:
+                           Serial.println("S message not understood");
+                           break;
+                           }
+                           i=i+1;          
+                           } }
    
                                          
-         if ((in_format && Message[i]=='L')){  // this code does the Lines (L) coding, moving stuff down 8 pixels .
-                                            DisplayLine=GetNumber(Message,i+1);
-                                            //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Changing Line number to %d GN<%d>",OLed_x,DisplayLine,GetNumber(Message,i+1)));
-                                            i=i+1;
-                                            } 
+             if ((in_format && Message[i]=='L')){  // this code does the Lines (L) coding, moving stuff down 8 pixels .
+                             if (!CA){ CA=true;
+                             DisplayLine=GetNumber(Message,i+1);
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("<%c%d>",Message[i],DisplayLine);
+                             #endif
+                             //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Changing Line number to %d GN<%d>",OLed_x,DisplayLine,GetNumber(Message,i+1)));
+                             i=i+CharCountinGetnumber; //CharCountinGetnumber
+                             } }
                              
                                
-         if ((in_format && Message[i]=='F')){  // this code looks at the Fonts (F) coding. 
+             if ((in_format && Message[i]=='F')){  // this code looks at the Fonts (F) coding. 
                                  // selects Font  Message[] (now not limited to just 9)
+                             if (!CA){ CA=true;
                              FontSelected=GetNumber(Message,i+1);
                              SetFont(OLed_x,FontSelected);
-                             i=i+1;
-                                             } 
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("<%c%d>",Message[i],FontSelected);
+                             #endif
+                             i=i+CharCountinGetnumber; //CharCountinGetnumber
+                             }} 
 
-         if ((in_format && Message[i]=='J')){  // this code looks at the Flash (J) coding. 
+             if ((in_format && Message[i]=='J')){  // this code looks at the Flash (J) coding. 
+                             if (!CA){CA=true;
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("%c%c",Message[i],Message[i+1]);
+                             #endif  
                              if (Message[i+1]=='0'){inJ1=false;inJ2=false;ignoreJ1=false;ignoreJ2=false;  } // reset at J0
                              if (Message[i+1]=='1'){inJ1=true;ignoreJ1=true^FlashON;} // 
                              if (Message[i+1]=='2'){inJ2=true;inJ1=false;ignoreJ1=false;ignoreJ2=false^FlashON; } //NB false in ignorej2 here inverts when flashon acts !!
                              if (Message[i+1]=='S'){InScrolling=true;ScrolledCharCount=0;}
                              if (Message[i+1]=='C'){InScrolling=false;}
                              i=i+1;
-                                             } 
+                             } }
+                             
+            if ((in_format && Message[i]=='T')){  // this code looks at the Columns (T) coding.
+                            if (!CA){ CA=true; 
+                            #ifdef  _ROC_MSG_Parsing_DEBUG
+                            Serial.printf("%c%c",Message[i],Message[i+1]);
+                            #endif   
+                            if ((in_format && Message[i+2]=='L')){// Check for 'TxLx' codes, as they are common! Saves changing to "correct" 'LxTx' structure
+                              DisplayLine=GetNumber(Message,i+3);}
+                            if (Message[i+1]=='0'){if (RowPixel[DisplayLine]<=TabZero) {RowPixel[DisplayLine]=TabZero;}}  
+                            if (Message[i+1]=='1'){RowPixel[DisplayLine]=TabOne; 
+                                        if ( bitRead(OLED_Settings[OLed_x],_ClockAna)) {RowPixel[DisplayLine]=RowPixel[DisplayLine]-(2*ClockRad);}   
+                                                  } // offset if Analog clock is in operation
+                            i=i+1;
+                            } }
        
-         if ((in_format && Message[i]=='W')){  // this code looks at the Departure column width (W) coding. 
-                               // ?? W .. "Departure column width" IF set sets the second tab position in pixels..Is volatile, and lost for next message!
-                             TabOne=GetNumber(Message,i+1); //S               
-                                            } 
-         if ((in_format && Message[i]=='w')){  // this code looks at the Platform column width (w) coding. 
-                               // ?? w .. "Platform column width" IF set sets the first tab position in pixels..Is volatile, and lost for next message!
-                             TabZero=GetNumber(Message,i+1); //S               
-                                            } 
+             if ((in_format && Message[i]=='W')){  // this code looks at the Departure column width (W) coding.
+                             if (!CA){ CA=true;
+                                // ?? W .. "Departure column width" IF set sets the second tab position in pixels..Is volatile, and lost for next message!
+                             TabOne=GetNumber(Message,i+1);
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("<%c%d>",Message[i],TabOne);
+                             #endif
+                             i=i+CharCountinGetnumber;
+                             }}
                                              
-     
-        if ((in_format && Message[i]=='T')){  // this code looks at the Columns (T) coding. 
-              if ((in_format && Message[i+2]=='L')){DisplayLine=GetNumber(Message,i+3);}// Check for 'TxLx' codes, as they are common! Saves changing to "correct" 'LxTx' structure
-                             if (Message[i+1]=='0'){if (RowPixel[DisplayLine]<=TabZero) {RowPixel[DisplayLine]=TabZero;}}  
-                             if (Message[i+1]=='1'){RowPixel[DisplayLine]=TabOne; 
-                                                    if ( bitRead(OLED_Settings[OLed_x],_ClockAna)) {RowPixel[DisplayLine]=RowPixel[DisplayLine]-(2*ClockRad);}   
-                                                    } // offset if Analog clock is in operation
-                                            i=i+1;
-                                            }  
+             if ((in_format && Message[i]=='w')){  // this code looks at the Platform column width (w) coding.
+                             if (!CA){ CA=true; 
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.print("w");
+                             #endif
+                             // ?? w .. "Platform column width" IF set sets the first tab position in pixels..Is volatile, and lost for next message!
+                             TabZero=GetNumber(Message,i+1);
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("<%c%d>",Message[i],TabZero);
+                             #endif
+                             i=i+CharCountinGetnumber; //CharCountinGetnumber
+                             }} 
+                                             
+            if (((in_format && Message[i]=='B'))&& !((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1))){  // this code looks at the Bitmaps (B) coding. 
+                             if (!CA){ CA=true;
+                                     // adding flash capability ignore bitmaps after J1 or J2
+                             BitChar=GetNumber(Message,i+1)+1; //Select char from bitmaps with offset to avoid asking for char 0 
+                             BitMsg=BitChar;BitMsg+="";
+                                                      //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));
+                             OLEDsetFont(OLed_x,RocBitMap);
+                             OLEDdrawString(OLed_x,RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
+                             RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,BitMsg);
+                             SetFont(OLed_x,FontSelected); // set back to last selected font; 
+                                                     //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
+                             #ifdef  _ROC_MSG_Parsing_DEBUG
+                             Serial.printf("<%c%d>",Message[i],BitChar);
+                             #endif
+                             i=i+CharCountinGetnumber; //CharCountinGetnumber
+                             } }
 
-        if (((in_format && Message[i]=='B'))&& !((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1))){  // this code looks at the Bitmaps (B) coding. 
-                                                            // adding flash capability ignore bitmaps after J1 or J2
-                               BitChar=GetNumber(Message,i+1)+1; //Select char from bitmaps with offset to avoid asking for char 0 
-                               BitMsg=BitChar;BitMsg+="";
                               
-                              //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));
-                               OLEDsetFont(OLed_x,RocBitMap);
-                               OLEDdrawString(OLed_x,RowPixel[DisplayLine]+ClockSpaceOffset, PixelsDown+(DisplayLine*NewLineOffset),BitMsg);
-                               RowPixel[DisplayLine]=RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,BitMsg);
-                               SetFont(OLed_x,FontSelected); // set back to last selected font; 
-                               //DebugSprintfMsgSend(sprintf ( DebugMsg, "OLed_x:%d Byte %d  %d",OLed_x,(Message[i+1]-48),GetNumber(Message,i+1)));// gets number from Message next byte(s)
-                               i=i+1;
-                              } 
                               // stuff for scroll control
-         if (InScrolling){ScrolledCharCount=ScrolledCharCount+1; 
+            if (InScrolling){ScrolledCharCount=ScrolledCharCount+1; 
                           if (ScrolledCharCount>=ScrollMsgLength[line][OLed_x]){ScrollMsgLength[line][OLed_x]= ScrolledCharCount;} 
                           }  
                           
-         _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCPhere));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
+            _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCPhere));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
 
-        // _ignore_Width senses if the scrolling text is approx one character width beyond the T1 position 
-         if (FontSelected==4){    _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels
+                                  // _ignore_Width senses if the scrolling text is approx one character width beyond the T1 position 
+            if (FontSelected==4){    _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels
                              else{_ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-8)); }
         
         
-        if (!(in_format)&&(j<=(TextObjectLength-1))){ // Not In format, This is text add text to formatted_message to display
+            if (!(in_format)&&(j<=(TextObjectLength-1))){ // Not In format, This is text add text to formatted_message to display
                               ignoreNF=( ((Message[i-1]=='}')&&(Message[i]==' '))||((Message[i+1]=='{')&&(Message[i]==' ')) ) ;// Ignore spaces near formatting ..do not copy first space after '}' or before {helps with alignment + saves display space,
                               if (!((ignoreJ2&&inJ2)||(ignoreJ1&&inJ1)||(_ignore_Scrolling)|| (_ignore_Width)||(ignoreNF)   ))   {   //J1 J2  are the flash function indicators  
                                      FormattedMsg+=Message[i];j=j+1;} 
                               } 
                               
                                             
-        if (Message[i]=='}'){ in_format=false;j=0;}
-     }
-     }
-    // IF set, draw small real time clock in the top line only 
-    
+            if (Message[i]=='}'){ in_format=false;j=0;}
+            }// MAIN PARSING CODE
+            }// end of loop parsing the message
+     if ( (OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x) )) {   
+                      SaveOledSettings(OLed_x);}
+     
+    // IF Analog clock set, draw small real time clock in the top line only 
+    // first set up left or right positioning
     if (bitRead(OLED_Settings[OLed_x],_ClockLeft)){ClockSpaceOffset=(ClockRad*2)+1;ClockPos=ClockRad;}
-                                            else{ClockSpaceOffset=0;             ClockPos=127-ClockRad;}
-                                            
+                                              else{ClockSpaceOffset=0;             ClockPos=127-ClockRad;}
+    // if analog and clock on, draw the clock                                        
     if ( (bitRead(OLED_Settings[OLed_x],_ClockAna)) && (bitRead(OLED_Settings[OLed_x],_ClockON)) ){  
                                 OLEDfillCircle(OLed_x,ClockPos,ClockRad,ClockRad);
                                 OLEDsetColor(OLed_x,BLACK);
@@ -558,10 +696,12 @@ void OLEDS_Display(String L1,String L2,String L3,String L4){
 extern int32_t SigStrength(void);
 
 void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
+
   if (OLEDPresent(OLed_x)){
    OLEDclear(OLed_x);
    // display 4 lines 
    RocFormatUsed[OLed_x]=false;
+
       if (!RocDisplayFormatted(OLed_x,0,L1)) {OLEDdrawStringMaxWidth(OLed_x,offset,  0,MaxWidth, L1);}
       if (!RocDisplayFormatted(OLed_x,16,L2)){OLEDdrawStringMaxWidth(OLed_x,offset, 16,MaxWidth, L2);}
       if (!RocDisplayFormatted(OLed_x,32,L3)){OLEDdrawStringMaxWidth(OLed_x,offset, 32,MaxWidth, L3);}
@@ -569,7 +709,7 @@ void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4){
       if ((L1[0]==0)&&(L2[0]==0)&&(L3[0]==0)&&(L4[0]==0)){
             RRPowerOnIndicator(OLed_x); 
             SignalStrengthBar(OLed_x);
-         if ( (bitRead(OLED_Settings[0],_32))  && (OLed_x>=5) ){BigClock(OLed_x,15);}else{BigClock(OLed_x,30);}// only oleds 5 and 6 (x32 high)need small clock
+         if ( (bitRead(OLED_Settings[OLed_x],_32))  && (OLed_x>=5) ){BigClock(OLed_x,15);}else{BigClock(OLed_x,30);}// only oleds 5 and 6 (x32 high)need small clock
             }   
             OLEDDisplay(OLed_x);
    }
@@ -597,49 +737,57 @@ void SetupTextArrays(uint8_t Address,int Display,String Message){
 
 extern uint16_t SW_REV;
 extern String wifiSSID;
+
 void OLED_initiate(uint8_t address,int I2CBus,bool disp){ // see commands in //https://github.com/ThingPulse/esp8266-oled-ssd1306
   String MSGText1;String MSGText2;  
-  
+    
   if (address==1){ 
    if (disp){Serial.println(F("Initiating Display 1"));} 
    OLED1.init();  
    OLED1.setI2cAutoInit(true);
-   OLED1.flipScreenVertically();
+   //OLED1.flipScreenVertically();
+   OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
    OLED1.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
   if (address==2){  
    if (disp){Serial.println(F("Initiating Display 2")); }
-  OLED2.init();Disp2ReInit=millis()+6000;
+  OLED2.init();    //Disp2ReInit=millis()+6000;
   OLED2.setI2cAutoInit(true);  
-  OLED2.flipScreenVertically();
+  //OLED2.flipScreenVertically();
+  OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
+ 
   OLED2.setTextAlignment(TEXT_ALIGN_CENTER); offset=64;
     }
   if (address==3){ 
    if (disp){ Serial.println(F("Initiating Display 3"));} 
    OLED3.init(); 
    OLED3.setI2cAutoInit(true); 
-   OLED3.flipScreenVertically();
+   //OLED3.flipScreenVertically();
+   OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
    OLED3.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
    if (address==4){ 
     if (disp){Serial.println(F("Initiating Display 4")); }
    OLED4.init(); 
    OLED4.setI2cAutoInit(true); 
-   OLED4.flipScreenVertically();
+   //OLED4.flipScreenVertically();
+   OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
    OLED4.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
     if (address==5){ 
    if (disp){ Serial.println(F("Initiating Display 5")); }
    OLED5.init(); 
    OLED5.setI2cAutoInit(true); 
-   OLED5.flipScreenVertically();
+   //OLED5.flipScreenVertically();
+   OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
    OLED5.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    }
     if (address==6){ 
    if (disp){ Serial.println(F("Initiating Display 6")); }
    OLED6.init(); 
    OLED6.setI2cAutoInit(true); 
-   OLED6.flipScreenVertically();
+   //OLED6.flipScreenVertically();
+   OLEDScreen(address,bitRead(OLED_Settings[address],_ClockFlip), bitRead(OLED_Settings[address],_ClockInvert));
    OLED6.setTextAlignment(TEXT_ALIGN_CENTER);offset=64;
    
    }
@@ -660,19 +808,30 @@ extern uint8_t OLED_EEPROM_Setting(int OLed_x);
 extern int NumberOfOLEDS;   
  
 void LookForOLEDs(bool Display){
-//TEST OF _32
-//bitSet(OLED_Settings[0],_32);
-//bitClear(OLED_Settings[0],_32);
-//
-OLED_Settings[0]=OLED_EEPROM_Setting(0);
+
+#ifdef _ROCDISP_EEPROM_DEBUG
+ 
+  //          if ( (!Observed_Change) && ( (OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x) ))) { // part of debug to find where the change I see happens
+  //              Observed_Change=true;   
+  //              Serial.printf("--- Time %dms --Before PARSING --\n -- Pixels down %d -- \n ",((millis()-StartedAt)),PixelsDown);
+  //              Serial.printf("Message <%s> \n",Message.c_str());                     
+  //              OLEDsettingView(OLed_x);
+  //              OLEDEEPROMsettingView(OLed_x);
+  //              }
+
+#endif
+
 
 if (Display){  
 Serial.println ();
   Serial.print ("I2C scanner. using secondary SDA2:");Serial.print(OLED_SDA2);Serial.print("  SCL2:");Serial.print(OLED_SCL2);Serial.println("  Scanning");
             }
   byte count = 0;
+  OLED6Present=false;OLED5Present=false;OLED4Present=false;OLED3Present=false;OLED2Present=false;OLED1Present=false;
+
+  
   Wire.begin(OLED_SDA2, OLED_SCL2);  // this is bus2
-  for (byte i = 8; i < 120; i++)
+  for (byte i = 8; i <= 120; i++)
   {
     Wire.beginTransmission (i);
     if (Wire.endTransmission () == 0)
@@ -683,13 +842,14 @@ Serial.println ();
       Serial.print (" (0x");
       Serial.print (i, HEX);
       Serial.print (")");
-       if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 6 ");} // if _32 set, we have _32 displays
+       if (i==60){ if (bitRead(OLED_Settings[2],_32)||bitRead(OLED_Settings[6],_32)){Serial.println (" OLED 6 ");} // if _32 set, we have _32 displays
                                                else{Serial.println (" OLED 2 ");}}
+                                               
        if (i==61){Serial.println (" OLED 4 ");}
       
                     }    
-      if (i==60){ if (bitRead(OLED_Settings[0],_32)){OLED6Present=true;OLED_initiate(6,2,Display);count++;} // if _32 set, we have _32 displays
-                                               else{OLED2Present=true;OLED_initiate(2,2,Display);count++;}}
+      if (i==60){ if (bitRead(OLED_Settings[2],_32)||bitRead(OLED_Settings[6],_32)){OLED2Present=false;OLED6Present=true;OLED_initiate(6,2,Display);count++;} // if _32 set, we have _32 displays
+                                               else{OLED2Present=true;OLED6Present=false;OLED_initiate(2,2,Display);count++;}}
                 
       if (i==61){OLED4Present=true;OLED_initiate(4,2,Display);count++;}
  
@@ -701,7 +861,7 @@ Serial.println ();
   Serial.print ("I2C scanner. using SDA:");Serial.print(OLED_SDA);Serial.print("  SCL:");Serial.print(OLED_SCL);Serial.println("  Scanning");
               }
   Wire.begin(OLED_SDA, OLED_SCL);  // 
-  for (byte i = 8; i < 120; i++)
+  for (byte i = 8; i <= 120; i++)
   {
     Wire.beginTransmission (i);
     if (Wire.endTransmission () == 0)
@@ -714,14 +874,14 @@ Serial.println ();
       Serial.print (")");
       
 
-      if (i==60){ if (bitRead(OLED_Settings[0],_32)){Serial.println (" OLED 5 ");} // if _32 set, we have _32 displays
+      if (i==60){ if (bitRead(OLED_Settings[1],_32)||bitRead(OLED_Settings[5],_32)){Serial.println (" OLED 5 ");} // if _32 set, we have _32 displays
                                                else{Serial.println (" OLED 1 ");}
                 }
       if (i==61){Serial.println (" OLED 3 ");}
                     }
                     
-      if (i==60){ if (bitRead(OLED_Settings[0],_32)){OLED5Present=true;OLED_initiate(5,1,Display);count++;} // if _32 set, we have _32 displays
-                                               else{OLED1Present=true;OLED_initiate(1,1,Display);count++;}
+      if (i==60){ if (bitRead(OLED_Settings[1],_32)||bitRead(OLED_Settings[5],_32)){OLED1Present=false;OLED5Present=true;OLED_initiate(5,1,Display);count++;} // if _32 set, we have _32 displays
+                                               else{OLED1Present=true;OLED5Present=false;OLED_initiate(1,1,Display);count++;}
                 }
       if (i==61){OLED3Present=true;OLED_initiate(3,1,Display);count++;}
                     
@@ -729,7 +889,12 @@ Serial.println ();
       } // end of good response
   } // end of for loop
   NumberOfOLEDS=count;
-  
+  #ifdef _ROCDISP_EEPROM_DEBUG
+  for (byte i = 1; i <= 6; i++)
+  {
+   if (OLEDPresent(i)) { OLEDsettingView(i); }
+   }
+  #endif
   if (Display){                  
   Serial.println ("SCAN Done.");
   Serial.print ("Found ");
@@ -835,6 +1000,7 @@ void OLED_Status(){
   for (int i=1;i<=6;i++){
    //Serial.print(" Display:");Serial.print(i);Serial.print(" present");Serial.println(OLEDPresent(i));
     if (OLEDPresent(i)){ 
+      
       OLEDsetTextAlignment(i,TEXT_ALIGN_LEFT); offset=0;  SetFont(i,TerminalDisplayFont);  
       if ( (RocFormatUsed[i])&&(bitRead(OLED_Settings[i],_ClockAna))&&(bitRead(OLED_Settings[i],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
             if (!bitRead(OLED_Settings[i],_ClockLeft) ){

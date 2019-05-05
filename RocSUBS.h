@@ -57,7 +57,7 @@ uint8_t ROC_len;
 uint8_t ROC_Data[260];
 uint8_t ROC_OUT_DATA[200];
 uint16_t RocNodeID;
-uint16_t EEPROMRocNodeID;
+//uint16_t EEPROMRocNodeID;
 
 
 extern uint32_t StartedAt;
@@ -65,7 +65,7 @@ extern uint32_t StartedAt;
 #include "EEPROMDEFAULTS.h"
  
 extern void SetDefaultSVs(); // moved to EEPROMDEFAULTS.h
-
+extern void OLEDsettingView(int OLed_x);
 
 
 //extern uint8_t Interpolate(uint8_t Input,uint8_t lowerout,uint8_t upperout,uint8_t lowerin,uint8_t upperin);
@@ -307,10 +307,19 @@ for (int i = 1; i <= 35 ; i++) {
     EEPROM.write(BrokerEEPROMLocation,BrokerAddr);
     EEPROM.write(RocNodeIDLocation,RN[1]);
     EEPROM.write(RocNodeIDLocation+1,RN[2]);
+#ifdef  _ROCDISP_EEPROM_DEBUG
+Serial.println(" --------- Writing Oled Settings---------");
+#endif
     for (byte i = 0; i <=6; i++) {
       EEPROM.write(DisplayClockBoolEEPROMLocation+(i),OLED_Settings[i]);
-            }
-    Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
+#ifdef  _ROCDISP_EEPROM_DEBUG
+OLEDsettingView(i);
+#endif
+                                 }
+#ifdef  _ROCDISP_EEPROM_DEBUG
+   Serial.println();
+#endif
+   // Serial.print(" RocNodeID:");Serial.println( (EEPROM.read(RocNodeIDLocation+1)*256)+ EEPROM.read(RocNodeIDLocation) );
     delay(100); // 
 }
 
@@ -375,13 +384,22 @@ void ReadEEPROM() {
   }
   
   wifiSSID=read_String(ssidEEPROMLocation);
-  EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
+  //EEPROMRocNodeID=(EEPROM.read(RocNodeIDLocation+1)*256)+EEPROM.read(RocNodeIDLocation);  // low then hi Plan to move to this from RocNodeID, or use it as backup
   wifiPassword=read_String(passwordEEPROMLocation);
   BrokerAddr=EEPROM.read(BrokerEEPROMLocation);
+  #ifdef  _ROCDISP_EEPROM_DEBUG
+Serial.println(" --------- Reading Oled Settings---------");
+#endif
   for (byte i = 0; i <=6; i++) {
      OLED_Settings[i]=EEPROM.read(DisplayClockBoolEEPROMLocation+i);;
+#ifdef  _ROCDISP_EEPROM_DEBUG
+    OLEDsettingView(i);
+#endif
+     
             }
-  
+   #ifdef  _ROCDISP_EEPROM_DEBUG
+   Serial.println();
+   #endif
    Serial.print(" Broker Addr:");Serial.println(BrokerAddr);
    Serial.print(" RocNodeID:");Serial.println(RocNodeID);
    //Serial.print(" Copy of RocNodeID:");Serial.println(EEPROMRocNodeID);
@@ -535,7 +553,7 @@ void ROC_CS() { //group 1
               CV[CVNum] = ROC_Data[5]; //set the new data
               if (OldValue != ROC_Data[5]) {
                      if (millis()>=StartedAt+1000) {  // Use started at Timer  TO STOP EEPROM UPDATE if the mqtt sends a (repeated) valid set command on node connecting
-                                          Data_Updated = true;  
+                                          Serial.println(" Setting new CV data");Data_Updated = true;  
                                           WriteEEPROM();     
                                           EPROM_Write_Delay = millis() + Ten_Sec; //update the time so you can press the same set and get another ten seconds delay
                                                                         }
@@ -624,12 +642,15 @@ void ROC_MOBILE() { //group 2
       break;
     case 3:  {
         Message_Decoded = true; //we understand these 
+        
         if (ROC_recipient == MyLocoAddr) {     //for me, do it!
           //Serial.print(" Function change for :");  
           //Serial.print(ROC_recipient); Serial.print(" data :"); 
     #ifdef _Audio          
-    #ifdef _LOCO_SERVO_Driven_Port              
-         SetSoundEffect(ROC_Data[1],ROC_Data[2],ROC_Data[3]); //Move settings to SetSoundEffect 
+    #ifdef _LOCO_SERVO_Driven_Port
+    if (millis()>=StartedAt+1000){     // but only after one second! (to miss out on any last will sound effect message from Mosquitto).         
+         SetSoundEffect(ROC_Data[1],ROC_Data[2],ROC_Data[3]); //Move settings to SetSoundEffect
+                                 }else {Serial.println(" Ignoring sound effect request ");} 
     #endif     
 /*               //ROC_Data[1];    //F1-F8   
                  //ROC_Data[2];    //F9-F16
@@ -655,11 +676,13 @@ void ROC_CLOCK() {
   //bad idea, to have lots of things transmitting immediately after synch.. 
   //test with delay based on subIPL  
   delay(subIPL);
+  #ifndef _NoSend_Time_Synch_Debug  // for a simpler display during debug
   if (POWERON) {
   DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr .%d  Time Synchronised. Power is ON",subIPL));
   }
   else{  DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr .%d  Time Synchronised. Power is OFF",subIPL));
   }
+  #endif
     Message_Decoded = true;
   //set / synch clock
 }
@@ -743,9 +766,10 @@ void ROC_NODE() { //stationary decoders GROUP 3
       break;
     case 11:  {  //SHOW
         Message_Decoded = true; //we understand these even if they are not for us
+        if (millis()>=StartedAt+1000){
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {
           FlashMessage("RocView Requests SHOW", 10, 500, 100);  //hold the LED on for 800ms, off for 800ms, 6 times!
-          }
+          }}
 
         Message_Decoded = true;
       }
@@ -814,6 +838,7 @@ void ROC_Programming() { //GROUP  5
           }
           //Serial.println();
           if (millis()>=StartedAt+1000){
+            Serial.println("Multi byte WRITE");
                 Data_Updated = true;
                 WriteEEPROM();
                 EPROM_Write_Delay = millis() + Ten_Sec;}
@@ -995,6 +1020,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
 
     case 12:  {
         Message_Decoded = true; //we understand these even if they are not for us
+        if (millis()>=StartedAt+1000){
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {
           int TEMP;
           int port;
@@ -1020,7 +1046,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
           MQTTSend("rocnet/ps", sendMessage);
           
           //ROCSerialPrint(sendMessage);
-        } Message_Decoded = true;
+        } }Message_Decoded = true;
       }
       break;
     case 13: {
@@ -1110,6 +1136,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
       break;
     case 16: {
         Message_Decoded = true; //we understand these even if they are not for us
+        if (millis()>=StartedAt+1000){     // but only after one second! (to miss out on any last will sound effect message from Mosquitto).     
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {
           //channel# offposH offposL onposH  onposL  offsteps  onsteps options
           DebugSprintfMsgSend(sprintf(DebugMsg," Responding to Pi 03 Set data"  ));
@@ -1137,13 +1164,14 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
                 Data_Updated = true;
                 WriteEEPROM();}
           
-        }
+        }}
         Message_Decoded = true;
       }
 
       break;
     case 18: { //set channel#  valueH  valueL (Pi03 settings)
         Message_Decoded = true; //we understand these even if they are not for us
+        if (millis()>=StartedAt+1000){     // but only after one second! (to miss out on any last will sound effect message from Mosquitto).     
         if ( (ROC_recipient ==   RocNodeID) || (    ROC_recipient ==   0)) {
           uint16_t DesiredPos;
 
@@ -1181,7 +1209,7 @@ RNm[27]=0; //050 L  set 1 for "0x50" 3 for 0x50,0x51 etc..NOT USED BY my code as
               EPROM_Write_Delay = millis() + 30000; //30 sec, not ten sec, as we may be wanting to tweak it when we see the movement..
           }
           
-        }
+        }}
         Message_Decoded = true;
       }
       break;
@@ -1269,6 +1297,7 @@ void ROC_Outputs() { //group 9
         } //a node we understand
     else {  // New bit for Sounds for Satationary nodes has own check for nodes avilability
     #if defined (_Audio) && !defined (_LOCO_SERVO_Driven_Port)  // add ability to play 8 sound effects by triggering switches but only for stationary nodes, not locos
+      if (millis()>=StartedAt+1000){     // but only after one second! (to miss out on any last will sound effect message from Mosquitto).     
       if (STATE &&!PlayingSoundEffect){
         int SFXNum;
         char Filename[31]; Filename[0]='\0';
@@ -1283,7 +1312,7 @@ void ROC_Outputs() { //group 9
           
           //DebugSprintfMsgSend( sprintf ( DebugMsg, "Rd1%d Rd2%d Rd3%d Rd4%d Rd5%d Playing %s ",ROC_Data[1],ROC_Data[2],ROC_Data[3],ROC_Data[4],ROC_Data[5],Filename));
           // Message_Decoded = false;
-        }          }
+        }          } }
 
         
     #endif
@@ -1301,6 +1330,8 @@ void ROC_Outputs() { //group 9
 
 
 void SendPortChange(int RNID, boolean ST, uint8_t i) {
+
+if (millis()>=StartedAt+1000){// but only after a second, to allow initial port settings to be captured.
  
   //new format send
   sendMessage[0] = ROC_netid;
@@ -1317,7 +1348,7 @@ void SendPortChange(int RNID, boolean ST, uint8_t i) {
   DebugSprintfMsgSend(sprintf ( DebugMsg, "Sensor change Seen Address:%d State:%d", i, ST));
   Serial.print(" I/O change, Node :"); Serial.print(RNID);  Serial.print(" Sends io:");  Serial.print (i);  Serial.print(" is now:"); Serial.print(ST); Serial.println(" ");
 
-}
+}}
 
 
 

@@ -192,7 +192,7 @@ extern uint16_t MyLocoAddr ;
 extern int32_t SigStrength();
 extern bool DebugMsgCleared;
 extern uint32_t TimeToClearDebugMessage;
-
+extern uint32_t StartedAt;
 
 
 void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
@@ -213,11 +213,15 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
   #endif
   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);
 
-   //add timestamp to outgoing message
+   //add timestamp to outgoing message 
+   if ((millis()-StartedAt)<=30000){//less than 30 seconds after start.
+                          cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %dms from start %s",hrs,mins,secs,(millis()-StartedAt),DebugMsgTemp);
+                          }else {
   if ((hrs==0)&&(mins==0)){//not Synchronised yet..
-                          cx=sprintf(DebugMsgLocal," Time not synchronised yet %s",DebugMsgTemp);
+                          cx=sprintf(DebugMsgLocal,"<Not synchronised yet> %d ms from start  %s",(millis()-StartedAt),DebugMsgTemp);
                           }
                           else {cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %s",hrs,mins,secs,DebugMsgTemp);
+                          }
                           }
         
     //Serial.printf("\n *Debug Message:%s Msg Length:%d \n",DebugMsgLocal,cx);
@@ -261,7 +265,7 @@ void DebugSprintfMsgNoprint(int CX){ //allows use of Sprintf function in the "cx
 extern bool ScanForBroker;
 extern int BrokerAddr;
 extern void WriteWiFiSettings();
-extern uint16_t SW_REV;
+extern uint8_t SW_REV;
 extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L4);
 extern void SetFont(uint8_t Disp,uint8_t Font);
 
@@ -333,4 +337,3 @@ void reconnect() {
              }
   }
 }
-
