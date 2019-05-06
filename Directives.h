@@ -173,7 +173,7 @@
  static const uint8_t OLED_SDA2 = 5;  //D1 is 5 //used only for display 3
  static const uint8_t OLED_SCL2 = 4;//d2 is 4
  static const uint8_t OLED_SDA = 0;  //  known as D3 on esp 8266 
- static const uint8_t OLED_SCL = 2;  // known as D4 on esp 8266 
+ static const uint8_t OLED_SCL = 2;  // known as D4 on esp 8266 AND IS the SignalLed, so will flash regularly if any OLED is present on I2C bus!
  #endif
  
 #endif //not pwm loco 

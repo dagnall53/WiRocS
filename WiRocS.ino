@@ -14,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 25;
+uint8_t SW_REV = 26;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -45,6 +45,7 @@ uint8_t ip0;
 uint8_t ip1;
 uint8_t subIPH;
 uint8_t subIPL;
+bool _HaveSent_Connected_Debug_Msg;
 extern int SCP[5][7];  // Scroll position counter for [Rocdisplay] [Oleds] on each, oled displays (LIMIT  ONE SCROLLING per display)
 extern int ScrollMsgLength[5][7];
 
@@ -102,22 +103,18 @@ extern void OLED_4_RN_displays(int OLed_x,String L1,String L2,String L3,String L
 extern void SetFont(uint8_t Disp,uint8_t Font);
 
 extern uint8_t OLED_Settings[7];
-
-
+extern void DebugSprintfMsgSend(int CX);
+extern  bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
 
 
 // functions start 
-void SignOfLifeFlash(bool state){
-  if (!(OLED2Present||OLED1Present||OLED3Present||OLED4Present)){
-    digitalWrite(SignalLed, state) ; ///turn On
+void SignOfLifeFlash(bool state){  //on ESP8266 SignalLed port is also I2CSDL, so will flash regularly if any OLED is present on I2C bus!
+  if (!(OLED1Present||OLED3Present||OLED5Present)){ // do not drive the pin if OLEDS that connect to the main I2C are present!!
+    digitalWrite(SignalLed, state) ; ///turn On/off  // Note will not flash if port (eg on esp8266 is D4) is set to output either! 
     // WAS   digitalWrite(NodeMCUPinD[SignalLed], state) ; ///turn On
 }}
 
 int32_t SigStrength(void){
-  //int32_t Siglevel;
-  //Siglevel=WiFi.RSSI();
-  //Serial.print("Signal:");
-  //Serial.println(Siglevel); 
   return WiFi.RSSI();
  }
 
@@ -150,10 +147,10 @@ void Report_address_and_do_any_forced_settings(){
                      else{ Serial.print("{Short}"); Serial.println (MyLocoAddr);}
        #ifdef  _Force_Loco_Addr
           MyLocoAddr= _Force_Loco_Addr;
-           CV[1]=_Force_Loco_Addr;
-            CV[17]=0;
-            CV[18]=_Force_Loco_Addr;
-            Serial.print("FORCED by #defines to long as short set at:"); Serial.println (MyLocoAddr);
+          CV[1]=_Force_Loco_Addr;
+          CV[17]=0;
+          CV[18]=_Force_Loco_Addr;
+          Serial.print("FORCED by #defines to long as short set at:"); Serial.println (MyLocoAddr);
        #endif 
    #endif
  
@@ -246,12 +243,13 @@ void Status(){
   mosquitto[0] = ipBroad[0]; mosquitto[1] = ipBroad[1]; mosquitto[2] = ipBroad[2];
   // old method of storage, now replaced replaced mosquitto[3]= RN[14];                //saved mosquitto address, where the (lowest address) broker is! saved as RN[14], will loop through 18-5 to find one
   mosquitto[3]= BrokerAddr;  //use saved broker address as your broker ip address.
-  SetFont(1,99); OLED_4_RN_displays(1,"Connected to",wifiSSID.c_str(),"","Connecting to MQQT");
-  SetFont(2,99); OLED_4_RN_displays(2,"Connected to",wifiSSID.c_str(),"","");
+  SetFont(1,99); OLED_4_RN_displays(1,"Connected to",wifiSSID.c_str(),"Connecting to MQQT","");
+  SetFont(2,99); OLED_4_RN_displays(2,"Connected to",wifiSSID.c_str(),"Connecting to MQQT","");
   Serial.print(F(" Mosquitto will first try to connect to:"));
   Serial.println(mosquitto);
-  MQTT_Setup();
-  reconnect();
+  //MQTT_Setup();
+  reconnect(); // includes MQTT_Setup();
+ 
   //------------------ IF rfid -------------------------
     #ifdef  _RFID
       SetupRFID(); //note I have not tested this stuff recently.. 
@@ -262,8 +260,8 @@ void Status(){
     RocNodeID=subIPL;
    #endif 
    if (RocNodeID==0){RocNodeID=3;}
-  Report_address_and_do_any_forced_settings();
-    
+   Report_address_and_do_any_forced_settings();
+     
  #ifdef _LOCO_SERVO_Driven_Port
   Loco_motor_servo_demand = 90;
   digitalWrite(NodeMCUPinD[FRONTLight], 1);  //Turn off direction lights
@@ -378,10 +376,12 @@ void SetupFTP(){
 
 extern bool Observed_Change;  // used trying to find why oledsetup is changing
 extern void ViewAllOLEDSettings(int OLed_x);
+extern void SetAll_32Mode(int OLed_x);
+
 void setup() {  
    bool UsedDefaults;
     Observed_Change=false; 
- 
+   _HaveSent_Connected_Debug_Msg=false;
    Serial.begin(115200);
    NumberOfOLEDS=0;
    // oled if fitted
@@ -420,6 +420,7 @@ ImmediateStop(); //stop motors as soon as setup set up
   ReadEEPROM();     //get the RN and CV registers and now the wifi settings etc. 
   CV[8] = 0x0D; //DIY MFR code  set regardless!
   CV[7] = SW_REV; //ver    set regardless
+  SetAll_32Mode(1); // set the _32 mode to the oled 1 setting regardless.
   delay(100); // time to get settings before OLED check
 #ifdef _OLED   
    LookForOLEDs(true);   // needs eeprom begin and eeprom settings read  see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu
@@ -607,25 +608,21 @@ extern bool OLEDPresent(int OLED);
 
 //========================MAIN LOOP==============================
 void loop() {
-//  LoopCount++;
+ //  LoopCount++;
  //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
 // if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
-// separated out oleds to allow faster than 1 sec updates..
-  #ifdef  _ROCDISP_EEPROM_DEBUG    
-              if (!Observed_Change){ Serial.printf("\n  --- IN LOOP First time around \n  -- At@%d ---\n\n",(millis()-StartedAt));                        
-                                 ViewAllOLEDSettings(1);
-                                 Observed_Change=true;} 
-  #endif 
 
+// separated out oleds from sign of life flash to allow faster than 1 sec updates..
 
 if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here 
     ScrollSpeedCounter=LoopTimer+500;
     #ifdef _OLED 
     //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
     TimeGears();
-    for (int oled=0; oled<=7;oled++){  
+    // Scrolling message pointers  : Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
+    for (int oled=1; oled<=6;oled++){  // six oleds entities (1-6) are possible, 
       if((OLEDPresent(oled))){
-        for (int RocDMsg=0;RocDMsg<=4;RocDMsg++){//roc display msg
+        for (int RocDMsg=1;RocDMsg<=4;RocDMsg++){//there are a max of 4 roc display messages (1-4) per OLED 
            SCP[RocDMsg][oled]=(SCP[RocDMsg][oled])+1; if (SCP[RocDMsg][oled]>=ScrollMsgLength[RocDMsg][oled]){SCP[RocDMsg][oled]= -5;}
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
@@ -635,7 +632,7 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
   //Sign of life flash 
   if (LoopTimer >= lastsec ) {//sign of life flash 
     SignOfLifeFlash(SignalON) ; ///turn On
-    lastsec = lastsec +1000;secs = secs + divider;  
+    lastsec = lastsec +1000; secs = secs + divider;  
    
 #ifdef _LoopTiming
     Serial.print("Loops achieved");Serial.println(LoopCount);

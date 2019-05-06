@@ -37,6 +37,8 @@ extern void DoFTP();
 extern void Status();
 extern void SetupFTP();
 extern void ImmediateStop();
+bool _ProcessedSerialInput;
+byte ndx;
 void CheckForSerialInput(){
   String MSGText;
   String MSGText1;
@@ -53,6 +55,7 @@ void CheckForSerialInput(){
     CtrlE=5;
     //Gives options to change wifiSSID,wifiPassword
     UpdateInProgress=false;
+    _ProcessedSerialInput=false;ndx=0;newData = false;
     if (wifiSSID=="Router Name"){   UpdateInProgress=true;
                                     Serial.println(" Forcing request for new entries as Default Router name has not been set in Secrets.h");
                                     Serial.println("--Serial port update Started--");
@@ -77,18 +80,18 @@ void CheckForSerialInput(){
     OLED_Status();// set up fonts etc?
     while ((countdown>= 0) || UpdateInProgress) {
       if (SerioLevel==10){
-                  newData = false;
-                  OLEDS_Display("FTP ONLY","Switch off to reset","","");
-                  DoFTP();
-                  if ((millis()>= FlashTime)){FlashTime=millis()+1000; Serial.println("Connected and waiting for ftp HARD reset to escape");}
-                       #ifdef _LOCO_SERVO_Driven_Port        // need this to stop loco from running at full speed when just trying to do FTP               
-                           pinMode(NodeMCUPinD[_LOCO_SERVO_Driven_Port], OUTPUT);
+                        newData = false;
+                        OLEDS_Display("FTP ONLY","Switch off to reset","","");
+                        DoFTP();
+                        if ((millis()>= FlashTime)){FlashTime=millis()+1000; Serial.println("Connected and waiting for ftp HARD reset to escape");}
+                          #ifdef _LOCO_SERVO_Driven_Port        // need this to stop loco from running at full speed when just trying to do FTP               
+                              pinMode(NodeMCUPinD[_LOCO_SERVO_Driven_Port], OUTPUT);
                               #ifdef _LocoPWMDirPort
                               pinMode(NodeMCUPinD[_LocoPWMDirPort], OUTPUT);
                               #endif
-                           ImmediateStop(); //stop motors as soon as setup set up
-                       #endif
-                  }
+                            ImmediateStop(); //stop motors as soon as setup set up
+                          #endif
+                          }
       
       if ((millis()>= FlashTime) && !UpdateInProgress) {Count=" Countdown:";Count+=countdown;
                                                         FlashTime=millis()+1000; Serial.print(countdown);SignOfLifeFlash(LAMP) ;
@@ -96,11 +99,12 @@ void CheckForSerialInput(){
                                                         LAMP=!LAMP; countdown=countdown-1;}
                                                           
       delay(1); //Allow esp to process other events .. may not be needed, but here to be safe..                                      
-      recvWithEndMarker();
+      recvWithEndMarker();  // SETS UP receivedChars and ndx and newData
       if ( ( (SerioLevel==0) )||(newData == true) ) 
                 {
-                  if (newData == true) {TestData=receivedChars;}
-                          //Serial.print("<");Serial.print(TestData);Serial.print("> Looking for {");Serial.print(LookFor);Serial.println("}");
+                  if (newData == true) {TestData=receivedChars;_ProcessedSerialInput=true;ndx=0;newData = false;
+                                        //Serial.print("Working with <");Serial.print(TestData);Serial.println(">");
+                                        }
                           switch (SerioLevel){ 
                           case 0:
                                  if ((TestData=="xxx\0")){
@@ -200,12 +204,12 @@ void CheckForSerialInput(){
 
 
 void recvWithEndMarker() {
-    static byte ndx = 0;
     char endMarker = '\n';
     char rc;
     while (Serial.available() > 0 ) { 
-           rc = Serial.read();
-           Serial.print(char(rc));
+           rc = Serial.read(); 
+          // Serial.print("<");Serial.print("ndx:");Serial.print(ndx);Serial.print(">");delay(1);
+           Serial.print(char(rc)); // echo on
            if ((rc != 10)&&(rc != 13) ){ 
                  receivedChars[ndx] = rc;
                  ndx++; 
@@ -214,9 +218,10 @@ void recvWithEndMarker() {
                  else { 
                       newData = true;
                       receivedChars[ndx] = '\0'; //replace NL/CR with '\0' terminator. Mark that new data is available, but do not increment ndx
-                      }
+                      }//once all serial data has been processed, reset ndx
+           delay(1); //v26 addded to try to make serial interface more reliable..           
            }
-           ndx = 0; //once all serial data has been processed, reset ndx
+           
 }
 
 void showNewData() {

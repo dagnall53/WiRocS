@@ -22,13 +22,13 @@
   
   // small displays
   
-  SSD1306 OLED1(0x3c, OLED_SDA, OLED_SCL);//== RocDisplays 1,2,3&4
-  SSD1306 OLED3(0x3d, OLED_SDA, OLED_SCL); // RocDisplays 9,10,11,12
-  SSD1306 OLED2(0x3c, OLED_SDA2, OLED_SCL2); // RocDisplays 5,6,7,8 
-  SSD1306 OLED4(0x3d, OLED_SDA2, OLED_SCL2);  // displays 13,14,15,16
-  //new stuff for software controlled X32 
-  SSD1306 OLED5(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );  //RocDisplays 1&2
-  SSD1306 OLED6(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); // RocDisplays 3&4? 
+  SSD1306 OLED1(0x3c, OLED_SDA, OLED_SCL);  // RN 60 RocDisplays 1,2,3 & 4
+  SSD1306 OLED3(0x3d, OLED_SDA, OLED_SCL);  // RN 60 RocDisplays 9,10,11,12
+  SSD1306 OLED2(0x3c, OLED_SDA2, OLED_SCL2);// RN 61  RocDisplays 5,6,7,8 
+  SSD1306 OLED4(0x3d, OLED_SDA2, OLED_SCL2);// RN 61 displays 13,14,15,16
+  //new stuff for software controlled X32 mode 
+  SSD1306 OLED5(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_32 );   //RN 60   //RocDisplays 1&2
+  SSD1306 OLED6(0x3c, OLED_SDA2, OLED_SCL2, GEOMETRY_128_32 ); //RN 60  RocDisplays 3&4?  
  
  
    //
@@ -385,13 +385,20 @@ void ViewAllOLEDSettings(int OLed_x){
   OLEDEEPROMsettingView(OLed_x);
 }
 
+void SetAll_32Mode(int OLed_x){
+  for (int i=1;i<=6;i++){ if (bitRead(OLED_Settings[OLed_x],_32)){bitSet(OLED_Settings[i],_32);}
+                                                             else{bitClear(OLED_Settings[i],_32);}
+     }         
+}
+
 void SaveOledSettings(int OLed_x){
 // should print and save if changed
                                  
                                   if (OLed_x==2){OLED_Settings[6]=OLED_Settings[OLed_x];} // keep the "paired" OLED set at the same settings..
                                   if (OLed_x==6){OLED_Settings[2]=OLED_Settings[OLed_x];}
                                   if (OLed_x==1){OLED_Settings[5]=OLED_Settings[OLed_x];}
-                                  if (OLed_x==5){OLED_Settings[1]=OLED_Settings[OLed_x];}                     
+                                  if (OLed_x==5){OLED_Settings[1]=OLED_Settings[OLed_x];}  
+                                                 
  //#ifdef  _ROCDISP_EEPROM_DEBUG    
                                  Serial.printf("---SAVING Changed OLED Setting ---/n");                        
                                  OLEDsettingView(OLed_x);
@@ -1008,7 +1015,7 @@ void OLED_Status(){
                             offset=1+(ClockRad*2);MaxWidth=127-(ClockRad*2);} }
       if ((i==1) ){OLED_4_RN_displays(i,TS[1],TS[2],TS[3],TS[4]);}      
       if ((i==5) ){OLED_4_RN_displays(i,TS[1],TS[2],"","");}
-      if ((i==6) ){OLED_4_RN_displays(i,TS[3],TS[4],"","");}
+      if ((i==6) ){OLED_4_RN_displays(i,TS[5],TS[6],"","");}
       if ((i==2) ){OLED_4_RN_displays(i,TS[5],TS[6],TS[7],TS[8]);}
       if ((i==3) ){OLED_4_RN_displays(i,TS[9],TS[10],TS[11],TS[12]);}
       if ((i==4) ){OLED_4_RN_displays(i,TS[13],TS[14],TS[15],TS[16]);}

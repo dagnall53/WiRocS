@@ -678,9 +678,9 @@ void ROC_CLOCK() {
   delay(subIPL);
   #ifndef _NoSend_Time_Synch_Debug  // for a simpler display during debug
   if (POWERON) {
-  DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr .%d  Time Synchronised. Power is ON",subIPL));
+  DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr.%d Time Synchronised. Power is ON",subIPL));
   }
-  else{  DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr .%d  Time Synchronised. Power is OFF",subIPL));
+  else{  DebugSprintfMsgSend( sprintf ( DebugMsg, " IPaddr.%d Time Synchronised. Power is OFF",subIPL));
   }
   #endif
     Message_Decoded = true;

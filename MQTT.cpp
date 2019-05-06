@@ -193,11 +193,12 @@ extern int32_t SigStrength();
 extern bool DebugMsgCleared;
 extern uint32_t TimeToClearDebugMessage;
 extern uint32_t StartedAt;
-
+extern bool CheckWiFiConnected(void);
+extern bool _HaveSent_Connected_Debug_Msg;
 
 void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquitto_sub -h 127.0.0.1 -i "CMD_Prompt" -t debug -q 0
-  char DebugMsgLocal[127];
-  char DebugMsgTemp[127];
+  char DebugMsgLocal[200];
+  char DebugMsgTemp[200];
   int cx;
   int32_t Signal;
   bool retained;
@@ -205,33 +206,27 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
   Signal=SigStrength();
  
 //  if (payload==""){client.publish(topic.c_str(),"",false);Serial.println("Clearing DebugMsg"); return; }
-  
+  // add node type specific data and subIPL addr whilst hrs and secs are not synchronised.
   #ifdef _LOCO_SERVO_Driven_Port
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+                                   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",subIPL,RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
   
+                                    cx= sprintf ( DebugMsgTemp, "RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);
+  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB)(%s) %s",subIPL,RocNodeID,Signal,  Nickname, payload);}
   #endif
-  cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);
+  
 
    //add timestamp to outgoing message 
-   if ((millis()-StartedAt)<=30000){//less than 30 seconds after start.
-                          cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %dms from start %s",hrs,mins,secs,(millis()-StartedAt),DebugMsgTemp);
-                          }else {
-  if ((hrs==0)&&(mins==0)){//not Synchronised yet..
-                          cx=sprintf(DebugMsgLocal,"<Not synchronised yet> %d ms from start  %s",(millis()-StartedAt),DebugMsgTemp);
-                          }
-                          else {cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %s",hrs,mins,secs,DebugMsgTemp);
-                          }
-                          }
+   if ((hrs==0)&&(mins==0)){//not Synchronised yet..
+                                  cx=sprintf(DebugMsgLocal,"(%dms from start) %s",(millis()-StartedAt),DebugMsgTemp);}
+                            else {cx=sprintf(DebugMsgLocal,"<%02d:%02d:%02ds> %s",hrs,mins,secs,DebugMsgTemp);}
+                                
         
     //Serial.printf("\n *Debug Message:%s Msg Length:%d \n",DebugMsgLocal,cx);
-   if (Print){        Serial.printf("\n*Debug Msg %s  \n",DebugMsgTemp);}
+   if (Print){ Serial.printf("\n*Debug Msg %s  \n",DebugMsgTemp);}
              else{cx= sprintf ( DebugMsgLocal, "RN:%d %s",RocNodeID,payload);  }  // shortened intro for debug msg on no print version                                                                     }
 
- 
-    //if ((cx <= 120)) {
-    //                //  can do     client.publish(topic.c_str(), DebugMsgLocal,false); // not retained// added at V17b
-    //                 }
     if ((cx >= 120) && (strlen(payload) <= 100)) {
                    cx= sprintf ( DebugMsgLocal, "MSG-%s-", payload);
                        }//print just msg  line
@@ -239,8 +234,9 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
                    cx= sprintf ( DebugMsgLocal, "Node:%d Loco:%d Time %d:%d:%ds Msg TOO Big to print", RocNodeID, MyLocoAddr, hrs, mins, secs);
                        }
     // all ends with actually sending the message!
-        client.publish(topic.c_str(), DebugMsgLocal,retained); // retained or not?// added at V17bb
-        if (!Print){delay(1000);}// slow down the Setup (the only place Print=false is used) to allow time for message propagation 
+    if (MQTT_Connected()&& CheckWiFiConnected()) { // && _HaveSent_Connected_Debug_Msg ) { //_HaveSent_Connected_Debug_Msg was a test... 
+        client.publish(topic.c_str(), DebugMsgLocal,retained); }//v26 seems not needed, but sensible to add check WiFi connected and so is MQTT??..// retained or not?// added at V17bb
+        if (!Print){delay(1000);}// slow down for the Port Setup (the only place Print=false is used) to allow time for message propagation 
         TimeToClearDebugMessage=millis()+5000; // not used at present, but can be switched on in main loop
         DebugMsgCleared=false;
   }
@@ -272,42 +268,47 @@ extern void SetFont(uint8_t Disp,uint8_t Font);
 extern void StringToChar(char *line, String input);
 extern void FlashMessage (String msg, int Repeats, int ON, int Off);
 extern void OLEDS_Display(String L1,String L2,String L3,String L4);
-extern bool CheckWiFiConnected(void);
+
 uint32_t TimeLimit;
-void reconnect() {
+void reconnect(void) {
   bool ConnectedNow; int cx;
   char ClientName[80];
   char myName[15] = "RocNetESPNode:";
   String MSGText1, MSGText2;
-  if (!MQTT_Connected()) { // not connected so need to do stuff
-      sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
+  sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
+  if (CheckWiFiConnected()){Serial.printf("--%s Connected at Address:%d.%d.%d.%d --\n  --Looking for MQTT at %d --\n",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]);}
+
+
+  
+  if (!MQTT_Connected()) { // not connected to MQTT so need to do stuff
       SignOfLifeFlash( SignalON) ; ///turn on
       MQTT_Setup();   //Set any changes in MQTT mosquitto address ?
       MSGText1=" <";MSGText1+=mosquitto[0];MSGText1+=".";MSGText1+=mosquitto[1];MSGText1+=".";MSGText1+=mosquitto[2];MSGText1+=".";MSGText1+=mosquitto[3];MSGText1+=">";
       MSGText2="code <Ver:";MSGText2+=SW_REV;MSGText2+="> "; 
       Serial.print("MQTT trying ");Serial.println(MSGText1);
       
-      if (mosquitto[3] != BrokerAddr ){ DebugSprintfMsgSend( sprintf ( DebugMsg, "%s updating Broker Addr was %d. to %d",ClientName,BrokerAddr,mosquitto[3]));}
+      if (mosquitto[3] != BrokerAddr ){ Serial.printf("%s updating Broker Addr was %d. to %d\n",ClientName,BrokerAddr,mosquitto[3]);}
+      
       cx=sprintf( DebugMsg, "Trying :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
  
       
       ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per unsucessful check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
+
       if (ConnectedNow) {// I want this Connected message before the flash message
             Serial.print("WiRocS ");Serial.print(MSGText2);Serial.print("MQTT Connected");Serial.println(MSGText1);}
             else{FlashMessage(DebugMsg, 2, 100, 100);} // flash "trying" mmessage in OLED (also sends to Serial port and mqtt debug)
       
       if (ConnectedNow) {
-           // Serial.print("WiRocS ");Serial.print(MSGText2);Serial.print("MQTT Connected");Serial.println(MSGText1);
+            // Serial.print("WiRocS ");Serial.print(MSGText2);Serial.print("MQTT Connected");Serial.println(MSGText1);
             connects=0;
             if (mosquitto[3] != BrokerAddr ){   //BrokerAddr is the MQQT broker address, save if changed
                    BrokerAddr=mosquitto[3];
                    WriteWiFiSettings();
                    }
-      //can advise this node is connected now:
-      
-            DebugSprintfMsgSend( sprintf ( DebugMsg, "%s Connected at Address:%d.%d.%d.%d  Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]));
-            cx=sprintf( DebugMsg, "Broker OK :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
-            FlashMessage(DebugMsg, 4, 500, 100);  //Flash message sends to oled displays
+            //can advise this node is connected now:
+            Serial.printf ( DebugMsg, "%s Connected at:%d.%d.%d.%d Found MQTT at %d",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]);
+            cx=sprintf( DebugMsg, "IP:%d Broker OK :%d.%d.%d.%d",subIPL,mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
+            FlashMessage(DebugMsg, 4, 500, 100);  //Flash message sends to oled displays (and sends a MQTT debugmsg !!) 
                  
         //... and now subscribe to topics  http://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en#groups
             client.subscribe("rocnet/lc", 1 ); //loco
@@ -321,10 +322,11 @@ void reconnect() {
         client.subscribe("rocnet/ot",1);
         client.subscribe("rocnet/sr",0); //to allow reflection check of my sensor events
       */
-           delay(10); // time to stabilise everything?
-       } else { // not connected? try another address
-             connects=connects+1;
-             if ((connects>=5) && ScanForBroker && (CheckWiFiConnected()) &&(SigStrength()>=-85)){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
+               delay(10); // time to stabilise everything?
+               } 
+               else { // not connected? try another address
+                     connects=connects+1;
+                     if ((connects>=5) && ScanForBroker && (CheckWiFiConnected()) &&(SigStrength()>=-85)){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
                        mosquitto[3]=mosquitto[3]+1; 
                        Serial.println(" Incrementing MQTT addresses ");
                        #ifdef myBrokerSubip 
@@ -335,5 +337,6 @@ void reconnect() {
                        }   //limit mqtt brokerrange  to 3-127 to save scan time
             SignOfLifeFlash( SignalOFF) ; ///turn OFF
              }
-  }
-}
+             
+       }
+ }

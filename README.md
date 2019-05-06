@@ -14,6 +14,14 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 
 ===Version History===
 
+V26
+
+Revised Serial input so it should be improved.
+Re-Organised MQTT debug messages so they do not try to send before the MQTT is set up!.
+Made the _32 mode "global", so changing it for any OLED should change all to _32 mode.
+Corrected which RN messages can be sent to the _32 version OLED with Addr 60 ("OLED6") on second I2C bus. This was RN 3 and 4, but now corrected to RocMessges 5 and 6 to be consistent with the option of this OLED alternatively being a "_64" OLED ("OLED2"), which displays RN messages 5,6,7,8.  
+  
+
 V25
 
 Corrected fault that changed OLED settings.
