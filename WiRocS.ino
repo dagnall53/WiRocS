@@ -14,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 26;
+uint8_t SW_REV = 27;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -46,7 +46,7 @@ uint8_t ip1;
 uint8_t subIPH;
 uint8_t subIPL;
 bool _HaveSent_Connected_Debug_Msg;
-extern int SCP[5][7];  // Scroll position counter for [Rocdisplay] [Oleds] on each, oled displays (LIMIT  ONE SCROLLING per display)
+extern int SCP[5][7];  // Scroll position counter for [display] [Oleds] on each, oled (LIMIT  ONE SCROLLING per display)
 extern int ScrollMsgLength[5][7];
 
 #ifdef ESP32  // https://github.com/madhephaestus/ESP32Servo/tree/master/src
@@ -420,7 +420,7 @@ ImmediateStop(); //stop motors as soon as setup set up
   ReadEEPROM();     //get the RN and CV registers and now the wifi settings etc. 
   CV[8] = 0x0D; //DIY MFR code  set regardless!
   CV[7] = SW_REV; //ver    set regardless
-  SetAll_32Mode(1); // set the _32 mode to the oled 1 setting regardless.
+  //SetAll_32Mode(1); // set the _32 mode to the oled 1 setting regardless.
   delay(100); // time to get settings before OLED check
 #ifdef _OLED   
    LookForOLEDs(true);   // needs eeprom begin and eeprom settings read  see also  https://roboindia.com/tutorials/i2c-address-scanner-nodemcu

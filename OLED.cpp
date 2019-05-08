@@ -5,8 +5,8 @@
   // these outside #define to save putting more #defines in other places..
   bool OLED1Present,OLED2Present,OLED3Present,OLED4Present,OLED5Present,OLED6Present;
   uint8_t OLED_Settings[7]; ///bit settings for oleds 1-6
-  int SCP[5][7];  // Scroll position counter for [Rocdisplay 1-4] [Oleds 1-6] on each, oled displays (LIMIT  ONE SCROLLING per display)
-  int ScrollMsgLength[5][7];
+  int SCP[5][7];  // Scroll position counter for [display 1-4] on  [Oleds 1-6] on each, oled (LIMIT  ONE SCROLLING per display)
+  int ScrollMsgLength[5][7]; //Scroll msg length counter
   #define _ClockON 0
   #define _ClockLeft 1
   #define _ClockAna 2
@@ -442,10 +442,10 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   ignoreJ2=false;inJ2=false;
   int SCPhere;
   int line;
-  if (PixelsDown==0){SCPhere=SCP[0][OLed_x];line=0;}
-  if (PixelsDown==16){SCPhere=SCP[1][OLed_x];line=1;}  
-  if (PixelsDown==32){SCPhere=SCP[2][OLed_x];line=2;}
-  if (PixelsDown==48){SCPhere=SCP[3][OLed_x];line=3;}
+  if (PixelsDown==0){SCPhere=SCP[1][OLed_x];line=0;}
+  if (PixelsDown==16){SCPhere=SCP[2][OLed_x];line=1;}  
+  if (PixelsDown==32){SCPhere=SCP[3][OLed_x];line=2;}
+  if (PixelsDown==48){SCPhere=SCP[4][OLed_x];line=3;}
   cx=sprintf(MSGTextC,"%02d:%02d",hrs,mins);
     ClockTime=MSGTextC; // easy way to convert to string
     
@@ -522,31 +522,37 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                           case '1':
                               {bitSet(OLED_Settings[OLed_x],_ClockON); bitClear(OLED_Settings[OLed_x],_ClockAna);}
                           break;
-                          case '3':
+                          case '2': //Two rocdisplays Displays
+                              //{Changed_32=true;bitSet(OLED_Settings[OLed_x],_32);}
+                          break;
+                          case '3':  //or "32 pixel" (two display)
                               {Changed_32=true;bitSet(OLED_Settings[OLed_x],_32);}
                           break;
-                          case '6':
+                          case '4': //4 rocdisplay Displays
+                            //  {Changed_32=true;bitClear(OLED_Settings[OLed_x],_32);}
+                          break;
+                          case '6': //or "64 pixel" (four rocdisplays)
                               {Changed_32=true;bitClear(OLED_Settings[OLed_x],_32);}
                           break;
                           case 'C':
                               FormattedMsg+=ClockTime;
                           break;
-                          case 'F':
+                          case 'F': //Flip : not inverted
                               {bitSet(OLED_Settings[OLed_x],_ClockFlip);bitClear(OLED_Settings[OLed_x],_ClockInvert); OLEDScreen(OLed_x,true, false);}
                           break;
-                          case 'I':
+                          case 'I'://Not Flip : Inverted
                               {bitClear(OLED_Settings[OLed_x],_ClockFlip);bitSet(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,false, true);}
                           break;
-                          case 'f':
+                          case 'f'://Flip : Inverted
                               {bitSet(OLED_Settings[OLed_x],_ClockFlip);bitSet(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,true, true);}
                           break;
-                          case 'N':
+                          case 'N'://not Flip : not Inverted
                               {bitClear(OLED_Settings[OLed_x],_ClockFlip);bitClear(OLED_Settings[OLed_x],_ClockInvert);OLEDScreen(OLed_x,false, false);}
                           break;
                           case 'x':
                                 SetOLEDDefaults();
                           break;
-                          case 'E':
+                          case 'E': // save to eeprom -- not strictly needed now since V25 saves automatically --- 
                               if ((OLED_Settings[OLed_x]!=OLED_EEPROM_Setting(OLed_x))){
                                                         Serial.println("Saving Settings on demand");
                                                         SaveOledSettings(OLed_x);
