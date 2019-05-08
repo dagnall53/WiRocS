@@ -14,6 +14,10 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 
 ===Version History===
 
+V27
+
+Fixed scrolling issue that affected scrolling in messages 1 and 5
+
 V26
 
 Revised Serial input so it should be improved.
