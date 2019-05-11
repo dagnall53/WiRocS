@@ -14,7 +14,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 27;
+uint8_t SW_REV = 28;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -82,6 +82,10 @@ uint32_t LoopTimer;
 uint32_t ScrollSpeedCounter;
 uint32_t LocoCycle;
 uint32_t TimeToClearDebugMessage;
+uint32_t TestTime1;
+uint32_t TestTime2;
+uint32_t TestTime3;
+uint32_t TestTime4;
 bool DebugMsgCleared;
 uint32_t StartedAt;
 
@@ -361,6 +365,12 @@ void SetDefaultEEPROM(){
    
 }
 
+void ShowTestTimers(){
+Serial.printf("OLED display time %dms \n",TestTime1);
+
+  
+}
+
 void SetupFTP(){
    /////FTP Setup, ensure SPIFFS is started before ftp;  /////////
   #ifdef ESP32       //esp32 we send true to format spiffs if cannot mount //NOT TESTED!
@@ -610,12 +620,13 @@ extern bool OLEDPresent(int OLED);
 void loop() {
  //  LoopCount++;
  //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
-// if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
+ // if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
 
 // separated out oleds from sign of life flash to allow faster than 1 sec updates..
 
 if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here 
     ScrollSpeedCounter=LoopTimer+500;
+    //TestTime1=millis();
     #ifdef _OLED 
     //DebugSprintfMsgSend(sprintf ( DebugMsg, "Clk :%d :%d :%d :%d ",OLED_Settings[1],OLED_Settings[2],OLED_Settings[3],OLED_Settings[4]));
     TimeGears();
@@ -627,6 +638,8 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
     #endif
+   // TestTime1=millis()-TestTime1;
+   // ShowTestTimers();
    }
 
   //Sign of life flash 
@@ -706,7 +719,8 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
   FLASHING();
   ReadInputPorts();
   DETACH();     //check if servos need detaching...
-  DoRocNet();   //do any messages ! includes... if (Message_Length >=1)
+  if ((millis()-StartedAt)>=2000){ // delay a little to stabilise before doing rocmessages
+  DoRocNet(); }  //do any messages ! includes... if (Message_Length >=1)
 
   //delay(5);   //slow this down for tests
   SignOfLifeFlash( SignalOFF) ; ///turn OFF signal lamp

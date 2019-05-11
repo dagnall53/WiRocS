@@ -1013,7 +1013,7 @@ void OLED_Status(){
   for (int i=1;i<=6;i++){
    //Serial.print(" Display:");Serial.print(i);Serial.print(" present");Serial.println(OLEDPresent(i));
     if (OLEDPresent(i)){ 
-      
+      delay(1); // see if this removes clicks in audio by giving some time for other tasks..
       OLEDsetTextAlignment(i,TEXT_ALIGN_LEFT); offset=0;  SetFont(i,TerminalDisplayFont);  
       if ( (RocFormatUsed[i])&&(bitRead(OLED_Settings[i],_ClockAna))&&(bitRead(OLED_Settings[i],_ClockON)  ) ){// any roc formatted text and analog clock on showing??
             if (!bitRead(OLED_Settings[i],_ClockLeft) ){
