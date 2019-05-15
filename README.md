@@ -14,6 +14,10 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 
 ===Version History===
 
+V29
+
+Fixed issue that truncated scrolling on some messages 
+
 V28
 
 Added small delay in some OLED display status task (Should allow the processor to do other tasks, like Audio more frequently.)

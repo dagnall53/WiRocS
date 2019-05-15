@@ -440,12 +440,11 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
   FlashON=secs%2;
   ignoreJ1=false;inJ1=false;
   ignoreJ2=false;inJ2=false;
-  int SCPhere;
-  int line;
-  if (PixelsDown==0){SCPhere=SCP[1][OLed_x];line=0;}
-  if (PixelsDown==16){SCPhere=SCP[2][OLed_x];line=1;}  
-  if (PixelsDown==32){SCPhere=SCP[3][OLed_x];line=2;}
-  if (PixelsDown==48){SCPhere=SCP[4][OLed_x];line=3;}
+  int RocDisplayMsg;
+  if (PixelsDown==0){RocDisplayMsg=1;}
+  if (PixelsDown==16){RocDisplayMsg=2;}  
+  if (PixelsDown==32){RocDisplayMsg=3;}
+  if (PixelsDown==48){RocDisplayMsg=4;}
   cx=sprintf(MSGTextC,"%02d:%02d",hrs,mins);
     ClockTime=MSGTextC; // easy way to convert to string
     
@@ -658,10 +657,10 @@ bool RocDisplayFormatted(int OLed_x, int PixelsDown, String Message){
                               
                               // stuff for scroll control
             if (InScrolling){ScrolledCharCount=ScrolledCharCount+1; 
-                          if (ScrolledCharCount>=ScrollMsgLength[line][OLed_x]){ScrollMsgLength[line][OLed_x]= ScrolledCharCount;} 
+                          if (ScrolledCharCount>=ScrollMsgLength[RocDisplayMsg][OLed_x]){ScrollMsgLength[RocDisplayMsg][OLed_x]= ScrolledCharCount;} 
                           }  
                           
-            _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCPhere));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
+            _ignore_Scrolling= (InScrolling &&(ScrolledCharCount<=SCP[RocDisplayMsg][OLed_x]));   //_ignore_Scrolling is the ignore beginning of scrolling message stuff
 
                                   // _ignore_Width senses if the scrolling text is approx one character width beyond the T1 position 
             if (FontSelected==4){    _ignore_Width=(InScrolling &&((RowPixel[DisplayLine]+OLEDgetStringWidth(OLed_x,(FormattedMsg)) )>=TabOne-16));}// F4 is wider than other fonts, so allow at least 16 pixels

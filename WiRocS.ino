@@ -5,16 +5,16 @@
 //----DO NOT FORGET TO UPLOAD THE SKETCH DATA ---
 //  To check the code is working, in command prompt, set up a MQTT "debug" monitor: (e.g. For MQTT broker at 192.18.0.18) "CD C:\mosquitto  mosquitto_sub -h 192.168.0.18 -i "CMD_Prompt" -t debug -q 0" 
 //  From V15, the main ESP8266 program is too big to OTA, so change to 4M(2M SPIFFS), but remember to re-upload the sketch data !!
+//  Filezilla can also be used to upload the sketch data over wifi, which may be more convenient.
 
 //-----ESP32 compatibility--------
 // use latest esp32fs https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
-// Filezilla can also upload over wifi, which may be more convenient. 
 // 
 
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 28;
+uint8_t SW_REV = 29;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -633,7 +633,7 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
     // Scrolling message pointers  : Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     for (int oled=1; oled<=6;oled++){  // six oleds entities (1-6) are possible, 
       if((OLEDPresent(oled))){
-        for (int RocDMsg=1;RocDMsg<=4;RocDMsg++){//there are a max of 4 roc display messages (1-4) per OLED 
+        for (int RocDMsg=0;RocDMsg<=4;RocDMsg++){//there are a max of 4 roc display messages (1-4) per OLED[OLED] is 1-6 for the OLED1...OLED6 drivers
            SCP[RocDMsg][oled]=(SCP[RocDMsg][oled])+1; if (SCP[RocDMsg][oled]>=ScrollMsgLength[RocDMsg][oled]){SCP[RocDMsg][oled]= -5;}
            }}};  //Scroll position counter for displays (LIMIT  ONE scrolling count per Rocdisplay)
     OLED_Status();   
