@@ -259,7 +259,9 @@ void BeginPlayND(int Channel,const char *wavfilename, uint8_t CVVolume){ //no de
   NOW=micros();
   float Volume;
   Volume=(float)CVVolume*CV[100]/16384;
- 
+ #ifndef _LOCO_SERVO_Driven_Port
+  Volume=0.9; // difficult to access the CV's if not a loco, so just use 90% 
+ #endif
   //delete stub[Channel];
   stub[Channel] = mixer->NewInput();
   stub[Channel]->SetGain(Volume);
@@ -434,4 +436,3 @@ extern int LastSFX1,LastSFX0;
 
 
  
-

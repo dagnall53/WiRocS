@@ -14,6 +14,13 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 
 ===Version History===
 
+V30
+
+Changed "search for MQTT", so that it now only increments the MQTT address IF the WIFI signal is reasonably big. (Better than -85 dB reported). If the signal is worse, it will not increment the address, but will keep trying to find the broker at the previously set address. This prevents WiFi dropouts from causing the node to start a long hunt for the MQTT. 
+
+Modified sound volume control. If NOT a loco, then sounds are played at 90% volume. 
+Previously, sound volumes were set using CV(100) - on . This was fine if the node is a loco, (or has been used as a loco in the past), but setting CV values is not as easy on a standard node, so I have simply set the volume at 90%. (If node is used as a Loco, then the CV's remain active). 
+
 V29
 
 Fixed issue that truncated scrolling on some messages 

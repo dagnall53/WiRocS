@@ -4,8 +4,13 @@
 
 //----DO NOT FORGET TO UPLOAD THE SKETCH DATA ---
 //  To check the code is working, in command prompt, set up a MQTT "debug" monitor: (e.g. For MQTT broker at 192.18.0.18) "CD C:\mosquitto  mosquitto_sub -h 192.168.0.18 -i "CMD_Prompt" -t debug -q 0" 
-//  From V15, the main ESP8266 program is too big to OTA, so change to 4M(2M SPIFFS), but remember to re-upload the sketch data !!
+//  From V15, the main ESP8266 program is too big to OTA with 4M(3M SPIFFS), so change to 4M(2M SPIFFS), but remember to re-upload the sketch data !!
 //  Filezilla can also be used to upload the sketch data over wifi, which may be more convenient.
+
+//Audio Recommendations: When in the IDE please select the following options on the ESP8266:
+
+//Tools->lwIP Variant->v1.4 Open Source, or V2 Higher Bandwidth
+//Tools->CPU Frequency->160MHz
 
 //-----ESP32 compatibility--------
 // use latest esp32fs https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
@@ -14,7 +19,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 29;
+uint8_t SW_REV = 30;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager

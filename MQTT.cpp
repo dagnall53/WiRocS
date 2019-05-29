@@ -310,33 +310,34 @@ void reconnect(void) {
             cx=sprintf( DebugMsg, "IP:%d Broker OK :%d.%d.%d.%d",subIPL,mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
             FlashMessage(DebugMsg, 4, 500, 100);  //Flash message sends to oled displays (and sends a MQTT debugmsg !!) 
                  
-        //... and now subscribe to topics  http://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en#groups
+            //... and now subscribe to topics  http://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en#groups
             client.subscribe("rocnet/lc", 1 ); //loco
             client.subscribe("rocnet/#", 0);   //everything else
-        //client.subscribe("PiNg", 0);  //my ping...for my qos 1 attempt
-         /*   or do it individually.......
+            //client.subscribe("PiNg", 0);  //my ping...for my qos 1 attempt
+            /*   or do it individually.......
 
-        client.subscribe("rocnet/dc",0);
-        client.subscribe("rocnet/cs",0);
-        client.subscribe("rocnet/ps",0);
-        client.subscribe("rocnet/ot",1);
-        client.subscribe("rocnet/sr",0); //to allow reflection check of my sensor events
-      */
-               delay(10); // time to stabilise everything?
-               } 
+            client.subscribe("rocnet/dc",0);
+            client.subscribe("rocnet/cs",0);
+            client.subscribe("rocnet/ps",0);
+            client.subscribe("rocnet/ot",1);
+            client.subscribe("rocnet/sr",0); //to allow reflection check of my sensor events
+            */
+            delay(10); // time to stabilise everything?
+            } 
                else { // not connected? try another address
                      connects=connects+1;
-                     if ((connects>=5) && ScanForBroker && (CheckWiFiConnected()) &&(SigStrength()>=-85)){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
-                       mosquitto[3]=mosquitto[3]+1; 
-                       Serial.println(" Incrementing MQTT addresses ");
-                       #ifdef myBrokerSubip 
-                         mosquitto[3]= BrokerAddr  //change to force set  BrokerAddrDefault as your broker last ip address (defined in secrets)..
-                       #endif
-                       if (mosquitto[3]>=127){mosquitto[3]=3;} 
-                       delay(10);  
-                       }   //limit mqtt brokerrange  to 3-127 to save scan time
+                     if ((connects>=5) && ScanForBroker && CheckWiFiConnected()) {
+                      if (SigStrength()>=-85){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
+                          mosquitto[3]=mosquitto[3]+1; 
+                          Serial.println(" Incrementing MQTT addresses ");
+                          #ifdef myBrokerSubip 
+                            mosquitto[3]= BrokerAddr  //change to force set  BrokerAddrDefault as your broker last ip address (defined in secrets)..
+                          #endif
+                          if (mosquitto[3]>=127){mosquitto[3]=3;} 
+                          delay(10);  
+                         }else {Serial.println(" Signal too low. Not incrementing MQTT address ");}   //limit mqtt brokerrange  to 3-127 to save scan time
             SignOfLifeFlash( SignalOFF) ; ///turn OFF
              }
-             
+          }
        }
  }
