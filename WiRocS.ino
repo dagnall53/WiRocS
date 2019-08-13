@@ -19,7 +19,7 @@
 
 #include <ArduinoOTA.h>
 
-uint8_t SW_REV = 30;
+uint8_t SW_REV = 31;
 String SW_Type= " Master";
 
 #ifdef _Use_Wifi_Manager
@@ -620,14 +620,15 @@ void DoFTP(){
 uint32_t Timer[8];
 int LoopCount;
 extern bool OLEDPresent(int OLED);
-
+int32_t rssi;
 //========================MAIN LOOP==============================
 void loop() {
+ int32_t rssi;
  //  LoopCount++;
  //  Clear the retained debug Msg after a debug and delay (but this does not stop the repeats from mosquitto
  // if (!(DebugMsgCleared) && (millis()>=TimeToClearDebugMessage)){ DebugMsgClear;DebugMsgCleared=true;Serial.print("C");}
 
-// separated out oleds from sign of life flash to allow faster than 1 sec updates..
+// separated out oleds from sign of life flash to allow faster than 1 sec updates for scrolling..
 
 if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here 
     ScrollSpeedCounter=LoopTimer+500;
@@ -652,45 +653,52 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
     SignOfLifeFlash(SignalON) ; ///turn On
     lastsec = lastsec +1000; secs = secs + divider;  
    
-#ifdef _LoopTiming
-    Serial.print("Loops achieved");Serial.println(LoopCount);
-    LoopCount=0;
-#else     
-    if(Audio_Setup_Problem){Serial.print("A");}else{Serial.print(".");}
-#endif    
+    #ifdef _LoopTiming
+      Serial.print("Loops achieved");Serial.println(LoopCount);
+      LoopCount=0;
+    #else     
+      if(Audio_Setup_Problem){Serial.print("A");}
+      else{  Serial.print(".");
+            //test for arduino plotter for wifi signal stength viewing
+            //rssi=SigStrength();Serial.println(rssi);
+            //
+          }   
+    #endif    
    //  Serial.print("M<");Serial.print(hallRead());Serial.print("> ");
-   }
-           //make sure you call handleFTP() in loop  !! regardless of MQTT connection..
+    }
+           
+  //make sure you call handleFTP() in loop  !! regardless of MQTT connection..
     DoFTP();
     ArduinoOTA.handle();
     
     if (!MQTT_Connected()) {    //if NOT connected, try to connect, but if we are connected, the you can do the main loop stuff.
-        ImmediateStop();
+        ImmediateStop();  // stop any loco to prevent out of control crashes
+        Serial.println("!Lost WIFi in LOOP!");
       #ifdef _OLED  
-        OLED_Status();Serial.print("!");
+        OLED_Status();
       #endif  
         reconnect();
-        }else
-     { 
-    MQTT_Loop(); //gets wifi messages etc..
-#ifdef _LoopTiming
-    //SingleLoop=millis()-LoopTimer;
-    LoopCount=LoopCount+1;
-#endif    
-    LoopTimer = millis();      //idea is to use LoopTimer in functions instead of millis to ensure synchronous behaviour in loop
-
-    #ifdef _Audio
-    if (!Audio_Setup_Problem){
-      AudioLoop(LoopTimer);
-      SoundEffects();
-      if (TimeToChuff(LoopTimer)){ 
-         if (!AlternateSounds()){
-            Chuff("/Fenchurch","/Fench",35);} //~35 mph rough trigger speed .."chuff(" has formulae with number of wavcyclesperrpm  chuff selects sound samples (slow and Fast) and per wav switch period interval t sect slow or fast"/BBCH" is my best sounding set.. or try "/ivor_" or "/Fenchurch"  
-         else{
-            Chuff("/BBCH","/Fast",35);} //  chuff selects sound samples (slow and Fast) and per wav switch period interval t sect slow or fast"/BBCH" is my best sounding set.. or try "/ivor_" or "/Fenchurch"  
-                             }
         }
-    #endif
+    else { 
+         MQTT_Loop(); //gets wifi messages etc..
+       #ifdef _LoopTiming
+               //SingleLoop=millis()-LoopTimer;
+               LoopCount=LoopCount+1;
+       #endif    
+         LoopTimer = millis();      //idea is to use LoopTimer in functions instead of millis to ensure synchronous behaviour in loop
+
+      #ifdef _Audio
+        if (!Audio_Setup_Problem){
+           AudioLoop(LoopTimer);
+           SoundEffects();
+           if (TimeToChuff(LoopTimer)){ 
+              if (!AlternateSounds()){
+                Chuff("/Fenchurch","/Fench",35);} //~35 mph rough trigger speed .."chuff(" has formulae with number of wavcyclesperrpm  chuff selects sound samples (slow and Fast) and per wav switch period interval t sect slow or fast"/BBCH" is my best sounding set.. or try "/ivor_" or "/Fenchurch"  
+                else{
+                Chuff("/BBCH","/Fast",35);} //  chuff selects sound samples (slow and Fast) and per wav switch period interval t sect slow or fast"/BBCH" is my best sounding set.. or try "/ivor_" or "/Fenchurch"  
+                             }
+            }
+       #endif //audio
      
   //+++++++++++++++can reset wifi on command via "update node to sw 0"
   if ( ResetWiFi == true) { //reset settings - for testing purposes
@@ -707,6 +715,7 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
       ConnectionPrint();
       }
   //+++++++++++++++
+  
   //other periodic updates and checks
   
   //+++++++++++++commit any changed writes to the  Eprom and change the ports if they have been altered..
@@ -725,9 +734,9 @@ if ( LoopTimer>= ScrollSpeedCounter)  {//oled update system here
   ReadInputPorts();
   DETACH();     //check if servos need detaching...
   if ((millis()-StartedAt)>=2000){ // delay a little to stabilise before doing rocmessages
-  DoRocNet(); }  //do any messages ! includes... if (Message_Length >=1)
+         DoRocNet(); }  //do any messages ! includes... if (Message_Length >=1)
 
   //delay(5);   //slow this down for tests
   SignOfLifeFlash( SignalOFF) ; ///turn OFF signal lamp
- }// do if connected loop 
+  }// do if connected loop 
 } //void loop

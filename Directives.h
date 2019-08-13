@@ -12,6 +12,7 @@
  #define SignalON LOW  //defined so I can change the "phase of the SignalLED" easily.
  #define SignalOFF HIGH
 
+ #define MinWiFi -85 // min (negative) wi fi signal for various options
  #define _Scan_for_Mosquitto  // New define to switch on scanning for mosquitto. Useful if your router does not have the IP address of the mosquitto server reserved!.
  
 // -----------------------------------------------------------------------------------------------------------

@@ -204,16 +204,18 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
   bool retained;
   retained=true;
   Signal=SigStrength();
- 
+  
 //  if (payload==""){client.publish(topic.c_str(),"",false);Serial.println("Clearing DebugMsg"); return; }
   // add node type specific data and subIPL addr whilst hrs and secs are not synchronised.
   #ifdef _LOCO_SERVO_Driven_Port
-                                   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
-  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB) Loco:%d(%s) Msg<%s>",subIPL,RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+                                   cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) <%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB) Loco:%d(%s) <%s>",subIPL,RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
   #else
   
-                                    cx= sprintf ( DebugMsgTemp, "RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);
-  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB)(%s) %s",subIPL,RocNodeID,Signal,  Nickname, payload);}
+       if (Signal >= MinWiFi) {cx= sprintf ( DebugMsgTemp, "RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);}
+          else { cx= sprintf ( DebugMsgTemp, "RN:%d LOW Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);}
+       if ( (hrs==0)&&(mins==0) ) {if (Signal >= MinWiFi){cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB)(%s) %s",subIPL,RocNodeID,Signal,  Nickname, payload);}
+         else {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d LOW Sig(%ddB)(%s) %s",subIPL,RocNodeID,Signal,  Nickname, payload);}}
   #endif
   
 
@@ -276,9 +278,8 @@ void reconnect(void) {
   char myName[15] = "RocNetESPNode:";
   String MSGText1, MSGText2;
   sprintf(ClientName, "%s%i", myName, RocNodeID);// use sprint to build ClientName
+  
   if (CheckWiFiConnected()){Serial.printf("--%s Connected at Address:%d.%d.%d.%d --\n  --Looking for MQTT at %d --\n",ClientName,ip0,ip1,subIPH,subIPL,mosquitto[3]);}
-
-
   
   if (!MQTT_Connected()) { // not connected to MQTT so need to do stuff
       SignOfLifeFlash( SignalON) ; ///turn on
@@ -290,8 +291,7 @@ void reconnect(void) {
       if (mosquitto[3] != BrokerAddr ){ Serial.printf("%s updating Broker Addr was %d. to %d\n",ClientName,BrokerAddr,mosquitto[3]);}
       
       cx=sprintf( DebugMsg, "Trying :%d.%d.%d.%d",mosquitto[0],mosquitto[1],mosquitto[2],mosquitto[3]);
- 
-      
+       
       ConnectedNow=client.connect(ClientName);//Attempt to connect   takes about 15 secs per unsucessful check (set in MQTT_SOCKET_TIMEOUT PubSubClient.h
 
       if (ConnectedNow) {// I want this Connected message before the flash message
@@ -315,7 +315,6 @@ void reconnect(void) {
             client.subscribe("rocnet/#", 0);   //everything else
             //client.subscribe("PiNg", 0);  //my ping...for my qos 1 attempt
             /*   or do it individually.......
-
             client.subscribe("rocnet/dc",0);
             client.subscribe("rocnet/cs",0);
             client.subscribe("rocnet/ps",0);
@@ -327,7 +326,7 @@ void reconnect(void) {
                else { // not connected? try another address
                      connects=connects+1;
                      if ((connects>=5) && ScanForBroker && CheckWiFiConnected()) {
-                      if (SigStrength()>=-85){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than -85db)  signal
+                      if (SigStrength()>=MinWiFi){  // added tests for connected to wifi / strength. Only increment broker addr if connected with good (better than (set in Directives) -85db)  signal
                           mosquitto[3]=mosquitto[3]+1; 
                           Serial.println(" Incrementing MQTT addresses ");
                           #ifdef myBrokerSubip 

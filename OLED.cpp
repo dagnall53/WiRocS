@@ -928,22 +928,26 @@ void RRPowerOnIndicator(int OLED_x) {
 
 
 void SignalStrengthBar(int OLED_x) { //https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
-  int PosX,PosY;
+  int PosX,PosY,AntH;
   int32_t rssi;
   rssi=SigStrength();
  if((OLEDPresent(OLED_x))){
   // rssi -90 is just about dropout..
-  // rssi -40 is a great signal
+  // rssi -50 is a great signal
+  //Antenna appears from -98db, is full with top bits at -89
+  AntH=100+rssi; if (AntH>=10){AntH=10;}
+                 if (AntH<=2){AntH=2;}
   PosX=108;  // position left right  max = 128
   PosY=0; // top left position up / down max 64
-  OLEDdrawVerticalLine(OLED_x,PosX,PosY,10);
-  OLEDdrawLine( OLED_x,PosX,PosY+4,PosX-4,PosY);
-  OLEDdrawLine( OLED_x,PosX,PosY+4,PosX+4,PosY);
+                  OLEDdrawLine(OLED_x,PosX,PosY+(10-AntH),PosX,PosY+10);
+  if (rssi >= -89){  
+                  OLEDdrawLine( OLED_x,PosX,PosY+4,PosX-4,PosY);
+                  OLEDdrawLine( OLED_x,PosX,PosY+4,PosX+4,PosY);}
   if (rssi >= -50){OLEDdrawLine( OLED_x,PosX+10,PosY,PosX+10,PosY+10);}
-  if (rssi >= -55){OLEDdrawLine( OLED_x,PosX+8,PosY+2,PosX+8,PosY+10);}
-  if (rssi >= -65){OLEDdrawLine( OLED_x,PosX+6,PosY+4,PosX+6,PosY+10);}
-  if (rssi >= -70){OLEDdrawLine( OLED_x,PosX+4,PosY+6,PosX+4,PosY+10);}
-  if (rssi >= -80){OLEDdrawLine( OLED_x,PosX+2,PosY+8,PosX+2,PosY+10);}
+  if (rssi >= -60){OLEDdrawLine( OLED_x,PosX+8,PosY+2,PosX+8,PosY+10);}
+  if (rssi >= -70){OLEDdrawLine( OLED_x,PosX+6,PosY+4,PosX+6,PosY+10);}
+  if (rssi >= -80){OLEDdrawLine( OLED_x,PosX+4,PosY+6,PosX+4,PosY+10);}
+  if (rssi >= -85){OLEDdrawLine( OLED_x,PosX+2,PosY+8,PosX+2,PosY+10);}
  }
 
  }

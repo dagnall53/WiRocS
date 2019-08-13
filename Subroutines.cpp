@@ -149,7 +149,7 @@ void FlashMessage (String msg, int Repeats, int ON, int Off) {
    IAM6=IAM+",60,Display 3-4)";
    IAM+=",60, Display 1-4)";
   Serial.println(msg);
-  if (CheckWiFiConnected()&& MQTT_Connected()){DebugSprintfMsgSend( sprintf ( DebugMsg, "Flashing MSG <%s>",msg.c_str()));}
+  if (CheckWiFiConnected()&& MQTT_Connected()){DebugSprintfMsgSend( sprintf ( DebugMsg, "OLED Flash<%s>",msg.c_str()));}
   for (int i = 0; i <= Repeats; i++) {
     //Serial.print("+");
    //OLEDS_Display(msg,IAM,"",""); 

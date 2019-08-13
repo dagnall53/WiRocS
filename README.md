@@ -19,6 +19,11 @@ Make sure you have the right settings and the most recent library.
 
 ===Version History===
 
+V31
+
+Some improvements in the WiFi "Antenna" signal level display on OLED. From -90db the "antenna V wings" first dissapear and the antenna upright starts to shorten. This signal level (less than -90db) is about where the ESP8266 can still work but is likely to lose WiFi. If the "antenna" display starts to go the signal is VERY LOW. This display is useful for tracking the edges of the "suitable WiFi" signal zone.   
+
+
 V30
 
 Changed "search for MQTT", so that it now only increments the MQTT address IF the WIFI signal is reasonably big. (Better than -85 dB reported). If the signal is worse, it will not increment the address, but will keep trying to find the broker at the previously set address. This prevents WiFi dropouts from causing the node to start a long hunt for the MQTT. 
