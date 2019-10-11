@@ -127,3 +127,11 @@ V4b Changed Signal Led (NodeMcu D4) so it only works if Display is NOT connected
      
 V4 tried to correct error whereby a clean ESP's EEPROM was not properly set, so was being continually set to defaults.
 
+===SPIFFS===
+
+I forget this bit so have saved it here!
+
+To install the Arduino ESP8266 filesystem uploader see https://www.instructables.com/id/Using-ESP8266-SPIFFS/
+
+
+
