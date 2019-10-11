@@ -13,17 +13,25 @@ Use of this software is at your own risk!
 I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be uploadable via an ESP Flash Programmer and set up a  stationary nodes without having to compile the whole code in Arduino. You will need to use FileZilla or Arduino_Sketch_Data_Uploader to upload the sounds from the Data directory to the Node's SPIFFS, but generally this only needs doing once (unless you want to make changes to the sound effects!) 
 
 ===LIBRARIES NOTE:===
-See https://github.com/earlephilhower/ESP8266Audio#installation 
-Make sure you have the right settings and the most recent library.
+
+
+Make sure you have the right settings and the most recent libraries.
 
   https://github.com/earlephilhower/ESP8266Audio
+  See also https://github.com/earlephilhower/ESP8266Audio#installation 
+  
   https://github.com/Gianbacchio/ESP8266_Spiram
+  
   https://github.com/knolleary/pubsubclient
+  
   https://github.com/ThingPulse/esp8266-oled-ssd1306
+  
   https://github.com/nailbuster/esp8266FTPServer (includes esp32 support)
 
 For ESP 32 (still needed for esp8266 compile)
+
   https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
+  
   https://github.com/madhephaestus/ESP32Servo/tree/master/src
 
 
