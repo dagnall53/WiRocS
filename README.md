@@ -16,6 +16,16 @@ I am trying to save binaries compiled for the NodeMCU (ESP8266). These should be
 See https://github.com/earlephilhower/ESP8266Audio#installation 
 Make sure you have the right settings and the most recent library.
 
+  https://github.com/earlephilhower/ESP8266Audio
+  https://github.com/Gianbacchio/ESP8266_Spiram
+  https://github.com/knolleary/pubsubclient
+  https://github.com/ThingPulse/esp8266-oled-ssd1306
+  https://github.com/nailbuster/esp8266FTPServer (includes esp32 support)
+
+For ESP 32 (still needed for esp8266 compile)
+  https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
+  https://github.com/madhephaestus/ESP32Servo/tree/master/src
+
 
 ===Version History===
 
