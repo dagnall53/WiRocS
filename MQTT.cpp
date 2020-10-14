@@ -209,7 +209,7 @@ void DebugMsgSend (String topic, char* payload, bool Print) { //use with mosquit
   // add node type specific data and subIPL addr whilst hrs and secs are not synchronised.
   #ifdef _LOCO_SERVO_Driven_Port
                                    cx= sprintf ( DebugMsgTemp, " RN:%d Sig(%ddB) Loco:%d(%s) <%s>",RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
-  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB) Loco:%d(%s) <%s>",subIPL,RocNodeID,Signal,  MyLocoAddr,Nickname, payload);
+  if ( (hrs==0)&&(mins==0) ) {cx= sprintf ( DebugMsgTemp, "ip:%d RN:%d Sig(%ddB) Loco:%d(%s) <%s>",subIPL,RocNodeID,Signal,  MyLocoAddr,Nickname, payload);}
   #else
   
        if (Signal >= MinWiFi) {cx= sprintf ( DebugMsgTemp, "RN:%d Sig(%ddB)(%s) %s",RocNodeID,Signal,  Nickname, payload);}
