@@ -21,23 +21,21 @@
 //#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
 //#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
                                      //DO Notuse other ports unless you change the settings in detachservos
- 
 
-//IF PWM, which sort of PWM driver??
-
-//#define _NodeMCUMotorShield      //NodeMCU Motor Shield has inverters to the main H drives and so pin D1 is the PWM  and D3 is the PWM direction
-                                   //HOWEVER MY boards all exhibit strange behaviour after eeprom programming, when motor will only move one way.
-
-
-//#define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
   
- //assume if a loco then you need front and back lights...
- #ifdef _LOCO_SERVO_Driven_Port
+//assume if a loco then you need front and back lights...
+#ifdef _LOCO_SERVO_Driven_Port
   #define BACKLight 2  //NodeMCU D2
   #define FRONTLight 5 //NodeMCU D5
 //#define SteamOutputPin 6
- #endif
+// ---------AND you MUST define a driver if pwm
 
+  #ifdef _LocoPWMDirPort
+//#define _NodeMCUMotorShield      //NodeMCU Motor Shield has inverters to the main H drives and so pin D1 is the PWM  and D3 is the PWM direction
+                                   //HOWEVER MY boards all exhibit strange behaviour after eeprom programming, when motor will only move one way.
+  #define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
+ #endif
+#endif
 
 
 //---------------AUDIO--------------------

@@ -335,7 +335,10 @@ void Commit_EEprom(String reason){
     delay(100);
     EEPROM.commit();
     ReadEEPROM();     //get the RN and CV registers
-    LookForOLEDs(false); // false means no serial stuff
+    #ifdef _OLED  
+       LookForOLEDs(false); // false means no serial stuff 
+    #endif
+    
     //Port_Setup_and_Report();  //make any port direction changes.
     //ImmediateStop(); //stop motors as soon as ports set up
      #ifdef _LocoPWMDirPort  //is a restart of pwm needed ?? 
