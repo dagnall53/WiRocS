@@ -42,7 +42,7 @@ char TS[NumberofTextStores][TextObjectLength];
 uint8_t offset;
 
 
-bool Observed_Change;
+extern bool Observed_Change;
 
 bool RocFormatUsed[7];
 

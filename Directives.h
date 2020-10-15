@@ -2,6 +2,26 @@
  #define _Directives_h
  #include <Arduino.h> //needed
 
+ /*
+  * 2020 note: compiled with following setup:
+  * no Loco and (loco-Pwm-6612)
+  * 
+  * In arduino: 
+  * Board "NodeMCU 1.0 (ESP-12E module)"
+  * Builtin Led "2"
+  * Upload speed "115200"
+  * CPU "80MHz" (should be 160 for audio!!. )
+  * Flash Size "4Mb (FS 2Mb OTA 1019)" 
+  * Debug level "Disabled"
+  * IwIP "v2 Higher bandwidth"
+  * V tables "Flash"
+  * Exceptions "Legacy (new can return nullptrs)"
+  * Erase Flash "only Sketch"
+  * SSP support "Basic SSL ciphers (lower ROM use)"
+ */
+
+ 
+
                                   // LED_BUILTIN;?
                                   // 2 is default on //GPIO 02 SignalLed definition onboard led on most esp8266 and esp32
                                   //led is 22 for lolin lite? clashes with audio! 
@@ -18,8 +38,8 @@
 // -----------------------------------------------------------------------------------------------------------
 // NB -- Loco use is incompatble with OLED - so the OLED define is later, and switched off if PWM is set. ----
 //------------------------------------------------------------------------------------------------------------
-//#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
-//#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
+#define _LOCO_SERVO_Driven_Port 1  // D1 if using as mobile (LOCO) decoder node.. node becomes a loco with servo on port D "1"  for motor control
+#define _LocoPWMDirPort  3         // D3 add this second Port if using PWM loco motor control Using "3" assumes a L293 inputs driven from port D(_LOCO_SERVO_Driven_Port) and D(_LocoPWMDirPort)
                                      //DO Notuse other ports unless you change the settings in detachservos
 
   
@@ -33,7 +53,8 @@
   #ifdef _LocoPWMDirPort
 //#define _NodeMCUMotorShield      //NodeMCU Motor Shield has inverters to the main H drives and so pin D1 is the PWM  and D3 is the PWM direction
                                    //HOWEVER MY boards all exhibit strange behaviour after eeprom programming, when motor will only move one way.
-  #define _6612Driver              // much better hardware,  but more complex to drive, I will use it driving the two H drives with Enable being connected "on" via a simple Rc network. 
+  #define _6612Driver              // much better hardware,  but more complex to drive, 
+                                   //I use it driving the two H drives with Enable being connected "on" via a simple Rc network to prevent motor moving at turn on. 
  #endif
 #endif
 

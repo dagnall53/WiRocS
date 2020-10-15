@@ -392,7 +392,7 @@ void SetupFTP(){
                          } 
 }
 
-extern bool Observed_Change;  // used trying to find why oledsetup is changing
+bool Observed_Change;  // used trying to find why oledsetup is changing (set here because otherwise its definition is lost when OLEDS are NOT used.. 
 extern void ViewAllOLEDSettings(int OLed_x);
 extern void SetAll_32Mode(int OLed_x);
 
