@@ -1,0 +1,55 @@
+ESP32 setup
+The ESP 32 differs from the ESP8266 in that it has far more IO, as well as two CPU cores, plus a lot of additional capability such as Bluetooth. - But for the WiRocS code, the main difference is the way that the Rocnet Addresses map to the actual pins.
+
+On the ESP8266 NodeMCU, the Arduino compiler "understands" 'D0' 'D1' etc and assigns them to the actual esp ports that are marked D0 D1 on the NodeMCU board. The WiRocS code then uses the Rocnet "address" to select D1 -D8 as needed. Address 1 is D1 etc.
+ESP32 Port / Pin Numbering
+The ESP 32 boards do not have "D" numbered ports, but instead are marked with the 'correct' esp 32 port numbers. To avoid a lot of confusion in my code and to keep the ESP 32 stuff as compatible with the ESP 8266 as possible, I internally assign these esp port numbers to the RocNet Addresses that will control them. This is done in a table in Directives.h
+static const  uint8_t D0   = 2; // LED_BUILTIN;?  //GPIO 02 is SignalLed definition on board led on esp32?
+static const  uint8_t D1   = 19;
+static const  uint8_t D2   = 12;
+static const  uint8_t D3   = 13; //
+static const  uint8_t D4   = 14;  
+static const  uint8_t D5   = 15;
+static const  uint8_t D6   = 16;
+static const  uint8_t D7   = 17;
+static const  uint8_t D8   = 21; 
+static const  uint8_t D9   = 23; 
+static const  uint8_t D10   = 25;  
+static const  uint8_t  D11  = 26; 
+static const  uint8_t  D12 = 27; 
+static const  uint8_t  D13  = 32; 
+static const  uint8_t  D14  = 33; 
+static const  uint8_t  D15  = 34; 
+static const  uint8_t  D16  = 35;  
+
+The ordering of this list can be changed, and I may do so to make the ports "sensibly" ordered to match a particular board configuration in the future.
+Limitations
+There are some hardware limitations:
+
+Ports 34-39 do not have the ability to switch in pullup resistors and are only available as Inputs.
+Ports 25 and 26 are physical DAC types so output 0-3.3V analogue. I have arranged that these output voltages are set by the Pi03 settings, as though they were conventional PWM outputs.
+Port 21 (and Port 22, as used by the NoDAC speaker drive) are normally the I2C bus. But I select port 4 and 5 for the OLED I2C bus, and 19 and 21 (again!) for the Second I2C drive. (the re-use of pin 21 is one reason why the code needs to reinitialize the OLEDS after the sound initialisation)
+If you have a serial terminal connected to the node when you start it up, you will see a Node setup display that should help you identify how the ports re set up.
+"---------------------- LOCO Setup   -----------------------
+"        'Locomotive Address' is{Short}3
+"---------------------- ROCNODE Setup   -----------------------
+"          'RocNet Address' is :51
+"--------------------------------------------------------------
+"
+RR Addr:1 <GPIO:19> (Hard_Set) LOCO Motor_Servo  Output Servo
+RR Addr:2 <GPIO:12> (Hard_Set) Loco BACKLight  Output
+RR Addr:3 <GPIO:13>  Output {flashing}  Delay :750ms 
+RR Addr:4 <GPIO:14>  Output {flashing}  Delay :1000ms 
+RR Addr:5 <GPIO:15> (Hard_Set) Loco FRONTLight  Output
+RR Addr:6 <GPIO:16>  Output {flashing}  Delay :350ms 
+RR Addr:7 <GPIO:17>  Output {flashing}  Delay :500ms 
+RR Addr:8 <GPIO:21>  Output {flashing}  Delay :100ms 
+RR Addr:9 <GPIO:23>  Input with pullup Delay :0ms 
+RR Addr:10 <GPIO:25> (Hard_Set) ESP32 Native DAC  Output PWM
+RR Addr:11 <GPIO:26> (Hard_Set) ESP32 Native DAC  Output PWM
+RR Addr:12 <GPIO:27>  Output {flashing}  Delay :400ms 
+RR Addr:13 <GPIO:32>  Output Delay :0ms 
+RR Addr:14 <GPIO:33>  Input with pullup {invert}  Delay :0ms 
+RR Addr:15 <GPIO:34>Input NO PULLUP  Input with pullup Delay :0ms 
+RR Addr:16 <GPIO:35>Input NO PULLUP  Input with pullup Delay :0ms
+Ports that are {Hard_set} cannot be altered via RocView/Rocrail. Other ports show what they are currently set as, for example Input with pullup and Output , and whether the port is set to flash etc.
