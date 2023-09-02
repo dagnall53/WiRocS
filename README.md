@@ -16,7 +16,8 @@ WiFi Rocnet node for ESP 32 and 8266
 For documentation please read the pages in the /notes directory.
 The original User pages in Rocrail (https://wiki.rocrail.net/doku.php?id=users:dagnall53:description) are no no longer available. 
 
- For syntax see. Notes/Syntax 
+ For syntax see. https://github.com/dagnall53/WiRocS/blob/master/Notes/WirocS%20Syntax 
+ (Notes/Syntax) 
 (was https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign)
 
 
