@@ -1,7 +1,21 @@
+#NOTE 2023# 
+As of 2021 I now use "WIO" The Integrated code that Rob has written to provide similar functionality to this code. 
+It has the significant advantage of Working well, and being supported! 
+
+The only feature that Rob has not yet duplcated / improved (2023) is the Sound. 
+-But The "WIO" solution is to use the WIO + a simple power driver to form a real DCC source, and then use a standard DCC sound decoder. 
+And despoite it looking 'clumsy' this approach works astoinishingly well! And gives access to commercial DC sounds for Battery powered locos. 
+I have used it with Hornby TTS to provide very low cost battery powered units. (and the sound quailty far exceeds my modest efforts here! 
+
+
+
+
 # WiRocS
 
 WiFi Rocnet node for ESP 32 and 8266
-For documentation please read https://wiki.rocrail.net/doku.php?id=users:dagnall53:description
+For documentation please read the [pages in the /notes directory. 
+The original User pages in Rocrail are no no longer available. 
+(https://wiki.rocrail.net/doku.php?id=users:dagnall53:description)
 Use of this software is at your own risk!
 
  For syntax see. https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign
