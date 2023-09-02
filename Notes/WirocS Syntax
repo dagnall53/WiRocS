@@ -1,0 +1,63 @@
+WiRocS "RocDisplay" Syntax and Message Formatting
+WiRocS uses the following "RocDisplay Compatible" Text Alignment and formatting codes: Original RocDisplay format here for reference
+
+{T} The node recognises two Tab positions: T0 is 10 Pixels from the left and T1 is 102 pixels from the left.
+{T0} Special conditions: If Text has been written before the {T0} that is wider than the T0 position, a T0 has no effect. (it will not "move backwards" to the 10 pixel position.)
+{W} The position of the T1 tab can be altered with a {Wnnn} command. This is volatile and only affects this RocMessage.
+{w} The position of the T0 tab can be altered with a {wnnn} command. This is volatile and only affects this RocMessage.
+{L} Text following a {Ln} will be printed n lines lower than the starting point.
+Unlike a standard RocDisplay, the WiRocS code can choose to display on more than just 2 lines,
+BUT the Starting Line is always defined by the "text object" 'display' interface number used to send the message.
+So messages to text object at interface (RN,xx,1) starts at the top of the display, "line 0"
+those to (RN,xx,2) starts at line 2 (16 pixels down),
+and those to (RN,xx,3) 3 start at line 4 (32 pixels down)
+Messages to Text objects (RN,xx,5) to (RN,xx,8) will display on OLED2 (if fitted).
+{F} The code can select one of 5 fonts. These are copies of Walter Sax's original fonts. F0 is a 7*5 font and si used as a default.
+F4 is a very large (upper case characters only) Font. F3 is an inverted (5*5) font. F2 is a (6*5) 'narrow' font and F1 is a 6*5 'wide' font
+{B} Bitmaps. The code has copies of Walter's original bitmaps.
+{J} Flashing Text or bitmaps following a {J1} (logic 1 == FLASH ON) will only be shown every other second. A {J0} (logic 0 == FLASH OFF) or {J2} reverts to normal non flashing operation
+Text or bitmaps between a {J2} and the {J0} will flash alternately with the message between the {J1} and {J2}.
+Flashing ONLY operates at 1 second intervals and is not adjustable.
+* SCROLLING
+Text between {JS} and {JC} will scroll to the left at one character per second.
+{S} (SETUP) This code is used to set and save an overall Setup format for each OLED.
+The Setup commands affect only the OLED to which they are sent.
+To set the Small analog clock, The code accepts {S0} {S1} {SL} and {SR} Codes
+These set the small clock on the top two rows of the OLED Off, On, Left, Right.
+{SC} displays the current time in digital format. This can be placed anywhere.
+Special WiRocS "S" Commands have been added to control the OLEDS.
+The following settings are automatically saved to EEPROM if changed, but please only use one of these settings at a time per OLED, (IE best to use these commands only in messages 1 or 5) and do not change them if you can avoid it!
+{S6} and {S3} Commands sets{S3} or re-sets{S6} An internal setting to let the display know if it is using "32 pixel" OLEDS or "64" pixel OLEDS. This setting will mainly affect the appearance of the default clock when no message is being displayed.
+{SF} flips display 180, keeps White on Black display.
+{SN} Sets Normal display orientation, keeps White on Black display
+{Sf} Sets 180 deg rotation, Black on White display
+{SI} Keeps normal orientation, sets Black on White display.
+COMMAND SEQUENCING The format parsing needs to know the line to write on Before any TAB command.
+so please use {L1T1} and not {T1L1}
+WordWrap (Formatted Messages). Formatted messages are assumed to be correctly sized, so no WORD wrap is applied, to avoid overwriting.
+WordWrap (Unformatted Messages). Unformatted messages (ie ones that contain no '{' or '}' will be word wrapped.
+Message Length The Length of text that can be sent via Rocnet is limited to 250 characters. (using Rocrail versions after 15352.)
+WordWrap Example
+Word wrapping of unformatted text tries to take account of any clock that may be display by other messages sharing the OLED. (In the right photo, text object (50,60,1) is showing some time-table information (using RocDisplay formatting)and (50,60,3) was sent some unformatted text.) In the Left photo, both text objects (50,60,1) and (50,60,3) were sent unformatted text.
+
+
+Font and Bitmap example
+This is an example of very nearly the longest message that can be sent with RocNet, and shows how multiple fonts, bitmaps etc can be displayed on multiple lines. The message was sent to "text object" with interface (50,60,1) so starts at the top of the OLED. Clock is displayed because I set this earlier and this format was saved in the EEprom.
+
+   {B0B2B2B3B4B5B6B7B8L1B9B10B11B12L2B13B14B15B16B17F0L6}Font 0  {F1}Font1{F2L7}Font 2   {F3L7}Font 3{F4L5T1}4{P}
+The fonts were edited with GlyphEditor2 . The font files are here
+
+Example OLED Settings
+To select the right driver, the code needs to know if a 64 or 32 pixel high display is being used. It uses the formatting commands {S6} and {S3} as well as other commands to determine the overall "look" of the display. These commands the whole OLED display and need only be sent by one message to that display. It is most convenient if these commands are sent to Messages 1 and 5. These commands are saved in EEPROM if changed, so the display should restart with the ssame settings for orientation, black/white inversion etc.
+
+As an example: The way to change the Pixel size or other settings is:
+
+Set up a push button on Rocview that has a "Display" message and a "clear" message
+In an action that sends to Message 1 eg: (50,60,1)
+change the message to add {S6SF}. or {SI}
+Send this to the display.
+You should see the effect.
+To set for a -32 pixel displays, send {S3SF} etc.
+The -32 setting mainly affects the Big clock display that is shown when all the messages to that display are empty.
+Try out the {SR} and {SL} and {S0} settings to see the small clock.
+As a general rule, try to avoid changing the OLED settings as too many writes wear out the EEPROM.
