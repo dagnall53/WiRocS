@@ -1,0 +1,82 @@
+WiRocs NODE SETUP
+Setting up the Node Software with RocView (Once Programmed)
+Full printable documentation for the original ESPMQTTWIFOROCNET code setup, with illustrations is in Node Setup.pdf This should remain largely valid for the updated 'WiRocS' code.
+
+This includes full details on:
+
+Programming the NodeMCU/ESP8266
+How Rocrail addresses Ports
+Wireless Debugging
+Wireless Updating
+Updating the code
+Updating the sounds:
+Also see Compile Directives to see how the compile directives can be used to select the functionality of each WiRocS node.
+
+Selecting Pins as Inputs or Outputs
+The code uses settings from BOTH Pi02 and Pi03 settings tables to determine the functionality of each pin.
+
+If Pi02 Is set as "INPUT" then the pin is an input (and automatically has the weak pull-up switched on)
+If Pi02 is set as "OUTPUT", then the output can be either a Digital, PWM or Servo output, depending on the Pi03 settings.
+With Pi02 as "Output, if Pi03 "Blink" is set, the output will be PWM.
+With Pi02 as "Output, if Pi03 "Servo" is set, the output will be a Servo pulse.
+With Pi02 as "Output, if neither Pi03 "Blink" nor "Servod" are set, the output will digital.
+Setting "Pio2 Blink" enables a flashing mode, whose rate is determined by the Pio2 "delay".
+
+In PWM and Servo modes, the Pio3 Delay*10ms and Left and Right Steps will determine how fast the servo moves to the new position.
+
+Set Delay = 0 and steps to 0 for the fastest movement.
+
+See this guide for how to use RocView to set up a WiRocS node
+
+"FIXED" Functionality
+If you are using the code as a mobile decoder, then some pins will have "fixed" functionality. In this case, changing their functions or characteristics using the rocrail tabs will have no effect. You can confirm that their functionality is fixed by observing the Arduino serial terminal as the device initialises. As the device initialises, it checks its port definitions and sends a summary that looks like this: From it you can see if I/O is "fixed", and why.
+
+* Port :0 is SignalLED  Output (FIXED) NodePortType :0  Pi03_Setting_options0
+* Port :1 used as LOCO MOTOR (FIXED) NodePortType :0  Pi03_Setting_options42
+* Port :2 is BACKLight  Output (FIXED) NodePortType :0  Pi03_Setting_options0
+* Port :3 is FRONTLight  Output (FIXED) NodePortType :0  Pi03_Setting_options0
+* Port :4 is Output NodePortType :0  Pi03_Setting_options0
+* Port :5 is Output NodePortType :0  Pi03_Setting_options0
+* Port :6 is Input with pullup NodePortType :1  Pi03_Setting_options0
+* Port :7 is SteamPulse  Output (FIXED) NodePortType :0 
+* Port :8 is Servo NodePortType :0  Pi03_Setting_options32 
+I would recommend keeping D8 as an output as most boards have a relatively strong pull down resistor on this pin to assist with startup. This makes it harder to use as an input.
+
+(As a very simplistic overview, NodePortType Determines if the port is Input or Output, Pi03_Setting_options determines if the output will be digital, PWM or a servo drive.) See also this guide for how to use RocView to set up a WiRocS node and ESP32 Setup
+
+Mobile Decoder
+LOCO HEADLIGHTS
+When set as a Loco, the code expects LEDS connected to 3v3 and the Back or Frontlight pins (D2 and D5). Currently the "fixed" nodes cannot have their phase altered using the Rocrail Rocnet Programming PI02 tab.
+
+CV settings
+Clicking on “Programming” will open the Rocrail CV Programming interface. To make this work, you need to select “POM” and the loco to be programmed in the top left box, and Rocrail will interrogate the set loco address and get the main CV settings:
+
+Changing the Loco address can be done with this interface, but care needs to be taken to ensure the programming interface loco address and the loco address stay in synch.
+
+To change from a Short Loco address to a Long loco address, First set the Loco "long" address to the Current Short address. Then change the Loco so it reads the Long address, and then change the Loco address to the desired Long address.
+
+Sound System
+Click here for more details on the Sound System
+
+Speed settings:
+WiRocS tries to be NMRA compliant. 
+
+
+* CV[2]; Minimum speed setting (not MPH!..) Will have CV 66 or 95 added to set power at minimum speed demand 
+* CV[5]; High Speed Multiplier for speed setting, is multiplied by required speed to set power to motor
+* CV[6]; Mid Speed multiplier (used for first half of the throttle)
+* CV[3]; Acceleration rate (typ 2)
+* CV[4]; Decelleration (typ 2)
+* CV[29]; Standard Config usage
+* CV[67-94] ; Speed table   
+* CV[66]; Forward speed trim multiplier (multiplies by  CV[66]/127 when in "forward")
+* CV[95]; Reverse speed trim multiplier (multiplies by  CV[95]/127 when in "reverse") 
+* CV[65]; Kick start sets duration of high speed motor setting when starting.
+To set for best performance, first set CV2 so motor is running reliably at a "minimum speed" of 3 mph. (The code assumes this is the minimum the loco can do , but the "3" min speed value can be changed in the code).
+
+Set CV 66 and CV 95 if needed to trim for equal speed forward and reverse.
+
+Set the kick start CV65 to a value so that the motor reliably starts without a visible kick. If it kicks noticeably then lower the value. If it does not start, increase the value.
+
+Set the loco to desired speed and adjust CV5 and CV6 so the loco travels at the speed you want.
+Or use the speed table to select the speed.
