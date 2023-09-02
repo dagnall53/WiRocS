@@ -1,0 +1,67 @@
+WiRocS
+WiRocS is the name for a very inexpensive way to control your RocRail railway. It is not intended to replace more professional equipment, but it does provide a simple, inexpensive, Wireless, solution for small railways. WiRocS is actually 'just' some code that runs on ESP8266 (and ESP32) computers. These are readily available, and have massive capability. A single ESP8266 forms a single "WiRocS" Node and forms part of a standard RocNet Protocol Network. Each ESP8266 Node can have 8 fully programmable I/O (input/output/PWM/Servo), (see also ESP32 setup for more I/O with an ESP32).
+
+WiRocs Nodes can produce two simultaneous sampled sounds from an internal sound file system, and can even have a OLED display that is RocDisplay Compatible. See OLED display information
+
+Hardware
+Node_Setup
+Sound
+Oled Display
+RocDisplay Formatting / Syntax:
+Source Code
+Programming the Hardware (Arduino)
+Troubleshooting
+Setting WiFi SSID and Password
+Network overview
+The WiRocS code expects to work in a network where Rocrail is running and has a "ROCNET controller" using MQTT.(set Sub-Library to "MQTT"). A MQTT broker, such as Mosquitto must be running somewhere on the network. (It can run on either the same PC as Rocrail or a different PC). Rocrail needs to know the IP address of this MQTT broker, and this should be set in the Rocrail Rocnet Controller "Address" options with Port set to 1883 if using Mosquitto. (see illustration, where I use 192.168.0.11 for my Broker).
+
+My node code uses "rocnet" protocol, so subscribes to rocnet/lc and rocnet/#. see https://wiki.rocrail.net/doku.php?id=rocnet:rocnet-prot-en&s[]
+
+Rocrail can also use service calls to send information in "readable" format, see https://wiki.rocrail.net/doku.php?id=rocrailini-service-en#mqtt_service. I use this technique for my handheld controller (RocClientThrottle ), to use this you need to add a "MQTT Service Client" (with the correct MQTT broker address) in the Rocrail Service Properties.
+
+—-
+
+Operation
+On power up the WiRocS node reads its internal EEPROM, and from this extracts the WiFi Router name, Password, and where it last connected to the Mosquitto broker. The code then waits for approximately 3 seconds during which you can intervene with a Serial Terminal like PuTTY, to allow easy interface for changes to the Router,password etc. If the node cannot connect to the MQTT broker, it will sequentially search IP sub addresses 3-127 in sequence to find the MQTT Broker This allows for the situation where the Broker is not reserved a DHCP address, but does delay the node's startup.
+
+Once the node finds the router it saves the MQTT Broker sub address and uses this on its next start up to save time.
+The Nodes do not "know" where Rocrail is, nor do they need to. All communications are set via the MQTT broker.
+Rocrail addresses each Node by its ROCNET ID, which is usually initially set to the nodes subIP for simplicity.
+The system is therefore theoretically limited to about 250 WiRocS nodes, depending on what else the WiFI router is connecting, but the system is really designed for use with small layouts with dispersed stations, such as a Garden Railway.
+
+I/O Pin Capabilities
+Once connected to the MQTT broker, each node can be individually seen and modified by RocView.
+Every ESP8266 node provides 8 universal i/o pins. "D1-D8". Every ESP32 node has 16 I/O
+Each I/O is effectively a virtual Pi02 channel with added Pi03 capabilities.
+Rocview programming is used to set the functionality of each port.
+
+
+If you are not using the OLED, you have 8 I/O. Each I/O can be set by Rocrail as an input or output, using the "PI02 Port Setup". This allows blinking, and inversion.
+
+If you are using the OLED display,you still have 6 I/O for Motor drive, Loco Front or Rear Light or any other pre-defined functiona such as Loco Motor PWM drive, ESP32 users have a full 16 I/O!
+
+If the Pin is set as an OUTPUT, and if the PI03 channel is set to SERVO, the pin becomes a Servo drive output.
+If the Pin is set as an OUTPUT, and if the PI03 channel is set to "Blink", the pin becomes a PWM output.
+For both Servo and PWM outputs, the code uses the "left" and "right" PI03 values for the PWM/Servo settings.
+"Left Steps" and "Right Steps" and "delay" settings all work to slow down and control the left - right transitions.
+The ESP32 functionality is nearly identical, except that it has 16 programmable I/O
+On the ESP32 the OLED I2C display uses two pins that are not part of the 16 I/O.
+There are some limitations on the four of the defined '16' I/O ESP32 Pins.
+* Two pins (#34 and #35) can only be used as Inputs, and do not have the internal pull-up resistors that the other ports have.
+* Two pins (#25, #26) are permanently DAC outputs, so send out 0-3.3v (as selected by their PI03 settings).
+First Time Programming
+Programming the Hardware how_to_install_mqtt_broker_on_raspberry_pi.pdf
+
+Setting the Router SSID, Password and MQTT Broker Address using the Serial interface
+The code now has a simple method to allow changing the WiFi SSID,Password etc. When the code starts up, it waits for about three seconds and looks at the Serial Input and at the boot/Flash pin\\. IF the program sees "xxx{cr}" OR you press the Boot/Flash pin, it will enter a dialog with the user that allows the Wifi SSID, password and MQTT address to be changed.
+If you are using the Arduino Serial Monitor, you need to enter "xxx" in the send box, and make sure that the line end is set to Carriage return or LineFeed. It can be simpler to use PuTTY, as I have made the code send ^E, which allows PuTTY to send back the "xxx^m" automatically to start the serial interaction.\\In my setup, starting PuTTY with an ESP32 node connected seems to always immediately reset the node, enter the setup dialog. The ESP8266 needs to be reset manually to achieve the same objective.
+If you have a Flash/Boot button, like the NodeMCU boards, this is a simpler way to enter the dialog.
+
+
+Note how the port tests for I2C ports as it wakes up, and here sees #61, so will set the (second) display settings on.
+(#60 is always display 1, #61 is always display 2) To do this PuTTY must be set up like this (but select the correct Com port for your system!) :
+
+
+If the MQTT broker address is incorrect, the code will try to search for a broker, BUT this takes quite a long time as it takes 15 seconds for each address to be "searched". This is a limitation of some of the libraries and I cannot overcome this. - But it does mean that -eventually- your node should find the broker even if it has moved address.
+
+Rasberry Pi. Andrew has kindly written some notes on how to set up MQQT an a Rasberry pi. how_to_install_mqtt_broker_on_raspberry_pi.pdf
