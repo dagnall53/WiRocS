@@ -11,14 +11,13 @@ I have used it with Hornby TTS to provide very low cost battery powered units. (
 
 
 # WiRocS
-
-WiFi Rocnet node for ESP 32 and 8266
-For documentation please read the [pages in the /notes directory. 
-The original User pages in Rocrail are no no longer available. 
-(https://wiki.rocrail.net/doku.php?id=users:dagnall53:description)
 Use of this software is at your own risk!
+WiFi Rocnet node for ESP 32 and 8266
+For documentation please read the pages in the /notes directory.
+The original User pages in Rocrail (https://wiki.rocrail.net/doku.php?id=users:dagnall53:description) are no no longer available. 
 
- For syntax see. https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign
+ For syntax see. Notes/Syntax 
+(was https://wiki.rocrail.net/doku.php?id=users:dagnall53:rdtextalign)
 
 
 === General note ===
