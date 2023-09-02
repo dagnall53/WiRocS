@@ -1,0 +1,91 @@
+Check that the Node is actually connected
+If you have Rocrail setup, and one of my WiRocS nodes working, then when you select {rocrail}Programming/Rocnet/Setup and press "Query", you should see the esp ID and some data for the working WiRocS node… (getting this far sometimes takes a few restarts of Rocrail if you are changing things like the MQTT IP addresses…)
+
+  ID  Location Vendor                     Class Revision i/o Sub IP   UID name
+  28  0  Public Domain and DIY Decoders   Al     13       8    0.22     WoodSt
+Here the Node is at real IP address xxx.xxx.0.22 but has a Rocrail ID of 28, and a UID name of "Wood St". This module is using revision 13 of my code.
+
+IF this is not working it may be that your node is not connected properly to your wifi. Please start it using the arduino interface and it should help you identify the problem using the arduino terminal.
+
+Check that the ports on the node are set correctly
+If you get this far, you should then be able to check and see the various Port settings for this ESP module.
+
+Typically for an INPUT on PORT 4 using a hall effect switch, I will set the PORT 4 PI02 Port setup for the port as follows:
+
+Set Type to "Input", and then, because of the hall effect switch pulling "down" on detecting the magnet, I set "Invert" ON. I do not set Toggle. { I do not think my code even recognizes toggle, but I could add it later}
+
+{IMPORTANT NOTE The Pi03 “Channel” Setup options to make a pin a PWM Output or SERVO Output (“Blink” or “Servo”) actually take priority over the Pi02 “Port” Type/direction settings (“Input” /“Output”) and make the port an Output.)
+
+Having set up a port as an input, test this with a magnet and you should see the sensor icon (with the interface set to address 28,Address 4,type sensor) on Rocrail go RED when you place a magnet near the sensor, and the blue light on the WiRocS module should change to blue. (Because Port 4 on the NodeMCU is connected to the Blue LED. But this LED may not be present, or connected to another pin on other boards).
+
+In the rocrail controller viewport, rocrail should report something like this:
+
+  10:58:19 sensor report 28:4 off code= load=0
+  10:58:18 sensor report 28:4 on code= load=0
+The code does include a degree of debounce logic, but its best to try it to explore how it works with your sensors.
+
+Use the DEBUG MQTT messages
+To help testing, my code sends special MQTT debug messages to "debug" In command prompt (switch to your mosquitto directory) and use the command "mosquitto_sub -h 192.168.0.11 -i "CMD_Prompt" -t debug -q 0 (assuming your mosquitto is at 192.168.0.11 !!) and you should see something like this…
+
+For this example, I started the Debug Monitor and then re-started two nodes. They login to the "SHED" SSID, and find the MQTT Broker, and send a debug message.
+Every time they get the RocNet Time synchronization message, they send a simple debug message, allowing confirmation that they are connected.
+This is a very useful way of checking all your Esp devices are actually connected. For this reason I usually run the debug all the time in the background so I can check if something has lost connection. In comparison to the old code, at V3 I added a signal strength monitor, showing how strong(or weak) the WiFi signal is. In this example its exceptionally low, at below -90 dB. The two nodes were in my study, yet managed to connect to the SHED, which is in the garden, about 30m away.
+
+Set the sensors so they work with momentary inputs from the hall sensors
+Now, using the interface in Rocrail, First, note that the hall sensor will only close momentarily when the train passes over it, so I set the block sensors to "enter2in". Consider this very simple track with two terminal type sidings and a single point(/switch):
+
+[Station Back] Sensor{SR} … Point Thrown
+
+[Station Front] Sensor {SF}… Point Straight —— Main Route.
+
+The "SR" sensor (say ID28 port 4 for example) after the points(thrown) detects the train just as it starts to enter block "StationBack" You do this by having the (Tables/blocks/ (chose StationBack) and then "routes", "all enter+" and "all enter -" and set the ID of the sensor to "SR" and the "Event" to enter2in for both these entries.
+
+When the sensor detect the train, the sensor will momentarily go green, and Rocrail will know the train is now in that block. You can do more complex sensor patterns, with entry and exit sensors, but I have not played with these, as the enter2in event is suitable for all my needs.
+
+Make sure you have Input/Output settings correct
+As noted earlier, the Pi03 "Channel" Setup options to make a pin a PWM Output or SERVO Output ("Blink" or "Servo") take priority over the Pi02 "Port" Type/direction settings ("Input" /"Output").
+
+So, If you have any of the "Channel" pins set to Blink or Servo, then the Pi02 Port Type/direction will always be set(forced) to "Output". (Note: But it will report "Output" when you "get" the settings, to show that it is an Output).
+Make sure the Rocrail settings are correct
+Setting the Switch Interface for the points is very similar to setting the inputs, except that the settings for a port (example here is PORT 7) to be a servo output are as follows:
+Pi02 Port setup for PORT 7 set to OUTPUT
+Pi03Channel Setup for PORT 7: Left and right set the servo positions.
+(I would set left and right steps to "1" to start with)
+Set the "Servo" tick box, but leave the Blink box unchecked.
+Set Delay*10ms to "1".
+Providing you have placed a point/switch on your layout, and set the properties:
+
+Unordered List Item{General: Type: Switch}
+Interface InterfaceD {whatever you called your MQTT controller}
+Bus : {28 in this example}
+Address {7 in this exmple for PORT 7 with a servo connected}
+And Checked {Single Gate}.
+With these settings Rocrail should be able to change the switch/point/servo position.
+
+The debug monitor should show something like this
+
+  <11:23:24s>  Node:28 (Wood St) Msg:Setting Output 7 (SERVO) to State(1) = Position:180
+  <11:23:26s>  Node:28 (Wood St) Msg:Setting Output 7 (SERVO) to State(0) = Position:4
+I think if you can get all this working, you should be able to make what you want work, and experiment with the other settings, to get things like the PWM controls and blinking working for lights on the track…
+
+Arduino Compile errors
+I have seen arduino compile erors such as
+  "C:\Users\dagna\AppData\Local\Arduino15\packages\esp8266\tools\xtensa-lx106-elf-gcc\1.20.0-26-gb404fb9-2/bin/xtensa-lx106-elf-ar: unable to rename 
+  'C:\Users\dagna\AppData\Local\Temp\arduino_build_445866/arduino.ar'; reason: File exists\\
+  Multiple libraries were found for "Servo.h"
+  Used: C:\Users\dagna\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.4.2\libraries\Servo
+  Not used: C:\Arduino\libraries\Servo
+  Multiple libraries were found for "SD.h"
+  Used: C:\Users\dagna\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.4.2\libraries\SD
+  Not used: C:\Arduino\libraries\SD
+  exit status 1
+  Error compiling for board NodeMCU 1.0 (ESP-12E Module).
+  Archiving built core (caching) in: 
+  C:\Users\dagna\AppData\Local\Temp\arduino_cache_939480\core\core_esp8266_esp8266_nodemcuv2_CpuFrequency_80,
+  VTable_flash,FlashSize_4M3M,LwIPVariant_v2mss536,Debug_Disabled,DebugLevel_None____,FlashErase_none,
+  UploadSpeed_115200_3f447b7f4ff4321d67996d55e2879ce0.a"..
+But usually (!) although it complains, the code eventually compiles and uploads
+Usually it compiles fine the second time (!) around
+Sometimes the com port gets "stuck", and it needs a second try.
+
+good luck
