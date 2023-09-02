@@ -1,0 +1,132 @@
+How to send messages to WiRocS OLEDS
+(note Images lost !!) Much blank space where images were!
+This page will explain how to get simple messages displayed on WiRocS with Standard I2C OLED displays.
+
+Photo of RocDisplay Scheduling Example]]The WiRocS display system is heavily based on Walter Sax's RocDisplay system, and should be largely compatible. The German forum has discussions about using Rocdisplay to show live scheduling |RocDisplay (Bahnsteiganzeige) Ansteuerung NEU
+Peter (peter&basti) posted an example workspace to show how scheduling and automatic displays work |RocDisplay Scheduling Example and wrote a page on Scheduling with RocDisplay
+
+In this space I will not try to explain Scheduling, or the (super!) XML to generate automatic messages from the Schedules, to understand these, please follow the Forum discussions.
+
+But I will try to show how to put simple messages onto the displays. This should allow display of "pre-written" messages that can be updated either as a consequence of some RocRail action, OR by pressing a "button" on RocView.
+
+Text Objects
+The RocDisplay system is based on RocRail "Text" objects. You will need one Text object for each "Rocdisplay" message. Each Text object has an Interface setting that defines where the message will be sent. Their Interface settings are as follows:
+
+Interface ID (Your RocNet ID name- I use 'MQQT')
+Bus (eg:50) The Rocnet node address of the WiRocS node with the OLEDS)
+My WiRocS node defaults to 50 so I have used this in the examples.
+Address (eg:60) Can be 60 or 61.
+Display (eg:1) /Weergave) in Dutch
+I will call this example in later descriptions (50,60,1)
+
+Do not worry at this stage about putting any text in the "text" box in the 'General' tab when setting up the display, but do make sure you give the Text Object a name that you can recognise easily later. Incidentally, you can position the "text" on your RocView screen so it will show what will be sent. (Peter's example code uses this feature to show a timetable on the screen)
+The WiRocS node has two I2C busses, each can support have OLEDS with physical addresses 60 or 61.
+So, for OLED with Physical address 60 on the primary I2C bus, the code automatically organises the RocDisplay messages on the OLED screen in vertical order like this:
+
+–RocDisplay "display 1" (50,60,1) (Top line "{L0}')
+–RocDisplay "display 1" (Second line "{L1}')
+–RocDisplay "display 2" (50,60,2) (Top line "{L0}')
+–RocDisplay "display 2" (Second line "{L1}')
+–RocDisplay "display 3" (50,60,3) (Top line "{L0}')
+–RocDisplay "display 3" (Second line "{L1}')
+–RocDisplay "display 4" (50,60,4) (Top line "{L0}')
+–RocDisplay "display 4" (Second line "{L1}')
+If you are using a 32 pixel high OLED, it will organise the display like this:
+
+–RocDisplay "display 1" (50,60,1) (Top line "{L0}')
+–RocDisplay "display 1" (Second line "{L1}')
+–RocDisplay "display 2" (50,60,2) (Top line "{L0}')
+–RocDisplay "display 2" (Second line "{L1}')
+Address "60" OLEDS on the Secondary I2C bus will display the display messages numbered 5-8 eg:(50,60,5)
+OLEDS with the Physical Address 61 on the primary I2C bus show display messages numbered 1-4 eg:(50,61,1)
+Messages for Physical Address 61 on the secondary I2C bus show display messages numbered 5-8 eg:(50,61,5)
+For best effects, you will need to send some Formatting commands in your message to make them produce nice looking displays. WiRocS "RocDisplay" Syntax and Message Formatting shows the commands needed.
+
+See also Syntax Notes
+
+Actions
+The easiest way to actually "use" the system is to use ACTIONS, and to have these triggered by PushButtons on RocView. (Or by Schedules, See users:dagnall53:Using Schedules) To use pushbuttons on RocView to send messages, this you must first create some ACTIONS. I have generated quite a few whilst programming and testing the code. A typical action example is this example "1 RocDisplay1" You need to set the "type" to Text, and then in "ID" select the text object you will be modifying. Here I am using the text object "Node50_Display 1". In the Parameter field, write the text (RocDisplay formatted if you want), and this will be sent to the text object (and then to the OLED). You do not need to do anything in the Interface tab!
+
+
+
+Now add a button to your RocView, and select "properties" and click on the "ACTIONS" box: Select the ID for the Action we just wrote: here it was "1 RocDisplay1", click on ADD, and it will appear in the list of actions that will happen when the button is pushed. (make sure the button is set to Push button).
+
+Its as simple as that. Now, when you press the button, RocRail will send the message we defined in the Action "1 RocDisplay1" to text object "Node50_Display 1" (50,60,1), and it should appear on the top lines of OLED 1. You can add more actions to a single button to allow you to update a whole display with just a single button.
+
+128*64 Displays and 128*32 Displays
+Original RocDisplay (128*16)
+This code tries to keep RocDisplay compatible formatting
+The original RocRisplay was based on 128*16 OLEDS, and so each Text Object was able to send text to TWO lines of these small OLEDS.
+
+Each RocDisplay "text object" was designed to include formatting to send messages to the two lines on the small RocDisplay 128*16 OLED's.
+In the original Rocdisplay system each text object only sent to ONE OLED.
+Text object message lengths are limited to ~100 characters
+WiRocS
+In WiRocS version of the system:
+
+My OLEdS are four times larger than the original "RocDisplay" OLEDS.
+WiRocS support two 128*64 OLEDS with Physical I2C addresses 60 and 61 on each I2C bus.
+WiRocS has two I2C busses.
+OLEDS found on the Primary bus are named OLED1('60) and OLED3('61).
+OLEDS found on the Secondary bus are named OLED2('60) and OLED4('61).
+To retain backwards compatibility, all 128*64 can show messages for four "RocDisplay" "text objects".
+(OLED1) will show messages from (RN,60,1-4) and OLED3 will show messages from (RN,60,5-8) (Primary I2C bus)
+(OLED2) will show messages from (RN,60,1-4) and OLED4 will show messages from (RN,60,5-8) (Secondary I2C bus)
+128*32
+The WiRocS can also be used with smaller 128*32 displays.
+
+128*32 displays are NOT available with selectable I2C addresses, so only two can be used with WiRocS.
+An EEPROM Saved "setting" called "_32" mode has been added.
+If "_32" mode is selected, then OLEDS 1 and 2 will be setup (on power up) as 128*32 devices.
+If "_32" mode is selected:
+Text objects (50,60,1) & (50,60,2) will shown on "OLED1"
+Text objects (50,60,3) & (50,60,4) will shown on "OLED2"
+During power up a debug message appears on the OLEDs to identify what text objects can be shown.
+(Note that internally the code has to set up the 128*32 versions of the OLED1/2 code as "OLED5" and "OLED6", so some display help or debug messages may show 'OLED5' or 'OLED6')
+Any changes to "_32" mode can only take effect on re-initialization / power up.
+Where will Text Objects show on the WiRocS OLED?
+RocDisplay Text Objects display on "two" lines of each OLED.
+
+A 128*64 OLED1 with I2C Address 60 on the Main I2C bus of Rocnode has 8 physical lines of text.
+Each display can therefore display 4 pairs of RocDisplay/'Text Object' 'lines'.
+Text for the top two lines are sent using "text object" messages to (50,60,1)
+Text for the next two lines are sent using text object (50,60,2), etc.
+Allowing direct writing to all 8 line pairs, and retaining compatibility with existing Rocdisplay systems.
+Assuming the following (formatted) text examples
+
+Text on text object (50,60,1) is "{L0}Text_Object"1" Line 'L0'{L1}Text_Object"1" Line 'L1'"
+Text on text object (50,60,2) is "{L0}Text_Object"2" Line 'L0'{L1}Text_Object"2" Line 'L1'"
+etc..
+The OLED will show something like this:
+
+  Text_Object"1" Line 'L0'
+  Text_Object"1" Line 'L1'
+  Text_Object"2" Line 'L0'
+  Text_Object"2" Line 'L1'
+  Text_Object"3" Line 'L0'
+  Text_Object"3" Line 'L1'
+  Text_Object"4" Line 'L0'
+  Text_Object"4" Line 'L1
+When you send short, "UNFORMATTED" text, you have just 4 lines showing (although unformatted text will be allowed to wrap.. see later)
+
+  Text_Object "1" Unformatted Text
+  (space)
+  Text_Object "2" Unformatted Text
+  (space)
+  Text_Object "3" Unformatted Text
+  (space)
+  Text_Object "4" Unformatted Text
+  (space)
+Text Wrapping
+When using "unformatted" messages, the displays will wrap long messages. This example shows two long messages sent to two text objects. The first text was sent to object"Node50_Display 1"(50,60,1) described earlier. The second text was sent to a text object called "Node 50 -3"(50,60,3). Note that the message to (50,60,1) actually goes down to line3 of the display, so any text sent by sent to (50,60,2) could be overwritten or corrupted.
+
+
+
+
+
+
+If the Clock has been set in RocDisplay messages, AND a RocDisplay formatted message, (like a standard platform message), is being shown, then the Word wrapping will "tighten up" so as not to overwrite the clock. Here the message to text object (50,60,1) has been changed, but the message to text object (50,60,3) remains the same as in the previous photo.
+
+
+
+RocDisplay formatted messages are NOT allowed to Wrap. It is assumed that they will be properly sized to show on the display. IF a very long RocDisplay formatted message is sent, the end of the message can reappear on the left of the display and overwrite any text on the left. This will produce a mess on the screen. The answer to this is to keep RocDisplay messages short!
