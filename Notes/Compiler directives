@@ -1,0 +1,25 @@
+Compiler Setup
+For most users, it is expected that they will want the code to be used with the "noDac" audio output, and set up as a "stationary" node. The Binaries in the code repository are compiled using these (default) directives.
+
+#Define Compile Options
+To allow for maximum flexibility, and avoid having branches that are incompatible, the Code to compile the WiRocS Node includes a lot of #Define statements that allow the code to be modified for various uses. This allows the node to be set up as a Static / or Mobile(LOCO) Node, and with or without Audio.
+
+To select "Mobile" settings, use the "#define _LOCO_SERVO_Driven_Port 1". (This example sets D1 as the RC Servo drive, and also s To use a Mobile (LOCO) node with a "PWM" drive rather than Servo drive, use "#define _LocoPWMDirPort 3 " (If you do this then D3 (and D1 set above) are used to drive the PWM drive device). Currently the code assumes use of a NodeMCU motor board, but there is an option to use other drivers.
+
+Other pins are then "used up" by the various audio output options. The Table below refers to the ESP8266 NodeMCU "D" pin numbering, but theESP32 is similar, although the pin numbering is different
+
+node_options3.jpg
+
+User : Port is available for user to specify as Input or Output.
+
+Port D4 is used for the onboad LED.
+with "AudioNoDAC", port D4 is LRC (set as output with LRC square wave sent by DAC) , but it can be reused (but is complicated)
+Port usage shown above is considered "standard", but all port numbers/use can be modified in the code "directives.h" file if required.
+
+(Some additional #defines are set or ignored depending on the defines noted above) e.g:
+
+#ifdef _LOCO_SERVO_Driven_Port
+ #define BACKLight 2  // NodeMCU D2
+ #define FRONTLight 5 // NodeMCU D5
+ //  #define SteamOutputPin 6
+#endif
