@@ -1,0 +1,79 @@
+WiRocs HARDWARE
+The Source Code can be run on any ESP8266 ESP-12 or ESP32 modules. This includes the NodeMCU and WeMOS mini modules:
+The NodeMCU module is on the left, and is fitted in a "NodeMCU Motor Shield" The Wemos Mini is a smaller equivalent to the NODEMCU, and is shown right, Note both have the same "ESP8266 ESP-12 module on board. Also shown are some options for the Audio. The smaller board by the WEMOS Mini is an ADAfruit MAX 98357 board that is one option for "High Quality" audio. Below the NodeMCU is a 3D printed housing for the Hall effect switch that is used for sensing trains. The 3d file for this is included in my thingyverse item: Sensor
+
+Stationary Decoder
+A WiRocS node using NodeMCU When used with an ESP8266 NodeMCU and NodeMCU Motor Shield, WiRocS is very easy to use: WiRocS provides 8 general purpose I/O on an ESP8266, the Illustrated example has Sound, An OLED display, a Servo, two PWM Leds and still has three general purpose I/O unconnected.
+On an ESP32, there are 16 General purpose I/O.
+
+Deciding what functionality each General Purpose I/O has is set up in RocView using the PI02 and PIO3 programming interfaces.
+
+There is an inbuilt memory drive ("SPIFFS") that holds up "Wav" sound files. These are primarily for the Loco version of the code, but can also be accessed by the Stationary Node. For example, a WiRocS node can say "Please Stand Clear of the Platform" (this is switched by a standard Rocrail Switch interface, "Bus" set to the WIRocS Node number, and Address "109"). Sound Files can be uploaded using a standard FTP protocol.
+
+WiRocS can also interface with inexpensive OLEDs to display messages, and the illustration shows a typical timetable example.
+
+Using a ESP8266 NodeMCU Motor Shield
+The NodeMCU Motor Shield is very useful as the basis of a stationary decoder because it provides a Servo like three pin connection for each "D" output. This allows simple connection of hall effect switches or servos.
+However, the Central "V+" rail of these pinouts is connected as standard to the NodeMCU 3.3V supply, which is not suitable for driving most servos.
+To overcome this I would recommend some modifications.
+
+Disconnect the NodeMCU 3v3 drive from Motor Shield. This can be done by cutting the track on the back of the board (see photo), OR by cutting the 3V3 pin on the NodeCU board situated between "D4" and "G".
+Then connect a 5V regulator with input to the V Motor input, and the regulated 5V out to the "Vin" input.
+Lastly connect the 5V power (on Vin) to the (cut) Middle 3v3 rail on the line of pins by adding a link jumper to the "Vin/3v3" pins.
+Note that all the Motor shields I have had only connected a single 3v3 from the NodeMCU to the shield, but you should check that your shields do not use the other two 3v3 outputs to avoid problems!
+
+This shows the 3V3 trace cut (uncut on left, the knife points to the cut track on the right)
+
+The motor shield is designed to allow you to use the inbuilt "293" motor driver IC to power high powered items like motors or lights.
+
+These are connected to the D1-D3 and D2-D4 pins, which will need to be set up as outputs on the ESP module (and as PWM if you like).
+
+
+However please note that the 293 on the shield is NOT connected as four independent half bridges, but as a "direction" and PWM inputs. The direction input includes an inverter to one of the half bridges.
+
+This means that the board can drive only two motors or two lights, and not four lights that would be possible if it did not include these inverters.
+
+Different NodeMCU Modules
+Most NodeMCU modules are 26mm wide and fit the Motor Shield perfectly. However, the "V3" version is 31mm wide, so it cannot fit directly into the two rows of pins on the shield. But all is not lost!. The Side with the "important" "D" pins has the same pinout as the other boards and so you can connect a V3 module in the shield using just this set of pins. Then connect a wire from the 5V rail to the V3's VV pin (on the side that did not fit in the Motor Shield's sockets) to power it.
+
+ESP32 Motor Shield
+Unfortunately there is no standard ESP32 motor shield equivalent to the ESP8266 version. Different ESP32 boards seem to have different pin-outs, making it difficult to suggest a "good" off the shelf solution. There appears to be an interesting possible PCB here but I have not explored this option.
+
+WiRocS Sound
+There are two options to get sound. You can hear how it works on the Mobile variant here Youtube: Loco running with sound.
+
+The simplest is to use the definition _AudioNODAC. This is the Default and all the available binary files have been compiled with this option.
+
+This creates a Class D amplifier output stage that uses "I2SDAC_DIN" {D9/RX (esp8266) or 22 on ESP32}, to drive a transistor base that then drives the loudspeaker.
+
+I2SDAC_DIN drives the transistor base. I recommend placing resistor {1k to 10k} between I2SDAC_DIN and the NPN transistor base.
+I2SDAC_LRC is 'LRC' This is set during Audio setup, but released for use as an input later. (?).
+In this configuration I2SDAC_LRC is initially set as a clock output, but it can be re-used once the DAC has been setup.
+The resistor in the transistor base ensures that the serial programming is still possible!. THe speaker will make squeaks whilst being programmed, but I find this useful to show something is happening.
+
+The transistor collector is connected to the loudspeaker and the emitter to ground. The Loudspeaker is connected to the collector and V+. An electrolytic across V+ to Gnd is recommended to support the high pulse currents. The "NODAC" output system uses oversampling, so to try and prevent timing issues, I limited my sound samples to 11K sample rate, rather than the 44k possible. I have not done tests to find the limits, but I find the sounds very acceptable.
+
+There is a "high quality" option that uses the _AudioDAC definition set, which uses the AdaFruit MAX98357 which provides high quality stereo sound and on-board amplifier.
+If this option is used, the board needs these connections :
+
+I2SDAC_DIN 9 D9(/rx) Data
+I2SDAC_LRC 4 D4 used as Left Right Control
+I2SDAC_CLK 8 D8 used by DAC as clock.
+This mode is not compatible with the OLED display.
+
+MOBILE DECODER
+WiRocS can be used as a complete "mobile" Loco controller. It includes the ability to get RocNet protocol loco messages and will respond to speed, direction, lights and sounds commands.
+
+One small mobile sound decoder configuration is to use the WEMOS Mini with a RC servo dc motor controller and the Adafruit DAC. In this configuration, the Battery eliminator in the RC servo DC motor controller powers the WEMOS Mini and the DAC.
+
+The WiRocS can also be used to drive a PWM motor control directly, in which case the RC DC motor controller is replaced by a motor shield with the 293 chip or (much better!) a TB6612FNG Dual DC Stepper Motor Drive Controller Board Module.
+
+The TB6612 has MOS drivers so does not have the losses of the bipolar 293, and I found it runs cool driving my loco motors, where the 293 gets hot. BUT! NOTE that the WEMOS Mini input voltage is limited to 6.5V, so must not be connected directly to a 2S LIPO. A small 5V regulator must therefore be added for this purpose. - Also, to complicate matters, the NodeMCU motor shield has some additional and not well documented circuitry. This makes pins D3 and D4 "direction pins" and Pins D1 and D2 the PWM for the two Motor channels. This makes motor direction code for the Motor Shield very simple, but incompatible with use with other hardware. Because most users will use the "stationary" version of WiRocS I have defaulted the drives to use the "motor shiled" type driving. There are some directives in the code to select other drive options, but I would recommend contacting me if you plan to use the WiRocS to drive a loco using PWM mode.
+
+There is another advantage to the 6612, - you can use one set of drivers to replace the single transistor AudioNODAC drive. Connect RX to one of the PWM inputs, and the loudspeaker (via a 10uf electrolytic) to the output.
+
+I also connected a 100k resistor from 3V3 to the Standby pin, with 10uf from standby to Gnd. This provides a very short delay before the drivers are turned on. Without this, the wheels do a powerful spin on turn on that can be disconcerting or damaging.
+
+The illustration shows a 6612 board with the PWM Channel A driving to the motor, and one half of Channel B to drive the loudspeaker via the electrolytic, (but note that the standby pin did not yet have the Resistor-Capacitor delay added at the time of the photo).
+
+There are examples of the (3D printed) loco running on Youtube: Loco running with sound.
