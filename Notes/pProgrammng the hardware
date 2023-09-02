@@ -1,0 +1,74 @@
+Programming the Hardware
+Arduino Libraries and Dependencies
+It is vital that you have the correct libraries installed in your Arduino to allow it to compile the code. You should have
+
+ESP8266 esp8266 by ESP8266 Community (I have Ver 2.4.2)
+ESP32 esp32 by Espresif System (I have version 1.01)
+Ftp support ESP8266FtpServer.h https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/latest
+ESP32Servo.h https://github.com/madhephaestus/ESP32Servo/tree/master/src
+PubSubClient.h https://github.com/ThingPulse/esp8266-oled-ssd1306
+AudioOutputI2SNoDAC.h, AudioFileSourceSPIFFS.h, AudioGeneratorWAV.h, AudioOutputMixer.h see https://github.com/earlephilhower/ESP8266Audio
+SSD1306.h https://github.com/ThingPulse/esp8266-oled-ssd1306 (You will need to use my Special Fonts)
+From V17, the Special OLEDDisplayFonts.h file is included in the Arduino sketch, but for earlier versions, this can be found in https://github.com/dagnall53/Fonts-for-WiRocs and needs to be saved in your Oled library src directory to replace the existing one. (typically Arduino\libraries\esp8266-oled-ssd1306-master\src )
+The OLEDfonts are also stored as separate .h files in the Fonts for Wirocs Github, along with a copy of the excellent Squix |GlyphEditor.
+Programming a Stationary Node
+From WiRocS V 15, I have been saving the Sketch files with them setup for Stationary Nodes. It should be possible to simply compile the code and upload it (and the SPIFFS sketch data) to your ESP 8266 or ESP32. See Direct Binary Upload
+
+But If you wish to change the way the code compiles and works, there are a number of Directives set in directives.h that affect the coding.
+
+I now recommend the Audio be left on, but the Audio directives can be switched off if required.
+Assuming you have Audio , you will need the SPIFFS to be populated with the example .wav Files.(see below)
+I program the ESP8266 with the Arduino 'NodeMCU 1.0 ESP12-E' board option, and it must be set to "Flash Size (4M,2M Spiffs)
+For the ESP32, I use the 'WEMOS Lolin32' board option.
+Make sure you "UPLOAD" the "Sketch Data" to the ESP. (see below)
+WiRocS will default to Rocnet ID 50.
+YOU MUST change the Rocnet ID after programming to a spare ID, as RocRail needs each node to have separate RocNet ID's
+Use (RocView, Programming, Rocnet)
+Programming a LOCO decoder
+To use the WiRocS Code for a "Mobile" (Loco) controller, you will need to use the Directive '#define _LOCO_SERVO_Driven_Port 1
+By Its-self, this sets up a RC servo controller on D1 as a Loco Speed Control.
+If the LOCO uses a PWM speed controller, then #define _LocoPWMDirPort 3 will also need to be uncommented.
+These two defines set up the board with PWM drives on ports D1 and D3, and FrontLight and BackLight on pins D2 and D5.
+Sound effects for synchronised chuffs and bells, whistles, etc are stored in the SPIFFS and may be edited to match your loco.
+Just like theStationary nodes, the RocNet ID must also be changed to a spare ID, or Rocrail will have problems!
+Once programmed, you can use the standard "RocView Loco Programming" system to change the Loco CVs, to modify the loco address and other behaviours.
+Forcing compiler options if there are setup issues
+I have tried to make the code react sensibly when programmed to a blank board, but it is difficult to cover all eventualities. So, if you have any problems with the code repeatedly crashing after your upload, it may be that it is having trouble with internally set (wrongly or not at all) EEprom settings. If you are experiencing this issue, I have some "Force" defines to set internal variables. These are probably not required, but:
+
+You can set your own Router and Password settings in the Secrets.h file.
+#define _ForceRocnetNodeID_to_subIPL
+#define _ForceDefaultEEPROM T
+NOTE this should force "sensible" values into the EEprom– BUT will STOP you saving any new settings!!- including the WiFi SSID etc!
+#define _Force_Loco_Addr 3 (if using the Loco Mode this sets the loco to address 3)
+IF you have to use these "FORCE" defines MAKE SURE that you then comment out these defines and reprogram the unit so you can set and change things for your specific application.
+SPIFFS Data Upload
+WiRocS stores all its sound effects in a "SPIFFS" (Serial Peripheral Interface Flash File System) To make my code "work as expected" , it needs to have all the sketch programmed on the board, including the Sketch data upload.
+
+
+
+SPIFFS is a small (2Mb) disk drive set up inside the ESP, that can have many files stored, just like a normal disk drive or SD card.
+The size of the SPIFFS is set when you program the main ino. I (now) use the "2M SPIFFS" option
+You can send files (or read) these files in the code, OR send to the "disk drive" using a "File Transfer Protocol" (FTP) program.
+In an Arduino sketch, files that are expected to be stored in the "SPIFFS" are stored in a special "data" directory.
+As part of the ESP programming, you need to separately do a "Sketch Data Upload". Arduino will then upload all the files in the "data" directory to the ESP. This takes quite a while, and only works if the Arduino Serial Monitor is switched OFF.. It is not smart enough to switch it Off by its-self.
+If you ever change the SPIFFS size when re-programming the ESP, you will need to re-upload files to the SPIFFS.
+(This is important because I started programming using "3M SPIFFS", but changed to "2M SPIFFS" around version 15 to give more room for the main program)[*]
+When you want to change or update the stored Wav files, you can use a FTP program like Filezilla, and just do drag and drop. This can be incredibly useful to change sound effects.
+Programming using OTA
+Once they have been programmed once via the serial port, the nodes can be updated by Arduino using OTA (Over the Air) wireless programming.\ To do this you must know the node IP address. Then, in Arduino, in "tools": port", select the node you wish to update.
+Then proceed with Sketch:upload as you would if the node was connected physically.
+Known Limitation
+I have noticed that the Node may need to be powered down and then re-powered after an OTA upload.
+Because the MQTT find broker code blocks all other operations, the Node should be successfully connected to a MQTT broker before the update can be undertaken. Also note that, depending on what #defines you have used, after updating, you may still need to physically connect to the node to set SSID and Passwords etc. - But the update should not affect the saved values, so in general, if the code worked before you updated, it should do so again afterwards.
+
+Direct Write using Binary Files
+It is possible to directly write a compiled Binary file to an ESP 8266 without using Arduino. For the ESP8266, you can use the NodeMCU Firmware Programmer. https://github.com/nodemcu/nodemcu-flasher
+
+If you use this, make sure you do not have any other programs opening the com port (like arduino monitor).
+Set the com port by typing COM4 in the Com Port tab (the pull down does not work).
+Copy the Binary you need from the Github and save it (make sure it is the ESP8266/nodemcu version)
+In the Programmer, select the file (wherever you saved it), set "offset" to 0.
+Deselect the "INTERNAL: NODEMCU" test program
+Press flash.
+RESET the Node manually after programming.
+You Will still need to upload the SPIFFS data files to the hardware (or have already uploaded them)
